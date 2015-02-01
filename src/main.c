@@ -45,7 +45,7 @@ typedef struct {
 typedef struct {
 	xy *vertex;
 	float floor, ceil;
-	unsigned int npoints, *neighbors;
+	unsigned int npoints, nneighbors, *neighbors;
 } sector;
 
 struct player {
@@ -235,9 +235,9 @@ void render()
 
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed)
 {
-	sector sect;
+	sector sect, neighbor;
 	xy v1, v2, isect;
-	unsigned int i;
+	unsigned int i, j, k, found;
 
 	if(upPressed){
 		player.vel.x += cos(player.angle + M_PI / 2) * PLAYER_SPEED;
@@ -271,8 +271,27 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		if(!lineIntersect(v1, v2, (xy){player.pos.x, player.pos.y}, (xy){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 			continue;
 		}
-		player.vel.x = 0;
-		player.vel.y = 0;
+		found = 0;
+		for(j = 0; j < sect.nneighbors; j++){
+			neighbor = sectors[sect.neighbors[j]];
+			for(k = 0; k < neighbor.npoints; k++){
+				if(v1.x == neighbor.vertex[k].x && v1.y == neighbor.vertex[k].y){
+					found++;
+				}
+				if(v2.x == neighbor.vertex[k].x && v2.y == neighbor.vertex[k].y){
+					found++;
+				}
+				if(found == 2){
+					player.sector = sect.neighbors[j];
+					goto foundAll;
+				}
+			}
+		}
+foundAll:
+		if(found < 2){
+			player.vel.x = 0;
+			player.vel.y = 0;
+		}
 	}
 
 	player.pos.x += player.vel.x;
@@ -326,6 +345,14 @@ void load(char *map)
 				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
 					sect->vertex = (xy*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
 					sect->vertex[sect->npoints - 1] = verts[index];
+				}
+				sscanf(ptr += scanlen, "%*c%n", &scanlen);
+
+				sect->nneighbors = 0;
+				sect->neighbors = NULL;
+				while(sscanf(ptr += scanlen, "%u%n", &index, &scanlen) == 1){
+					sect->neighbors = (unsigned int*)realloc(sect->neighbors, ++sect->nneighbors * sizeof(*sect->neighbors));
+					sect->neighbors[sect->nneighbors - 1] = index;
 				}
 				break;
 			case 'p':
