@@ -271,15 +271,16 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		if(!lineIntersect(v1, v2, (xy){player.pos.x, player.pos.y}, (xy){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 			continue;
 		}
-		found = 0;
 		for(j = 0; j < sect.nneighbors; j++){
 			neighbor = sectors[sect.neighbors[j]];
+			found = 0;
 			for(k = 0; k < neighbor.npoints; k++){
 				if(v1.x == neighbor.vertex[k].x && v1.y == neighbor.vertex[k].y){
 					found++;
-				}
-				if(v2.x == neighbor.vertex[k].x && v2.y == neighbor.vertex[k].y){
+				}else	if(v2.x == neighbor.vertex[k].x && v2.y == neighbor.vertex[k].y){
 					found++;
+				}else{
+					continue;
 				}
 				if(found == 2){
 					player.sector = sect.neighbors[j];

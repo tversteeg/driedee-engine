@@ -2,10 +2,15 @@
 vert 100		0 100 200
 vert 200		200 100
 vert 300		200 100
+vert 400		200 100
+vert 200		300
+vert 300		300
 
 # Floor height, ceiling height, vertices
 sector 0 10		0 1 2 3 4 x 1
-sector 0 10		5 6 4 3 x 0
+sector 0 10		5 6 4 3 x 0 2 3
+sector 0 10		7 8 6 5 x 1
+sector 0 10		9 10 5 3 x 1
 # sector 0 10		0 1
 
 # X, Y, Z
