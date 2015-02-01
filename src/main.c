@@ -20,6 +20,9 @@
 #define WIDTH 640
 #define HEIGHT 480
 
+#define PLAYER_SPEED 1.0f
+#define PLAYER_FRICTION 0.8f
+
 typedef struct {
 	unsigned char r, g, b;
 } pixelRGB;
@@ -63,10 +66,12 @@ void drawLine(xy p1, xy p2, int r, int g, int b)
 	err = (dx > dy ? dx : -dy) / 2;
 
 	while(true){
-		pixel = &pixels[x1 + y1 * WIDTH];
-		pixel->r = r;
-		pixel->g = g;
-		pixel->b = b;
+		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
+			pixel = &pixels[x1 + y1 * WIDTH];
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}
 
 		if(x1 == x2 && y1 == y2){
 			break;
@@ -96,7 +101,7 @@ void render()
 	playerPos.y = player.pos.y;
 	lookDir.x = player.pos.x + (float)cos(player.angle) * 10;
 	lookDir.y = player.pos.y + (float)sin(player.angle) * 10;
-	drawLine(playerPos, lookDir, 255, 255, 255);
+	drawLine(playerPos, lookDir, 255, 0, 255);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -175,7 +180,7 @@ void load(char *map)
 
 int main(int argc, char **argv)
 {
-	bool loop;
+	bool loop, upPressed, downPressed;
 
 	load(argv[1]);
 
@@ -198,6 +203,7 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	loop = true;
+	upPressed = downPressed = false;
 	while(loop){
 		while(ccWindowEventPoll()){
 			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
@@ -207,13 +213,45 @@ int main(int argc, char **argv)
 					case CC_KEY_ESCAPE:
 						loop = false;
 						break;
+					case CC_KEY_W:
+					case CC_KEY_UP:
+						upPressed = true;
+						break;
+					case CC_KEY_S:
+					case CC_KEY_DOWN:
+						downPressed = true;
+						break;
+				}
+			}else if(ccWindowEventGet().type == CC_EVENT_KEY_UP){
+				switch(ccWindowEventGet().keyCode){
+					case CC_KEY_W:
+					case CC_KEY_UP:
+						upPressed = false;
+						break;
+					case CC_KEY_S:
+					case CC_KEY_DOWN:
+						downPressed = false;
+						break;
 				}
 			}
+		}
+
+		if(upPressed){
+			player.vel.x += cos(player.angle) * PLAYER_SPEED;
+			player.vel.y += sin(player.angle) * PLAYER_SPEED;
+		}
+		if(downPressed){
+			player.vel.x -= cos(player.angle) * PLAYER_SPEED;
+			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
 		}
 
 		render();
 		ccGLBuffersSwap();
 
+		player.pos.x += player.vel.x;
+		player.pos.y += player.vel.y;
+		player.vel.x *= PLAYER_FRICTION;
+		player.vel.y *= PLAYER_FRICTION;
 		player.angle += (ccWindowGetMouse().x - WIDTH / 2) / 1000.0f;
 		ccWindowMouseSetPosition((ccPoint){WIDTH / 2, HEIGHT / 2});
 
