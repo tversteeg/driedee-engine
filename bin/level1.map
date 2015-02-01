@@ -1,9 +1,9 @@
 # Y coordinate followed by list of X coordinates
-vert 0		0 10
-vert 10		0 10
+vert 100		100 200
+vert 200		200 100
 
 # Floor height, ceiling height, vertices
 sector 0 10		0 1 2 3
 
 # X, Y, Z
-player 10 10 0
+player 150 150 0

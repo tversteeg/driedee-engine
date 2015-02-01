@@ -1,4 +1,7 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -17,8 +20,10 @@
 #include <GL/glew.h>
 #endif
 
-#define WIDTH 640
-#define HEIGHT 480
+#define WIDTH 800
+#define HEIGHT 600
+#define HWIDTH WIDTH / 2
+#define HHEIGHT HEIGHT / 2
 
 #define PLAYER_SPEED 1.0f
 #define PLAYER_FRICTION 0.8f
@@ -59,6 +64,15 @@ void drawLine(xy p1, xy p2, int r, int g, int b)
 
 	x1 = p1.x, y1 = p1.y;
 	x2 = p2.x, y2 = p2.y;
+	if(x1 == x2 && y1 == y2){
+		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
+			pixel = &pixels[x1 + y1 * WIDTH];
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}
+		return;
+	}
 	dx = abs(x2 - x1);
 	dy = abs(y2 - y1);
 	sx = x1 < x2 ? 1 : -1;
@@ -90,18 +104,43 @@ void drawLine(xy p1, xy p2, int r, int g, int b)
 
 void render()
 {
-	unsigned int i;
-	xy playerPos, lookDir;
+	unsigned int i, j;
+	sector sect;
+	xy vert1, vert2, tv1, tv2;
 
 	for(i = 0; i < WIDTH * HEIGHT; i++){
 		pixels[i].r = pixels[i].g = pixels[i].b = 0;
 	}
 
-	playerPos.x = player.pos.x;
-	playerPos.y = player.pos.y;
-	lookDir.x = player.pos.x + (float)cos(player.angle) * 10;
-	lookDir.y = player.pos.y + (float)sin(player.angle) * 10;
-	drawLine(playerPos, lookDir, 255, 0, 255);
+	// Render walls on map relative to player
+	for(i = 0; i < nsectors; i++){
+		sect = sectors[i];
+		for(j = 0; j < sect.npoints; j++){
+			if(j > 0){
+				vert1 = sect.vertex[j];
+				vert2 = sect.vertex[j - 1];
+			}else{
+				vert1 = sect.vertex[0];
+				vert2 = sect.vertex[sect.npoints - 1];
+			}
+
+			tv1.x = vert1.x - player.pos.x;
+			tv1.y = vert1.y - player.pos.y;
+
+			tv2.x = vert2.x - player.pos.x;
+			tv2.y = vert2.y - player.pos.y;
+
+			vert1.x = HWIDTH - tv1.x * sin(player.angle) - tv1.y * cos(player.angle);
+			vert1.y = HHEIGHT - tv1.x * cos(player.angle) + tv1.y * sin(player.angle);
+			vert2.x = HWIDTH - tv2.x * sin(player.angle) - tv2.y * cos(player.angle);
+			vert2.y = HHEIGHT - tv2.x * cos(player.angle) + tv2.y * sin(player.angle);
+
+			drawLine(vert1, vert2, 255, 255, 255);
+		}
+	}
+
+	// Render player on map
+	drawLine((xy){HWIDTH, HHEIGHT}, (xy){HWIDTH, HHEIGHT - 20}, 255, 0, 255);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -187,6 +226,7 @@ int main(int argc, char **argv)
 	ccDisplayInitialize();
 
 	ccWindowCreate((ccRect){0, 0, WIDTH, HEIGHT}, "3D", CC_WINDOW_FLAG_NORESIZE);
+	ccWindowMouseSetCursor(CC_CURSOR_NONE);
 
 	ccGLContextBind();
 
@@ -238,11 +278,11 @@ int main(int argc, char **argv)
 
 		if(upPressed){
 			player.vel.x += cos(player.angle) * PLAYER_SPEED;
-			player.vel.y += sin(player.angle) * PLAYER_SPEED;
+			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
 		}
 		if(downPressed){
 			player.vel.x -= cos(player.angle) * PLAYER_SPEED;
-			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
+			player.vel.y += sin(player.angle) * PLAYER_SPEED;
 		}
 
 		render();
@@ -252,8 +292,8 @@ int main(int argc, char **argv)
 		player.pos.y += player.vel.y;
 		player.vel.x *= PLAYER_FRICTION;
 		player.vel.y *= PLAYER_FRICTION;
-		player.angle += (ccWindowGetMouse().x - WIDTH / 2) / 1000.0f;
-		ccWindowMouseSetPosition((ccPoint){WIDTH / 2, HEIGHT / 2});
+		player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
+		ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
 
 		ccTimeDelay(6);
 	}
