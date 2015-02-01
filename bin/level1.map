@@ -1,16 +1,9 @@
-vert 0 0 0
-vert 10 0 0
-vert 10 10 0
-vert 0 10 0
+# Y coordinate followed by list of X coordinates
+vert 0		0 10
+vert 10		0 10
 
-vert 0 0 10
-vert 10 0 10
-vert 10 10 10
-vert 0 10 10
+# Floor height, ceiling height, vertices
+sector 0 10		0 1 2 3
 
-rect 0 1 2 3
-rect 0 1 4 5
-rect 0 1 6 7
-rect 2 3 4 5
-rect 2 3 6 7
-rect 4 5 6 7
+# X, Y, Z
+player 10 10 0

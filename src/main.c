@@ -1,4 +1,6 @@
+#define _GNU_SOURCE
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
 #include <ccore/display.h>
@@ -37,7 +39,7 @@ typedef struct {
 } sector;
 
 struct player {
-	xyz *pos, vel;
+	xyz pos, vel;
 	float angle;
 	unsigned int sector;
 } player;
@@ -47,15 +49,33 @@ pixelRGB pixels[WIDTH * HEIGHT];
 sector *sectors = NULL;
 unsigned int nsectors = 0;
 
+void drawLine(xy p1, xy p2, int r, int g, int b)
+{
+	pixelRGB *pixel;
+	if(p1.x == p2.x && p1.y == p2.y){
+		if(p1.x >= 0 && p1.x < WIDTH && p1.y >= 0 && p1.y < HEIGHT){
+			pixel = &pixels[(int)p1.x + (int)p1.y * WIDTH];
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}
+	}
+}
+
 void render()
 {
 	unsigned int i;
+	xy playerPos, lookDir;
 
 	for(i = 0; i < WIDTH * HEIGHT; i++){
-		pixels[i].r = i % 256;
-		pixels[i].g = i % 256;
-		pixels[i].b = i % 256;
+		pixels[i].r = pixels[i].g = pixels[i].b = 0;
 	}
+
+	playerPos.x = player.pos.x;
+	playerPos.y = player.pos.y;
+	lookDir.x = player.pos.x + (float)cos(player.angle) * 10;
+	lookDir.y = player.pos.y + (float)sin(player.angle) * 10;
+	drawLine(playerPos, lookDir, 255, 255, 255);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -72,11 +92,24 @@ void render()
 	glTexCoord2f(1.0f, 0.0f);
 	glVertex2f(1.0f, 1.0f);
 	glEnd();
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void load(char *map)
 {
 	FILE *fp;
+	char *line, *ptr;
+	int index, scanlen, nverts;
+	size_t len;
+	ssize_t read;
+	xy vert, *verts;
+	sector *sect;
+
+	line = NULL;
+	verts = NULL;
+	len = 0;
+	nverts = 0;
 
 	fp = fopen(map, "rt");
 	if(!fp) {
@@ -84,7 +117,39 @@ void load(char *map)
 		exit(1);
 	}
 
+	/* TODO: replace GNU readline with a cross platform solution */
+	while((read = getline(&line, &len, fp)) != -1) {
+		switch(line[0]){
+			case 'v':
+				ptr = line;
+				sscanf(ptr, "%*s %f%n", &vert.y, &scanlen);
+				while(sscanf(ptr += scanlen, "%f%n", &vert.x, &scanlen) == 1){
+					verts = (xy*)realloc(verts, ++nverts * sizeof(*verts));
+					verts[nverts - 1] = vert;
+				}
+				break;
+			case 's':
+				sectors = (sector*)realloc(sectors, ++nsectors * sizeof(*sectors));
+				sect = sectors + nsectors - 1;
+
+				ptr = line;
+				sect->npoints = 0;
+				sect->vertex = NULL;
+				sscanf(ptr, "%*s %f %f%n", &sect->floor, &sect->ceil, &scanlen);
+				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
+					sect->vertex = (xy*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
+					sect->vertex[sect->npoints - 1] = verts[index];
+				}
+				break;
+			case 'p':
+				sscanf(line, "%*s %f %f %f", &player.pos.x, &player.pos.y, &player.pos.z);
+				break;
+		}
+	}
+
 	fclose(fp);
+	free(line);
+	free(verts);
 }
 
 int main(int argc, char **argv)
