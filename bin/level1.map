@@ -5,13 +5,17 @@ vert 300		200 100
 vert 400		200 100
 vert 200		300
 vert 300		300
+vert 0			0 300
+vert 100		300 360 400
 
 # Floor height, ceiling height, vertices
-sector 0 10		0 1 2 3 4 x 1
+sector 0 10		0 1 2 3 4 x 1 4
 sector 0 10		5 6 4 3 x 0 2 3
 sector 0 10		7 8 6 5 x 1
-sector 0 10		9 10 5 3 x 1
-# sector 0 10		0 1
+sector 0 10		9 10 5 3 x 1 6
+sector 0 10		11 12 2 1 x 0 5
+sector 0 10		12 2 13 14 15 x 3 6
+sector 0 10		10 9 14 15 x 3 5
 
 # X, Y, Z
 player 150 150 0

@@ -28,8 +28,6 @@
 #define PLAYER_SPEED 1.0f
 #define PLAYER_FRICTION 0.8f
 
-#define CROSS_PRODUCT(p1, p2) (p1.x * p2.y - p1.y * p2.x)
-
 typedef struct {
 	unsigned char r, g, b;
 } pixelRGB;
@@ -256,49 +254,51 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		player.vel.y -= sin(player.angle) * PLAYER_SPEED;
 	}
 
-	sect = sectors[player.sector];
-	for(i = 0; i < sect.npoints; i++){
-		if(i > 0){
-			if(sect.npoints == 2){
-				break;
-			}
-			v1 = sect.vertex[i];
-			v2 = sect.vertex[i - 1];
-		}else{
-			v1 = sect.vertex[0];
-			v2 = sect.vertex[sect.npoints - 1];
-		}
-		if(!lineIntersect(v1, v2, (xy){player.pos.x, player.pos.y}, (xy){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
-			continue;
-		}
-		for(j = 0; j < sect.nneighbors; j++){
-			neighbor = sectors[sect.neighbors[j]];
-			found = 0;
-			for(k = 0; k < neighbor.npoints; k++){
-				if(v1.x == neighbor.vertex[k].x && v1.y == neighbor.vertex[k].y){
-					found++;
-				}else	if(v2.x == neighbor.vertex[k].x && v2.y == neighbor.vertex[k].y){
-					found++;
-				}else{
-					continue;
+	if(player.vel.x > 0.01f || player.vel.x < -0.01f || player.vel.y > 0.01f || player.vel.y < -0.01f){
+		sect = sectors[player.sector];
+		for(i = 0; i < sect.npoints; i++){
+			if(i > 0){
+				if(sect.npoints == 2){
+					break;
 				}
-				if(found == 2){
-					player.sector = sect.neighbors[j];
-					goto foundAll;
+				v1 = sect.vertex[i];
+				v2 = sect.vertex[i - 1];
+			}else{
+				v1 = sect.vertex[0];
+				v2 = sect.vertex[sect.npoints - 1];
+			}
+			if(!lineIntersect(v1, v2, (xy){player.pos.x, player.pos.y}, (xy){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
+				continue;
+			}
+			for(j = 0; j < sect.nneighbors; j++){
+				neighbor = sectors[sect.neighbors[j]];
+				found = 0;
+				for(k = 0; k < neighbor.npoints; k++){
+					if(v1.x == neighbor.vertex[k].x && v1.y == neighbor.vertex[k].y){
+						found++;
+					}else	if(v2.x == neighbor.vertex[k].x && v2.y == neighbor.vertex[k].y){
+						found++;
+					}else{
+						continue;
+					}
+					if(found == 2){
+						player.sector = sect.neighbors[j];
+						goto foundAll;
+					}
 				}
 			}
-		}
 foundAll:
-		if(found < 2){
-			player.vel.x = 0;
-			player.vel.y = 0;
+			if(found < 2){
+				player.vel.x = 0;
+				player.vel.y = 0;
+			}
 		}
-	}
 
-	player.pos.x += player.vel.x;
-	player.pos.y += player.vel.y;
-	player.vel.x *= PLAYER_FRICTION;
-	player.vel.y *= PLAYER_FRICTION;
+		player.pos.x += player.vel.x;
+		player.pos.y += player.vel.y;
+		player.vel.x *= PLAYER_FRICTION;
+		player.vel.y *= PLAYER_FRICTION;
+	}
 	player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
 	ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
 }
