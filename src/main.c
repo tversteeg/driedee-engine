@@ -52,12 +52,33 @@ unsigned int nsectors = 0;
 void drawLine(xy p1, xy p2, int r, int g, int b)
 {
 	pixelRGB *pixel;
-	if(p1.x == p2.x && p1.y == p2.y){
-		if(p1.x >= 0 && p1.x < WIDTH && p1.y >= 0 && p1.y < HEIGHT){
-			pixel = &pixels[(int)p1.x + (int)p1.y * WIDTH];
-			pixel->r = r;
-			pixel->g = g;
-			pixel->b = b;
+	int x1, y1, x2, y2, dx, dy, sx, sy, err, err2;
+
+	x1 = p1.x, y1 = p1.y;
+	x2 = p2.x, y2 = p2.y;
+	dx = abs(x2 - x1);
+	dy = abs(y2 - y1);
+	sx = x1 < x2 ? 1 : -1;
+	sy = y1 < y2 ? 1 : -1;
+	err = (dx > dy ? dx : -dy) / 2;
+
+	while(true){
+		pixel = &pixels[x1 + y1 * WIDTH];
+		pixel->r = r;
+		pixel->g = g;
+		pixel->b = b;
+
+		if(x1 == x2 && y1 == y2){
+			break;
+		}
+		err2 = err;
+		if(err2 > -dx) {
+			err -= dy;
+			x1 += sx;
+		}
+		if(err2 < dy) {
+			err += dx;
+			y1 += sy;
 		}
 	}
 }
@@ -192,6 +213,9 @@ int main(int argc, char **argv)
 
 		render();
 		ccGLBuffersSwap();
+
+		player.angle += (ccWindowGetMouse().x - WIDTH / 2) / 1000.0f;
+		ccWindowMouseSetPosition((ccPoint){WIDTH / 2, HEIGHT / 2});
 
 		ccTimeDelay(6);
 	}
