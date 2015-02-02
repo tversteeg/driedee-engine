@@ -1,21 +1,16 @@
 # Y coordinate followed by list of X coordinates
-vert 100		0 100 200
-vert 200		200 100
-vert 300		200 100
-vert 400		200 100
-vert 200		300
-vert 300		300
-vert 0			0 300
-vert 100		300 360 400
+vert 0		0 100 120 200 		# 0 1 2 3
+vert 100	0 100 120 200 		# 4 5 6 7
+vert 120	0 100 120 200 		# 8 9 10 11
+vert 200	0 100 120 200 		# 12 13 14 15
+vert 300	0 120 						# 16 17
 
 # Floor height, ceiling height, vertices
-sector 0 10		0 1 2 3 4 x 1 4
-sector 0 10		5 6 4 3 x 0 2 3
-sector 0 10		7 8 6 5 x 1
-sector 0 10		9 10 5 3 x 1 6
-sector 0 10		11 12 2 1 x 0 5
-sector 0 10		12 2 13 14 15 x 3 6
-sector 0 10		10 9 14 15 x 3 5
+sector 0 10		0 5 9 12 x				1 3
+sector 0 10 	9 12 13 15 10 x		0 2 4
+sector 0 10 	15 10 6 3 x				1 3
+sector 0 10		3 6 5 0 x					0 2
+sector 0 10		13 15 17 16	x			1
 
 # X, Y, Z
-player 150 150 0
+player 50 100 0

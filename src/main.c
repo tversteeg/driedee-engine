@@ -246,12 +246,14 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		player.vel.y -= sin(player.angle - M_PI / 2) * PLAYER_SPEED;
 	}
 	if(leftPressed){
-		player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED;
-		player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED;
+		//player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED;
+		//player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED;
+		player.angle += 0.1f;
 	}
 	if(rightPressed){
-		player.vel.x += cos(player.angle) * PLAYER_SPEED;
-		player.vel.y -= sin(player.angle) * PLAYER_SPEED;
+		//player.vel.x += cos(player.angle) * PLAYER_SPEED;
+		//player.vel.y -= sin(player.angle) * PLAYER_SPEED;
+		player.angle -= 0.1f;
 	}
 
 	if(player.vel.x > 0.01f || player.vel.x < -0.01f || player.vel.y > 0.01f || player.vel.y < -0.01f){
@@ -299,8 +301,8 @@ foundAll:
 		player.vel.x *= PLAYER_FRICTION;
 		player.vel.y *= PLAYER_FRICTION;
 	}
-	player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
-	ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
+	//player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
+	//ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
 }
 
 void load(char *map)
