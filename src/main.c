@@ -86,6 +86,22 @@ int lineIntersect(xy p1, xy p2, xy p3, xy p4, xy *p)
 	return 1;
 }
 
+xy vectorProject(xy p1, xy p2)
+{
+	float len, scalar;
+	xy normal;
+
+	len = sqrt(p2.x * p2.x + p2.y * p2.y);
+	normal.x = p2.x / len;
+	normal.y = p2.y / len;
+
+	scalar = p1.x * normal.x + p1.y * normal.y;
+	normal.x *= scalar;
+	normal.y *= scalar;
+
+	return normal;
+}
+
 void drawLine(xy p1, xy p2, int r, int g, int b, float a)
 {
 	pixelRGB *pixel;
@@ -146,55 +162,81 @@ void drawLine(xy p1, xy p2, int r, int g, int b, float a)
 	}
 }
 
-void renderWalls()
+void renderSector(unsigned int id)
 {
-	unsigned int i, j;
+	unsigned int i;
 	sector sect;
 	xy v1, v2, tv1, tv2;
 	float cosa, sina;
 
-	for(i = 0; i < nsectors; i++){
-		sect = sectors[i];
-		for(j = 0; j < sect.npoints; j++){
-			if(j > 0){
-				if(sect.npoints == 2){
-					break;
-				}
-				v1 = sect.vertex[j];
-				v2 = sect.vertex[j - 1];
-			}else{
-				v1 = sect.vertex[0];
-				v2 = sect.vertex[sect.npoints - 1];
+	sect = sectors[id];
+	for(i = 0; i < sect.npoints; i++){
+		if(i > 0){
+			if(sect.npoints == 2){
+				break;
 			}
+			v1 = sect.vertex[i];
+			v2 = sect.vertex[i - 1];
+		}else{
+			v1 = sect.vertex[0];
+			v2 = sect.vertex[sect.npoints - 1];
+		}
 
-			v1.x = player.pos.x - v1.x;
-			v1.y = player.pos.y - v1.y;
-			v2.x = player.pos.x - v2.x;
-			v2.y = player.pos.y - v2.y;
+		v1.x = player.pos.x - v1.x;
+		v1.y = player.pos.y - v1.y;
+		v2.x = player.pos.x - v2.x;
+		v2.y = player.pos.y - v2.y;
 
-			sina = sin(player.angle);
-			cosa = cos(player.angle);
+		sina = sin(player.angle);
+		cosa = cos(player.angle);
 
-			// 2D transformation matrix for rotations
-			tv1.x = cosa * v1.x - sina * v1.y;
-			tv1.y = sina * v1.x + cosa * v1.y;
+		// 2D transformation matrix for rotations
+		tv1.x = cosa * v1.x - sina * v1.y;
+		tv1.y = sina * v1.x + cosa * v1.y;
 
-			tv2.x = cosa * v2.x - sina * v2.y;
-			tv2.y = sina * v2.x + cosa * v2.y;
+		tv2.x = cosa * v2.x - sina * v2.y;
+		tv2.y = sina * v2.x + cosa * v2.y;
 
-			v1.x = HWIDTH - tv1.x;
-			v1.y = HHEIGHT - tv1.y;
-			v2.x = HWIDTH - tv2.x;
-			v2.y = HHEIGHT - tv2.y;
+		// Clip everything behind the player
+		if(tv1.y <= 0 && tv2.y <= 0){
+			continue;
+		}
 
-			if(i == player.sector){
-				drawLine(v1, v2, 255, 0, 0, 0.5f);
-			}else{
-				drawLine(v1, v2, 0, 255, 0, 0.5f);
-			}
+		// Clip everything outside of the field of view
+		if((tv1.x < -tv1.y && tv2.x < -tv2.y) || (tv1.x > tv1.y && tv2.x > tv2.y)){
+			continue;
+		}
+
+		// Find the vector to the frustrum
+		if(tv1.x < -tv1.y){
+			lineIntersect(tv1, tv2, (xy){0, 0}, (xy){-1000, 1000}, &tv1);
+		}
+		if(tv1.x > tv1.y){
+			lineIntersect(tv1, tv2, (xy){0, 0}, (xy){1000, 1000}, &tv1);
+		}
+		if(tv2.x < -tv2.y){
+			lineIntersect(tv2, tv1, (xy){0, 0}, (xy){-1000, 1000}, &tv2);
+		}
+		if(tv2.x > tv2.y){
+			lineIntersect(tv2, tv1, (xy){0, 0}, (xy){1000, 1000}, &tv2);
+		}
+
+		v1.x = HWIDTH - tv1.x;
+		v1.y = HHEIGHT - tv1.y;
+		v2.x = HWIDTH - tv2.x;
+		v2.y = HHEIGHT - tv2.y;
+
+		if(id == player.sector){
+			drawLine(v1, v2, 255, 0, 0, 0.5f);
+		}else{
+			drawLine(v1, v2, 0, 255, 0, 0.5f);
 		}
 	}
+}
 
+void renderWalls()
+{
+	renderSector(player.sector);
 }
 
 void render()
@@ -231,7 +273,7 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed)
+void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPressed, bool rightPressed)
 {
 	sector sect, neighbor;
 	xy v1, v2, isect;
@@ -246,14 +288,20 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		player.vel.y -= sin(player.angle - M_PI / 2) * PLAYER_SPEED;
 	}
 	if(leftPressed){
-		//player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED;
-		//player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED;
-		player.angle += 0.1f;
+		if(useMouse){
+			player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED;
+			player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED;
+		}else{
+			player.angle += 0.1f;
+		}
 	}
 	if(rightPressed){
-		//player.vel.x += cos(player.angle) * PLAYER_SPEED;
-		//player.vel.y -= sin(player.angle) * PLAYER_SPEED;
-		player.angle -= 0.1f;
+		if(useMouse){
+			player.vel.x += cos(player.angle) * PLAYER_SPEED;
+			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
+		}else{
+			player.angle -= 0.1f;
+		}
 	}
 
 	if(player.vel.x > 0.01f || player.vel.x < -0.01f || player.vel.y > 0.01f || player.vel.y < -0.01f){
@@ -301,8 +349,10 @@ foundAll:
 		player.vel.x *= PLAYER_FRICTION;
 		player.vel.y *= PLAYER_FRICTION;
 	}
-	//player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
-	//ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
+	if(useMouse){
+		player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
+		ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
+	}
 }
 
 void load(char *map)
@@ -446,7 +496,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		movePlayer(upPressed, downPressed, leftPressed, rightPressed);
+		movePlayer(true, upPressed, downPressed, leftPressed, rightPressed);
 
 		render();
 		ccGLBuffersSwap();
