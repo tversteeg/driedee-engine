@@ -44,6 +44,7 @@ typedef struct {
 	xy *vertex;
 	float floor, ceil;
 	unsigned int npoints, nneighbors, *neighbors;
+	bool renderred;
 } sector;
 
 struct player {
@@ -164,12 +165,18 @@ void drawLine(xy p1, xy p2, int r, int g, int b, float a)
 
 void renderSector(unsigned int id)
 {
-	unsigned int i;
-	sector sect;
+	unsigned int i, j, k, nverts, verts[32], found;
+	sector sect, sect2;
 	xy v1, v2, tv1, tv2;
 	float cosa, sina;
 
+	if(sect.renderred){
+		return;
+	}
+	sect.renderred = true;
+
 	sect = sectors[id];
+	nverts = 0;
 	for(i = 0; i < sect.npoints; i++){
 		if(i > 0){
 			if(sect.npoints == 2){
@@ -197,6 +204,17 @@ void renderSector(unsigned int id)
 		tv2.x = cosa * v2.x - sina * v2.y;
 		tv2.y = sina * v2.x + cosa * v2.y;
 
+		v1.x = HWIDTH - tv1.x;
+		v1.y = HHEIGHT - tv1.y;
+		v2.x = HWIDTH - tv2.x;
+		v2.y = HHEIGHT - tv2.y;
+
+		if(id == player.sector){
+			drawLine(v1, v2, 255, 0, 0, 0.5f);
+		}else{
+			drawLine(v1, v2, 0, 255, 0, 0.5f);
+		}
+
 		// Clip everything behind the player
 		if(tv1.y <= 0 && tv2.y <= 0){
 			continue;
@@ -221,21 +239,39 @@ void renderSector(unsigned int id)
 			lineIntersect(tv2, tv1, (xy){0, 0}, (xy){1000, 1000}, &tv2);
 		}
 
-		v1.x = HWIDTH - tv1.x;
-		v1.y = HHEIGHT - tv1.y;
-		v2.x = HWIDTH - tv2.x;
-		v2.y = HHEIGHT - tv2.y;
-
-		if(id == player.sector){
-			drawLine(v1, v2, 255, 0, 0, 0.5f);
+		if(i > 0){
+			verts[nverts++] = i;
+			verts[nverts++] = i - 1;
 		}else{
-			drawLine(v1, v2, 0, 255, 0, 0.5f);
+			verts[nverts++] = 0;
+			verts[nverts++] = sect.npoints - 1;
+		}
+	}
+
+	for(i = 0; i < sect.nneighbors; i++){
+		sect2 = sectors[sect.neighbors[i]];
+		found = 0;
+		for(j = 0; j < nverts; j++){
+			v1 = sect.vertex[verts[j]];
+			for(k = 0; k < sect2.npoints; k++){
+				if(v1.x == sect2.vertex[k].x && v1.y == sect2.vertex[k].y){
+					found++;
+				}
+			}
+		}
+		if(found >= 2){
+			renderSector(sect.neighbors[i]);
 		}
 	}
 }
 
 void renderWalls()
 {
+	unsigned int i;
+
+	for(i = 0; i < nsectors; i++){
+		sectors[i].renderred = false;
+	}
 	renderSector(player.sector);
 }
 
