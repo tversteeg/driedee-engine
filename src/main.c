@@ -276,6 +276,7 @@ void renderSector(unsigned int id)
 		}
 		if((near = findNeighborSector(id, v1, v2)) != -1){
 			renderSector(near);
+			drawLine(v1, v2, 0, 0, 255, 0.5f);
 		}
 	}
 }
