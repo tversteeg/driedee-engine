@@ -255,17 +255,6 @@ void renderSector(unsigned int id)
 		if(tv2.x > tv2.y){
 			lineIntersect(tv2, tv1, (xy){0, 0}, (xy){1000, 1000}, &tv2);
 		}
-		
-		v1.x = HWIDTH - tv1.x;
-		v1.y = HHEIGHT - tv1.y;
-		v2.x = HWIDTH - tv2.x;
-		v2.y = HHEIGHT - tv2.y;
-
-		if(id == player.sector){
-			drawLine(v1, v2, 255, 0, 0, 0.5f);
-		}else{
-			drawLine(v1, v2, 0, 255, 0, 0.5f);
-		}
 
 		if(i > 0){
 			v1 = sect.vertex[i];
@@ -274,9 +263,23 @@ void renderSector(unsigned int id)
 			v1 = sect.vertex[0];
 			v2 = sect.vertex[sect.npoints - 1];
 		}
+		
 		if((near = findNeighborSector(id, v1, v2)) != -1){
 			renderSector(near);
-			drawLine(v1, v2, 0, 0, 255, 0.5f);
+		}
+
+		v1.x = HWIDTH - tv1.x;
+		v1.y = HHEIGHT - tv1.y;
+		v2.x = HWIDTH - tv2.x;
+		v2.y = HHEIGHT - tv2.y;
+		if(id == player.sector){
+			drawLine(v1, v2, 255, 0, 0, 0.5f);
+		}else{
+			drawLine(v1, v2, 0, 255, 0, 0.5f);
+		}
+
+		if(near != -1){
+			drawLine(v1, v2, 0, 0, 255, 1);
 		}
 	}
 }
