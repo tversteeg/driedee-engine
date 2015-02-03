@@ -163,20 +163,51 @@ void drawLine(xy p1, xy p2, int r, int g, int b, float a)
 	}
 }
 
+int findNeighborSector(unsigned int current, xy v1, xy v2)
+{
+	int i, j;
+	int found;
+	sector s1, s2;
+	xy compareTo;
+
+	s1 = sectors[current];
+	for(i = 0; i < s1.nneighbors; i++){
+		s2 = sectors[s1.neighbors[i]];
+		found = 0;
+		compareTo = v1;
+		for(j = 0; j < s2.npoints; j++){
+			if(s2.vertex[j].x == compareTo.x && s2.vertex[j].y == compareTo.y){
+				if(found == 0){
+					compareTo = v2;
+					j = -1;
+				}else if(found == 1){
+					return i;
+				}
+				found++;
+			}
+		}
+	}
+
+	return -1;
+}
+
 void renderSector(unsigned int id)
 {
-	unsigned int i, j, k, nverts, verts[32], found;
-	sector sect, sect2;
+	unsigned int i;
+	int near;
+	sector sect;
 	xy v1, v2, tv1, tv2;
 	float cosa, sina;
 
+	sect = sectors[id];
 	if(sect.renderred){
 		return;
 	}
-	sect.renderred = true;
+	sectors[id].renderred = true;
 
-	sect = sectors[id];
-	nverts = 0;
+	sina = sin(player.angle);
+	cosa = cos(player.angle);
+
 	for(i = 0; i < sect.npoints; i++){
 		if(i > 0){
 			if(sect.npoints == 2){
@@ -194,26 +225,12 @@ void renderSector(unsigned int id)
 		v2.x = player.pos.x - v2.x;
 		v2.y = player.pos.y - v2.y;
 
-		sina = sin(player.angle);
-		cosa = cos(player.angle);
-
 		// 2D transformation matrix for rotations
 		tv1.x = cosa * v1.x - sina * v1.y;
 		tv1.y = sina * v1.x + cosa * v1.y;
 
 		tv2.x = cosa * v2.x - sina * v2.y;
 		tv2.y = sina * v2.x + cosa * v2.y;
-
-		v1.x = HWIDTH - tv1.x;
-		v1.y = HHEIGHT - tv1.y;
-		v2.x = HWIDTH - tv2.x;
-		v2.y = HHEIGHT - tv2.y;
-
-		if(id == player.sector){
-			drawLine(v1, v2, 255, 0, 0, 0.5f);
-		}else{
-			drawLine(v1, v2, 0, 255, 0, 0.5f);
-		}
 
 		// Clip everything behind the player
 		if(tv1.y <= 0 && tv2.y <= 0){
@@ -238,29 +255,27 @@ void renderSector(unsigned int id)
 		if(tv2.x > tv2.y){
 			lineIntersect(tv2, tv1, (xy){0, 0}, (xy){1000, 1000}, &tv2);
 		}
+		
+		v1.x = HWIDTH - tv1.x;
+		v1.y = HHEIGHT - tv1.y;
+		v2.x = HWIDTH - tv2.x;
+		v2.y = HHEIGHT - tv2.y;
+
+		if(id == player.sector){
+			drawLine(v1, v2, 255, 0, 0, 0.5f);
+		}else{
+			drawLine(v1, v2, 0, 255, 0, 0.5f);
+		}
 
 		if(i > 0){
-			verts[nverts++] = i;
-			verts[nverts++] = i - 1;
+			v1 = sect.vertex[i];
+			v2 = sect.vertex[i - 1];
 		}else{
-			verts[nverts++] = 0;
-			verts[nverts++] = sect.npoints - 1;
+			v1 = sect.vertex[0];
+			v2 = sect.vertex[sect.npoints - 1];
 		}
-	}
-
-	for(i = 0; i < sect.nneighbors; i++){
-		sect2 = sectors[sect.neighbors[i]];
-		found = 0;
-		for(j = 0; j < nverts; j++){
-			v1 = sect.vertex[verts[j]];
-			for(k = 0; k < sect2.npoints; k++){
-				if(v1.x == sect2.vertex[k].x && v1.y == sect2.vertex[k].y){
-					found++;
-				}
-			}
-		}
-		if(found >= 2){
-			renderSector(sect.neighbors[i]);
+		if((near = findNeighborSector(id, v1, v2)) != -1){
+			renderSector(near);
 		}
 	}
 }
