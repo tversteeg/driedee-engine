@@ -163,27 +163,51 @@ void drawLine(xy p1, xy p2, int r, int g, int b, float a)
 	}
 }
 
+void printSectorInfo(unsigned int id)
+{
+	sector sect;
+	unsigned int i;
+
+	sect = sectors[id];
+
+	printf("Sector: %d\n", id);
+	if(sect.npoints > 0){
+		printf("Vertices: ");
+	}
+	for(i = 0; i < sect.npoints; i++){
+		printf("(%g,%g) ", sect.vertex[i].x, sect.vertex[i].y);
+	}
+
+	if(sect.nneighbors > 0){
+		printf("\nNeighbors: ");
+	}
+	for(i = 0; i < sect.nneighbors; i++){
+		printf("%d ", sect.neighbors[i]);
+	}
+	printf("\n\n");
+}
+
 int findNeighborSector(unsigned int current, xy v1, xy v2)
 {
 	int i, j;
 	int found;
 	sector s1, s2;
-	xy compareTo;
 
 	s1 = sectors[current];
 	for(i = 0; i < s1.nneighbors; i++){
 		s2 = sectors[s1.neighbors[i]];
 		found = 0;
-		compareTo = v1;
 		for(j = 0; j < s2.npoints; j++){
-			if(s2.vertex[j].x == compareTo.x && s2.vertex[j].y == compareTo.y){
-				if(found == 0){
-					compareTo = v2;
-					j = -1;
-				}else if(found == 1){
+			if(s2.vertex[j].x == v1.x && s2.vertex[j].y == v1.y){
+				found++;
+				if(found >= 2){
 					return i;
 				}
+			}else if(s2.vertex[j].x == v2.x && s2.vertex[j].y == v2.y){
 				found++;
+				if(found >= 2){
+					return i;
+				}
 			}
 		}
 	}
@@ -199,8 +223,7 @@ void renderSector(unsigned int id)
 	xy v1, v2, tv1, tv2;
 	float cosa, sina;
 
-	sect = sectors[id];
-	if(sect.renderred){
+	if(sectors[id].renderred){
 		return;
 	}
 	sectors[id].renderred = true;
@@ -208,6 +231,7 @@ void renderSector(unsigned int id)
 	sina = sin(player.angle);
 	cosa = cos(player.angle);
 
+	sect = sectors[id];
 	for(i = 0; i < sect.npoints; i++){
 		if(i > 0){
 			if(sect.npoints == 2){
@@ -279,7 +303,7 @@ void renderSector(unsigned int id)
 		}
 
 		if(near != -1){
-			drawLine(v1, v2, 0, 0, 255, 1);
+			drawLine(v1, v2, 0, 0, 255, 0.5f);
 		}
 	}
 }
@@ -372,6 +396,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 				v1 = sect.vertex[0];
 				v2 = sect.vertex[sect.npoints - 1];
 			}
+			// Find which segment the player wants to pass throught
 			if(!lineIntersect(v1, v2, (xy){player.pos.x, player.pos.y}, (xy){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 				continue;
 			}
@@ -450,6 +475,7 @@ void load(char *map)
 				sect->npoints = 0;
 				sect->vertex = NULL;
 				sscanf(ptr, "%*s %f %f%n", &sect->floor, &sect->ceil, &scanlen);
+
 				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
 					sect->vertex = (xy*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
 					sect->vertex[sect->npoints - 1] = verts[index];
@@ -462,6 +488,7 @@ void load(char *map)
 					sect->neighbors = (unsigned int*)realloc(sect->neighbors, ++sect->nneighbors * sizeof(*sect->neighbors));
 					sect->neighbors[sect->nneighbors - 1] = index;
 				}
+				printSectorInfo(nsectors - 1);
 				break;
 			case 'p':
 				sscanf(line, "%*s %f %f %f", &player.pos.x, &player.pos.y, &player.pos.z);
