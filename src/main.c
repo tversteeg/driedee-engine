@@ -474,20 +474,22 @@ void load(char *map)
 				ptr = line;
 				sect->npoints = 0;
 				sect->vertex = NULL;
-				sscanf(ptr, "%*s %f %f%n", &sect->floor, &sect->ceil, &scanlen);
+				sect->renderred = false;
+				sect->nneighbors = 0;
+				sect->neighbors = NULL;
 
+				sscanf(ptr, "%*s %f %f%n", &sect->floor, &sect->ceil, &scanlen);
 				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
 					sect->vertex = (xy*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
 					sect->vertex[sect->npoints - 1] = verts[index];
 				}
-				sscanf(ptr += scanlen, "%*c%n", &scanlen);
 
-				sect->nneighbors = 0;
-				sect->neighbors = NULL;
+				sscanf(ptr += scanlen, "%*c%n", &scanlen);
 				while(sscanf(ptr += scanlen, "%u%n", &index, &scanlen) == 1){
 					sect->neighbors = (unsigned int*)realloc(sect->neighbors, ++sect->nneighbors * sizeof(*sect->neighbors));
 					sect->neighbors[sect->nneighbors - 1] = index;
 				}
+
 				printSectorInfo(nsectors - 1);
 				break;
 			case 'p':
