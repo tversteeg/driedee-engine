@@ -266,6 +266,14 @@ void renderSector(unsigned int id)
 			continue;
 		}
 
+		// Clip the case where the wall is not in the player's view but the ends on both sides
+		if((tv1.x < -tv1.y && tv2.x > tv2.y) || (tv1.x > tv1.y && tv2.x < -tv2.y)){
+			// Use the function y = ax + b to determine if the line is above or under the player
+			if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x < 0){
+				continue;
+			}
+		}
+
 		// Find the vector to the frustrum
 		if(tv1.x < -tv1.y){
 			lineIntersect(tv1, tv2, (xy){0, 0}, (xy){-1000, 1000}, &tv1);
@@ -580,7 +588,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		movePlayer(true, upPressed, downPressed, leftPressed, rightPressed);
+		movePlayer(false, upPressed, downPressed, leftPressed, rightPressed);
 
 		render();
 		ccGLBuffersSwap();
