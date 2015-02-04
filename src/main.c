@@ -170,7 +170,7 @@ void printSectorInfo(unsigned int id)
 
 	sect = sectors[id];
 
-	printf("Sector: %d\n", id);
+	printf("Sector \"%d\", floor: %g, ceil: %g, renderred: %s\n", id, sect.floor, sect.ceil, sect.renderred == true ? "true" : "false");
 	if(sect.npoints > 0){
 		printf("Vertices: ");
 	}
@@ -201,12 +201,12 @@ int findNeighborSector(unsigned int current, xy v1, xy v2)
 			if(s2.vertex[j].x == v1.x && s2.vertex[j].y == v1.y){
 				found++;
 				if(found >= 2){
-					return i;
+					return s1.neighbors[i];
 				}
 			}else if(s2.vertex[j].x == v2.x && s2.vertex[j].y == v2.y){
 				found++;
 				if(found >= 2){
-					return i;
+					return s1.neighbors[i];
 				}
 			}
 		}
