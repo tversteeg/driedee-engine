@@ -266,9 +266,9 @@ void renderSector(unsigned int id)
 			continue;
 		}
 
-		// Clip the case where the wall is not in the player's view but the ends on both sides
+		// Clip the case where the wall is not in the player's view but the ends are on both sides
 		if((tv1.x < -tv1.y && tv2.x > tv2.y) || (tv1.x > tv1.y && tv2.x < -tv2.y)){
-			// Use the function y = ax + b to determine if the line is above or under the player
+			// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
 			if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x < 0){
 				continue;
 			}
@@ -379,7 +379,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 			player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED;
 			player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED;
 		}else{
-			player.angle += 0.1f;
+			player.angle += 0.05f;
 		}
 	}
 	if(rightPressed){
@@ -387,7 +387,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 			player.vel.x += cos(player.angle) * PLAYER_SPEED;
 			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
 		}else{
-			player.angle -= 0.1f;
+			player.angle -= 0.05f;
 		}
 	}
 
