@@ -27,35 +27,35 @@
 
 typedef struct {
 	unsigned char r, g, b;
-} pixelRGB;
+} pixelRGB_t;
 
 typedef struct {
 	float x, y;
-} xy;
+} xy_t;
 
 typedef struct {
 	float x, y, z;
-} xyz;
+} xyz_t;
 
 typedef struct {
-	xy *vertex;
+	xy_t *vertex;
 	float floor, ceil;
 	unsigned int npoints, nneighbors, *neighbors;
 	bool renderred;
-} sector;
+} sector_t;
 
 struct player {
-	xyz pos, vel;
+	xyz_t pos, vel;
 	float angle;
 	unsigned int sector;
 } player;
 
 GLuint texture;
-pixelRGB pixels[WIDTH * HEIGHT];
-sector *sectors = NULL;
+pixelRGB_t pixels[WIDTH * HEIGHT];
+sector_t *sectors = NULL;
 unsigned int nsectors = 0;
 
-int lineIntersect(xy p1, xy p2, xy p3, xy p4, xy *p)
+int lineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
 	float denom, n1, n2;
 
@@ -84,10 +84,10 @@ int lineIntersect(xy p1, xy p2, xy p3, xy p4, xy *p)
 	return 1;
 }
 
-xy vectorProject(xy p1, xy p2)
+xy_t vectorProject(xy_t p1, xy_t p2)
 {
 	float len, scalar;
-	xy normal;
+	xy_t normal;
 
 	len = sqrt(p2.x * p2.x + p2.y * p2.y);
 	normal.x = p2.x / len;
@@ -100,9 +100,9 @@ xy vectorProject(xy p1, xy p2)
 	return normal;
 }
 
-void drawLine(xy p1, xy p2, int r, int g, int b, float a)
+void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 {
-	pixelRGB *pixel;
+	pixelRGB_t *pixel;
 	int x1, y1, x2, y2, dx, dy, sx, sy, err, err2;
 	float mina;
 
@@ -162,7 +162,7 @@ void drawLine(xy p1, xy p2, int r, int g, int b, float a)
 
 void printSectorInfo(unsigned int id)
 {
-	sector sect;
+	sector_t sect;
 	unsigned int i;
 
 	sect = sectors[id];
@@ -184,11 +184,11 @@ void printSectorInfo(unsigned int id)
 	printf("\n\n");
 }
 
-int findNeighborSector(unsigned int current, xy v1, xy v2)
+int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 {
 	int i, j;
 	int found;
-	sector s1, s2;
+	sector_t s1, s2;
 
 	s1 = sectors[current];
 	for(i = 0; i < s1.nneighbors; i++){
@@ -216,8 +216,8 @@ void renderSector(unsigned int id)
 {
 	unsigned int i;
 	int near;
-	sector sect;
-	xy v1, v2, tv1, tv2;
+	sector_t sect;
+	xy_t v1, v2, tv1, tv2;
 	float cosa, sina;
 
 	if(sectors[id].renderred){
@@ -273,16 +273,16 @@ void renderSector(unsigned int id)
 
 		// Find the vector to the frustrum
 		if(tv1.x < -tv1.y){
-			lineIntersect(tv1, tv2, (xy){0, 0}, (xy){-1000, 1000}, &tv1);
+			lineIntersect(tv1, tv2, (xy_t){0, 0}, (xy_t){-1000, 1000}, &tv1);
 		}
 		if(tv1.x > tv1.y){
-			lineIntersect(tv1, tv2, (xy){0, 0}, (xy){1000, 1000}, &tv1);
+			lineIntersect(tv1, tv2, (xy_t){0, 0}, (xy_t){1000, 1000}, &tv1);
 		}
 		if(tv2.x < -tv2.y){
-			lineIntersect(tv2, tv1, (xy){0, 0}, (xy){-1000, 1000}, &tv2);
+			lineIntersect(tv2, tv1, (xy_t){0, 0}, (xy_t){-1000, 1000}, &tv2);
 		}
 		if(tv2.x > tv2.y){
-			lineIntersect(tv2, tv1, (xy){0, 0}, (xy){1000, 1000}, &tv2);
+			lineIntersect(tv2, tv1, (xy_t){0, 0}, (xy_t){1000, 1000}, &tv2);
 		}
 
 		if(i > 0){
@@ -327,16 +327,12 @@ void render()
 {
 	unsigned int i;
 
-	for(i = 0; i < WIDTH * HEIGHT; i++){
-		pixels[i].r = pixels[i].g = pixels[i].b = 0;
-	}
-
 	renderWalls();
 
 	// Render player on map
-	drawLine((xy){HWIDTH, HHEIGHT}, (xy){HWIDTH, HHEIGHT - 20}, 255, 0, 255, 0.5f);
-	drawLine((xy){HWIDTH, HHEIGHT}, (xy){HWIDTH - 100, HHEIGHT - 100}, 0, 0, 255, 0.25f);
-	drawLine((xy){HWIDTH, HHEIGHT}, (xy){HWIDTH + 100, HHEIGHT - 100}, 0, 0, 255, 0.25f);
+	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH, HHEIGHT - 20}, 255, 0, 255, 0.5f);
+	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - 100, HHEIGHT - 100}, 0, 0, 255, 0.25f);
+	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH + 100, HHEIGHT - 100}, 0, 0, 255, 0.25f);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -355,14 +351,18 @@ void render()
 	glEnd();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	for(i = 0; i < WIDTH * HEIGHT; i++){
+		pixels[i].r = pixels[i].g = pixels[i].b = 0;
+	}
 }
 
 void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPressed, bool rightPressed)
 {
-	sector sect, neighbor;
-	xy v1, v2, isect;
+	sector_t sect, neighbor;
+	xy_t v1, v2, isect, norm, proj;
 	unsigned int i, j, k, found;
-	float len;
+	float dp;
 
 	if(upPressed){
 		player.vel.x += cos(player.angle + M_PI / 2) * PLAYER_SPEED;
@@ -403,7 +403,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 				v2 = sect.vertex[sect.npoints - 1];
 			}
 			// Find which segment the player wants to pass throught
-			if(!lineIntersect(v1, v2, (xy){player.pos.x, player.pos.y}, (xy){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
+			if(!lineIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 				continue;
 			}
 			for(j = 0; j < sect.nneighbors; j++){
@@ -424,10 +424,11 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 				}
 			}
 foundAll:
-			if(found < 2){
-				len = sqrt(player.vel.x * player.vel.x + player.vel.y * player.vel.y);
-				player.pos.x = isect.x - player.vel.x / len;
-				player.pos.y = isect.y - player.vel.y / len;
+			if(found < 2){				
+				proj = vectorProject((xy_t){player.pos.x + player.vel.x - v2.x, player.pos.y + player.vel.y - v2.y}, (xy_t){v1.x - v2.x, v1.y - v2.y});
+				
+				player.pos.x = proj.x + v2.x - player.vel.x;
+				player.pos.y = proj.y + v2.y - player.vel.y;
 				player.vel.x = 0;
 				player.vel.y = 0;
 			}
@@ -451,8 +452,8 @@ void load(char *map)
 	int index, scanlen, nverts;
 	size_t len;
 	ssize_t read;
-	xy vert, *verts;
-	sector *sect;
+	xy_t vert, *verts;
+	sector_t *sect;
 
 	line = NULL;
 	verts = NULL;
@@ -472,12 +473,12 @@ void load(char *map)
 				ptr = line;
 				sscanf(ptr, "%*s %f%n", &vert.y, &scanlen);
 				while(sscanf(ptr += scanlen, "%f%n", &vert.x, &scanlen) == 1){
-					verts = (xy*)realloc(verts, ++nverts * sizeof(*verts));
+					verts = (xy_t*)realloc(verts, ++nverts * sizeof(*verts));
 					verts[nverts - 1] = vert;
 				}
 				break;
 			case 's':
-				sectors = (sector*)realloc(sectors, ++nsectors * sizeof(*sectors));
+				sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(*sectors));
 				sect = sectors + nsectors - 1;
 
 				ptr = line;
@@ -489,7 +490,7 @@ void load(char *map)
 
 				sscanf(ptr, "%*s %f %f%n", &sect->floor, &sect->ceil, &scanlen);
 				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
-					sect->vertex = (xy*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
+					sect->vertex = (xy_t*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
 					sect->vertex[sect->npoints - 1] = verts[index];
 				}
 
