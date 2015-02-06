@@ -11,9 +11,6 @@
 #include <ccore/opengl.h>
 #include <ccore/time.h>
 
-#include <ccNoise/ccNoise.h>
-#include <ccRandom/ccRandom.h>
-
 #ifdef WINDOWS
 #include <gl/GL.h>
 #else
@@ -365,6 +362,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 	sector sect, neighbor;
 	xy v1, v2, isect;
 	unsigned int i, j, k, found;
+	float len;
 
 	if(upPressed){
 		player.vel.x += cos(player.angle + M_PI / 2) * PLAYER_SPEED;
@@ -427,6 +425,9 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 			}
 foundAll:
 			if(found < 2){
+				len = sqrt(player.vel.x * player.vel.x + player.vel.y * player.vel.y);
+				player.pos.x = isect.x - player.vel.x / len;
+				player.pos.y = isect.y - player.vel.y / len;
 				player.vel.x = 0;
 				player.vel.y = 0;
 			}
