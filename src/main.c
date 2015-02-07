@@ -100,6 +100,20 @@ xy_t vectorUnit(xy_t p)
 	return p;
 }
 
+float vectorDotProduct(xy_t p1, xy_t p2)
+{
+	return p1.x * p2.x + p1.y * p2.y;
+}
+
+bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
+{
+	float leftRight;
+
+	leftRight = vectorDotProduct(left, right);
+
+	return leftRight < vectorDotProduct(left, p) && leftRight < vectorDotProduct(right, p);
+}
+
 xy_t vectorProject(xy_t p1, xy_t p2)
 {
 	float scalar;
@@ -225,12 +239,12 @@ int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 	return -1;
 }
 
-void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright)
+void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen)
 {
 	unsigned int i;
 	int near;
 	sector_t sect;
-	xy_t v1, v2, tv1, tv2;
+	xy_t v1, v2, tv1, tv2, uv1, uv2, camleftdist, camrightdist;
 	float cosa, sina;
 
 	if(sectors[id].renderred){
@@ -240,6 +254,10 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright)
 
 	sina = sin(player.angle);
 	cosa = cos(player.angle);
+	camleftdist.x = camleft.x * camlen;
+	camleftdist.y = camleft.y * camlen;
+	camrightdist.x = camright.x * camlen;
+	camrightdist.y = camright.y * camlen;
 
 	sect = sectors[id];
 	for(i = 0; i < sect.npoints; i++){
@@ -272,8 +290,12 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright)
 		}
 
 		// Clip everything outside of the field of view
-		if((tv1.x < -tv1.y && tv2.x < -tv2.y) || (tv1.x > tv1.y && tv2.x > tv2.y)){
-			continue;
+		uv1 = vectorUnit(tv1);
+		uv2 = vectorUnit(tv2);
+		if(!vectorIsBetween(uv1, camleft, camright) && !vectorIsBetween(uv2, camleft, camright)){
+			if((uv1.x < 0 && uv2.x < 0) || (uv1.x > 0 && uv2.x > 0)){
+				continue;
+			}
 		}
 
 		// Clip the case where the wall is not in the player's view but the ends are on both sides
@@ -286,16 +308,16 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright)
 
 		// Find the vector to the frustrum
 		if(tv1.x < -tv1.y){
-			lineIntersect(tv1, tv2, (xy_t){0, 0}, (xy_t){-1000, 1000}, &tv1);
+			lineIntersect(tv1, tv2, (xy_t){0, 0}, camleftdist, &tv1);
 		}
 		if(tv1.x > tv1.y){
-			lineIntersect(tv1, tv2, (xy_t){0, 0}, (xy_t){1000, 1000}, &tv1);
+			lineIntersect(tv1, tv2, (xy_t){0, 0}, camrightdist, &tv1);
 		}
 		if(tv2.x < -tv2.y){
-			lineIntersect(tv2, tv1, (xy_t){0, 0}, (xy_t){-1000, 1000}, &tv2);
+			lineIntersect(tv2, tv1, (xy_t){0, 0}, camleftdist, &tv2);
 		}
 		if(tv2.x > tv2.y){
-			lineIntersect(tv2, tv1, (xy_t){0, 0}, (xy_t){1000, 1000}, &tv2);
+			lineIntersect(tv2, tv1, (xy_t){0, 0}, camrightdist, &tv2);
 		}
 
 		if(i > 0){
@@ -308,20 +330,15 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright)
 		
 		if((near = findNeighborSector(id, v1, v2)) != -1){
 			v1 = vectorUnit(tv1);
-			v1.x *= 1000;
-			v1.y *= 1000;
-
 			v2 = vectorUnit(tv2);
-			v2.x *= 1000;
-			v2.y *= 1000;
 			if(v1.x < v2.x){
-				renderSector(near, campos, v1, v2);
+				renderSector(near, campos, v1, v2, camlen);
 			}else{
-				renderSector(near, campos, v2, v1);
+				renderSector(near, campos, v2, v1, camlen);
 			}
 
-			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v1.x, HHEIGHT - v1.y}, 0, 0, 255, 0.25f);
-			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v2.x, HHEIGHT - v2.y}, 0, 0, 255, 0.25f);
+			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v1.x * 100, HHEIGHT - v1.y * 100}, 0, 0, 255, 0.25f);
+			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v2.x * 100, HHEIGHT - v2.y * 100}, 0, 0, 255, 0.25f);
 		}
 
 		v1.x = HWIDTH - tv1.x;
@@ -347,7 +364,7 @@ void renderWalls()
 	for(i = 0; i < nsectors; i++){
 		sectors[i].renderred = false;
 	}
-	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, (xy_t){-1000, 1000}, (xy_t){1000, 1000});
+	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, (xy_t){-1000, 1000}, (xy_t){1000, 1000}, 1000);
 }
 
 void render()
