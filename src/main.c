@@ -38,8 +38,13 @@ typedef struct {
 } xyz_t;
 
 typedef struct {
+	xyz_t start;
+	float angle, slope;
+} plane_t;
+
+typedef struct {
 	xy_t *vertex;
-	float floor, ceil;
+	plane_t floor, ceil;
 	unsigned int npoints, nneighbors, *neighbors;
 	bool renderred;
 } sector_t;
@@ -167,7 +172,7 @@ void printSectorInfo(unsigned int id)
 
 	sect = sectors[id];
 
-	printf("Sector \"%d\", floor: %g, ceil: %g, renderred: %s\n", id, sect.floor, sect.ceil, sect.renderred == true ? "true" : "false");
+	printf("Sector \"%d\", floor: %g, ceil: %g, renderred: %s\n", id, sect.floor.start.z, sect.ceil.start.z, sect.renderred == true ? "true" : "false");
 	if(sect.npoints > 0){
 		printf("Vertices: ");
 	}
@@ -360,9 +365,8 @@ void render()
 void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPressed, bool rightPressed)
 {
 	sector_t sect, neighbor;
-	xy_t v1, v2, isect, norm, proj;
+	xy_t v1, v2, isect, proj;
 	unsigned int i, j, k, found;
-	float dp;
 
 	if(upPressed){
 		player.vel.x += cos(player.angle + M_PI / 2) * PLAYER_SPEED;
@@ -449,7 +453,7 @@ void load(char *map)
 {
 	FILE *fp;
 	char *line, *ptr;
-	int index, scanlen, nverts;
+	int index, index2, scanlen, nverts;
 	size_t len;
 	ssize_t read;
 	xy_t vert, *verts;
@@ -488,7 +492,12 @@ void load(char *map)
 				sect->nneighbors = 0;
 				sect->neighbors = NULL;
 
-				sscanf(ptr, "%*s %f %f%n", &sect->floor, &sect->ceil, &scanlen);
+				sscanf(ptr, "%*s %f %f %f %u %f %f %f %u%n", &sect->floor.start.z, &sect->floor.slope, &sect->floor.angle, &index,
+						&sect->ceil.start.z, &sect->ceil.slope, &sect->ceil.angle, &index2, &scanlen);
+				sect->floor.start.x = verts[index].x;
+				sect->floor.start.y = verts[index].y;
+				sect->ceil.start.x = verts[index2].x;
+				sect->ceil.start.y = verts[index2].y;
 				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
 					sect->vertex = (xy_t*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
 					sect->vertex[sect->npoints - 1] = verts[index];
