@@ -89,15 +89,23 @@ int lineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 	return 1;
 }
 
+xy_t vectorUnit(xy_t p)
+{
+	float len;
+
+	len = sqrt(p.x * p.x + p.y * p.y);
+	p.x /= len;
+	p.y /= len;
+
+	return p;
+}
+
 xy_t vectorProject(xy_t p1, xy_t p2)
 {
-	float len, scalar;
+	float scalar;
 	xy_t normal;
 
-	len = sqrt(p2.x * p2.x + p2.y * p2.y);
-	normal.x = p2.x / len;
-	normal.y = p2.y / len;
-
+	normal = vectorUnit(p2);
 	scalar = p1.x * normal.x + p1.y * normal.y;
 	normal.x *= scalar;
 	normal.y *= scalar;
@@ -217,7 +225,7 @@ int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 	return -1;
 }
 
-void renderSector(unsigned int id)
+void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright)
 {
 	unsigned int i;
 	int near;
@@ -246,10 +254,10 @@ void renderSector(unsigned int id)
 			v2 = sect.vertex[sect.npoints - 1];
 		}
 
-		v1.x = player.pos.x - v1.x;
-		v1.y = player.pos.y - v1.y;
-		v2.x = player.pos.x - v2.x;
-		v2.y = player.pos.y - v2.y;
+		v1.x = campos.x - v1.x;
+		v1.y = campos.y - v1.y;
+		v2.x = campos.x - v2.x;
+		v2.y = campos.y - v2.y;
 
 		// 2D transformation matrix for rotations
 		tv1.x = cosa * v1.x - sina * v1.y;
@@ -299,7 +307,21 @@ void renderSector(unsigned int id)
 		}
 		
 		if((near = findNeighborSector(id, v1, v2)) != -1){
-			renderSector(near);
+			v1 = vectorUnit(tv1);
+			v1.x *= 1000;
+			v1.y *= 1000;
+
+			v2 = vectorUnit(tv2);
+			v2.x *= 1000;
+			v2.y *= 1000;
+			if(v1.x < v2.x){
+				renderSector(near, campos, v1, v2);
+			}else{
+				renderSector(near, campos, v2, v1);
+			}
+
+			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v1.x, HHEIGHT - v1.y}, 0, 0, 255, 0.25f);
+			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v2.x, HHEIGHT - v2.y}, 0, 0, 255, 0.25f);
 		}
 
 		v1.x = HWIDTH - tv1.x;
@@ -325,7 +347,7 @@ void renderWalls()
 	for(i = 0; i < nsectors; i++){
 		sectors[i].renderred = false;
 	}
-	renderSector(player.sector);
+	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, (xy_t){-1000, 1000}, (xy_t){1000, 1000});
 }
 
 void render()
