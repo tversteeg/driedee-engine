@@ -45,8 +45,7 @@ typedef struct {
 typedef struct {
 	xy_t *vertex;
 	plane_t floor, ceil;
-	unsigned int npoints, nneighbors, *neighbors;
-	bool renderred;
+	unsigned int npoints, nneighbors, *neighbors, nvisited, *visited;
 } sector_t;
 
 struct player {
@@ -194,7 +193,7 @@ void printSectorInfo(unsigned int id)
 
 	sect = sectors[id];
 
-	printf("Sector \"%d\", floor: %g, ceil: %g, renderred: %s\n", id, sect.floor.start.z, sect.ceil.start.z, sect.renderred == true ? "true" : "false");
+	printf("Sector \"%d\", floor: %g, ceil: %g\n", id, sect.floor.start.z, sect.ceil.start.z);
 	if(sect.npoints > 0){
 		printf("Vertices: ");
 	}
@@ -239,7 +238,7 @@ int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 	return -1;
 }
 
-void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen)
+void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId)
 {
 	unsigned int i;
 	int near;
@@ -247,10 +246,18 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	xy_t v1, v2, tv1, tv2, uv1, uv2, camleftdist, camrightdist;
 	float cosa, sina;
 
-	if(sectors[id].renderred){
-		return;
+	for(i = 0; i < sectors[id].nvisited; i++){
+		if(sectors[id].visited[i] == oldId || sectors[id].visited[i] == id){
+			return;
+		}
 	}
-	sectors[id].renderred = true;
+	if(sectors[id].nvisited == 0){
+		sectors[id].visited = (unsigned int*)malloc(sizeof(unsigned int));
+		sectors[id].visited[0] = oldId;
+	}else{
+		sectors[id].visited = (unsigned int*)malloc(++sectors[id].nvisited * sizeof(unsigned int));
+		sectors[id].visited[sectors[id].nvisited - 1] = oldId;
+	}
 
 	sina = sin(player.angle);
 	cosa = cos(player.angle);
@@ -327,9 +334,9 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			v1 = vectorUnit(tv1);
 			v2 = vectorUnit(tv2);
 			if(v1.x < v2.x){
-				renderSector(near, campos, v1, v2, camlen);
+				renderSector(near, campos, v1, v2, camlen, id);
 			}else{
-				renderSector(near, campos, v2, v1, camlen);
+				renderSector(near, campos, v2, v1, camlen, id);
 			}
 
 			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v1.x * 100, HHEIGHT - v1.y * 100}, 0, 0, 255, 0.25f);
@@ -357,9 +364,12 @@ void renderWalls()
 	unsigned int i;
 
 	for(i = 0; i < nsectors; i++){
-		sectors[i].renderred = false;
+		if(sectors[i].nvisited > 0){
+			free(sectors[i].visited);
+			sectors[i].nvisited = 0;
+		}
 	}
-	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, (xy_t){-1000, 1000}, (xy_t){1000, 1000}, 1000);
+	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, (xy_t){-1000, 1000}, (xy_t){1000, 1000}, 1000, player.sector);
 }
 
 void render()
@@ -522,7 +532,8 @@ void load(char *map)
 				ptr = line;
 				sect->npoints = 0;
 				sect->vertex = NULL;
-				sect->renderred = false;
+				sect->visited = NULL;
+				sect->nvisited = 0;
 				sect->nneighbors = 0;
 				sect->neighbors = NULL;
 
