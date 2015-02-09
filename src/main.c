@@ -295,15 +295,15 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		if(!vectorIsBetween(uv1, camleft, camright) && !vectorIsBetween(uv2, camleft, camright)){
 			if((uv1.x < 0 && uv2.x < 0) || (uv1.x > 0 && uv2.x > 0)){
 				continue;
+			}else if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x < 0){
+				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
+				continue;
 			}
 		}
 
 		// Clip the case where the wall is not in the player's view but the ends are on both sides
 		if((tv1.x < -tv1.y && tv2.x > tv2.y) || (tv1.x > tv1.y && tv2.x < -tv2.y)){
-			// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
-			if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x < 0){
-				continue;
-			}
+			
 		}
 
 		// Find the vector to the frustrum
