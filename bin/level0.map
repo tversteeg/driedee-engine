@@ -1,0 +1,13 @@
+# Y coordinate followed by list of X coordinates
+vert 0		0 100 120 200 		# 0 1 2 3
+vert 100	0 100 120 200 		# 4 5 6 7
+
+# Floor height, slope, angle, first vert
+# Ceiling height, slope, angle, first vert
+# Vertices
+# Connecting sectors
+sector 0 0 0 0	10 0 0 0		0 1 5 4
+# sector 0 0 0 0	10 0 0 0  	9 12 13 15 10 x			0 2 4
+
+# X, Y, Z
+player 50 50 0
