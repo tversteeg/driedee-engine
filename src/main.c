@@ -369,7 +369,7 @@ void renderWalls()
 			sectors[i].nvisited = 0;
 		}
 	}
-	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, (xy_t){-1000, 1000}, (xy_t){1000, 1000}, 1000, player.sector);
+	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, (xy_t){-sqrt(2), sqrt(2)}, (xy_t){sqrt(2), sqrt(2)}, 1000, player.sector);
 }
 
 void render()
