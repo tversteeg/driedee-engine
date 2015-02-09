@@ -193,8 +193,6 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 	
 	result->x = q.x + u * s.x;
 	result->y = q.y + u * s.y;
-
-	//drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - p->x, HHEIGHT - p->y}, 255, 0, 255, 0.5f);
 	return 1;
 }
 
@@ -367,14 +365,6 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 				renderSector(near, campos, tv1, tv2, camlen, id);
 			}else{
 				renderSector(near, campos, tv2, tv1, camlen, id);
-			}
-
-			if(id == player.sector){
-				drawLine((xy_t){HWIDTH - camleft.x, HHEIGHT - camleft.y}, (xy_t){HWIDTH - tv1.x, HHEIGHT - tv1.y}, 255, 0, 255, 0.25f);
-				drawLine((xy_t){HWIDTH - camright.x, HHEIGHT - camright.y}, (xy_t){HWIDTH - tv2.x, HHEIGHT - tv2.y}, 255, 0, 255, 0.25f);
-			}else{
-				drawLine((xy_t){HWIDTH - camleft.x, HHEIGHT - camleft.y}, (xy_t){HWIDTH - tv1.x, HHEIGHT - tv1.y}, 0, 128, 255, 0.25f);
-				drawLine((xy_t){HWIDTH - camright.x, HHEIGHT - camright.y}, (xy_t){HWIDTH - tv2.x, HHEIGHT - tv2.y}, 0, 128, 255, 0.25f);
 			}
 		}
 
