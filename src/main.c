@@ -243,8 +243,9 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	unsigned int i;
 	int near;
 	sector_t sect;
-	xy_t v1, v2, tv1, tv2, uv1, uv2, camleftdist, camrightdist;
+	xy_t v1, v2, tv1, tv2, uv1, uv2, camleftnorm, camrightnorm;
 	float cosa, sina;
+	bool notbetween1, notbetween2;
 
 	for(i = 0; i < sectors[id].nvisited; i++){
 		if(sectors[id].visited[i] == oldId || sectors[id].visited[i] == id){
@@ -254,6 +255,7 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	if(sectors[id].nvisited == 0){
 		sectors[id].visited = (unsigned int*)malloc(sizeof(unsigned int));
 		sectors[id].visited[0] = oldId;
+		sectors[id].nvisited = 1;
 	}else{
 		sectors[id].visited = (unsigned int*)malloc(++sectors[id].nvisited * sizeof(unsigned int));
 		sectors[id].visited[sectors[id].nvisited - 1] = oldId;
@@ -261,10 +263,8 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 
 	sina = sin(player.angle);
 	cosa = cos(player.angle);
-	camleftdist.x = camleft.x * camlen;
-	camleftdist.y = camleft.y * camlen;
-	camrightdist.x = camright.x * camlen;
-	camrightdist.y = camright.y * camlen;
+	camleftnorm = vectorUnit(camleft);
+	camrightnorm = vectorUnit(camright);
 
 	sect = sectors[id];
 	for(i = 0; i < sect.npoints; i++){
@@ -299,28 +299,40 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		// Clip everything outside of the field of view
 		uv1 = vectorUnit(tv1);
 		uv2 = vectorUnit(tv2);
-		if(!vectorIsBetween(uv1, camleft, camright) && !vectorIsBetween(uv2, camleft, camright)){
-			if((uv1.x < 0 && uv2.x < 0) || (uv1.x > 0 && uv2.x > 0)){
+		notbetween1 = !vectorIsBetween(uv1, camleftnorm, camrightnorm);
+		notbetween2 = !vectorIsBetween(uv2, camleftnorm, camrightnorm);
+		if(notbetween1 && notbetween2){
+			// Remove them if they both lie on the same side
+			if((uv1.x < camleftnorm.x && uv2.x < camleftnorm.x) || (uv1.x > camrightnorm.x && uv2.x > camrightnorm.x)){
 				continue;
 			}else if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x < 0){
 				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
 				continue;
 			}
 		}
-
-		// Find the vector to the frustrum
-		if(tv1.x < -tv1.y){
-			lineIntersect(tv1, tv2, (xy_t){0, 0}, camleftdist, &tv1);
+		/* else if(notbetween1){
+			// Find the vector to the frustrum
+			if(uv1.x < camleftnorm.x){
+				if(lineIntersect(tv1, tv2, campos, camleft, &tv1) == 0){
+					continue;
+				}
+			}else{
+				if(lineIntersect(tv1, tv2, campos, camright, &tv1) == 0){
+					continue;
+				}
+			}
+		}else if(notbetween2){
+			if(uv1.x < camleftnorm.x){
+				if(lineIntersect(tv2, tv1, campos, camleft, &tv2) == 0){
+					continue;
+				}
+			}else{
+				if(lineIntersect(tv2, tv1, campos, camright, &tv2) == 0){
+					continue;
+				}
+			}
 		}
-		if(tv1.x > tv1.y){
-			lineIntersect(tv1, tv2, (xy_t){0, 0}, camrightdist, &tv1);
-		}
-		if(tv2.x < -tv2.y){
-			lineIntersect(tv2, tv1, (xy_t){0, 0}, camleftdist, &tv2);
-		}
-		if(tv2.x > tv2.y){
-			lineIntersect(tv2, tv1, (xy_t){0, 0}, camrightdist, &tv2);
-		}
+		*/
 
 		if(i > 0){
 			v1 = sect.vertex[i];
@@ -331,16 +343,19 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		}
 		
 		if((near = findNeighborSector(id, v1, v2)) != -1){
-			v1 = vectorUnit(tv1);
-			v2 = vectorUnit(tv2);
-			if(v1.x < v2.x){
-				renderSector(near, campos, v1, v2, camlen, id);
+			if(tv1.x < tv2.x){
+				renderSector(near, campos, tv1, tv2, camlen, id);
 			}else{
-				renderSector(near, campos, v2, v1, camlen, id);
+				renderSector(near, campos, tv2, tv1, camlen, id);
 			}
 
-			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v1.x * 100, HHEIGHT - v1.y * 100}, 0, 0, 255, 0.25f);
-			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - v2.x * 100, HHEIGHT - v2.y * 100}, 0, 0, 255, 0.25f);
+			if(id == player.sector){
+				drawLine((xy_t){HWIDTH - camleft.x, HHEIGHT - camleft.y}, (xy_t){HWIDTH - tv1.x, HHEIGHT - tv1.y}, 255, 0, 255, 0.25f);
+				drawLine((xy_t){HWIDTH - camright.x, HHEIGHT - camright.y}, (xy_t){HWIDTH - tv2.x, HHEIGHT - tv2.y}, 255, 0, 255, 0.25f);
+			}else{
+				drawLine((xy_t){HWIDTH - camleft.x, HHEIGHT - camleft.y}, (xy_t){HWIDTH - tv1.x, HHEIGHT - tv1.y}, 0, 128, 255, 0.25f);
+				drawLine((xy_t){HWIDTH - camright.x, HHEIGHT - camright.y}, (xy_t){HWIDTH - tv2.x, HHEIGHT - tv2.y}, 0, 128, 255, 0.25f);
+			}
 		}
 
 		v1.x = HWIDTH - tv1.x;
@@ -348,13 +363,13 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		v2.x = HWIDTH - tv2.x;
 		v2.y = HHEIGHT - tv2.y;
 		if(id == player.sector){
-			drawLine(v1, v2, 255, 0, 0, 0.5f);
+			drawLine(v1, v2, 255, 0, 0, 0.25f);
 		}else{
-			drawLine(v1, v2, 0, 255, 0, 0.5f);
+			drawLine(v1, v2, 0, 255, 0, 0.25f);
 		}
 
 		if(near != -1){
-			drawLine(v1, v2, 0, 0, 255, 0.5f);
+			drawLine(v1, v2, 0, 0, 255, 0.25f);
 		}
 	}
 }
