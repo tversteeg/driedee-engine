@@ -301,11 +301,6 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			}
 		}
 
-		// Clip the case where the wall is not in the player's view but the ends are on both sides
-		if((tv1.x < -tv1.y && tv2.x > tv2.y) || (tv1.x > tv1.y && tv2.x < -tv2.y)){
-			
-		}
-
 		// Find the vector to the frustrum
 		if(tv1.x < -tv1.y){
 			lineIntersect(tv1, tv2, (xy_t){0, 0}, camleftdist, &tv1);
