@@ -59,99 +59,6 @@ pixelRGB_t pixels[WIDTH * HEIGHT];
 sector_t *sectors = NULL;
 unsigned int nsectors = 0;
 
-xy_t vectorUnit(xy_t p)
-{
-	float len;
-
-	len = sqrt(p.x * p.x + p.y * p.y);
-	p.x /= len;
-	p.y /= len;
-
-	return p;
-}
-
-float vectorDotProduct(xy_t p1, xy_t p2)
-{
-	return p1.x * p2.x + p1.y * p2.y;
-}
-
-float vectorCrossProduct(xy_t p1, xy_t p2)
-{
-		return p1.x * p2.y - p1.y * p2.x;
-}
-
-int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
-{
-	float denom, n1, n2;
-
-	denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-	n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
-	n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
-
-	if(fabs(n1) < 0.0001f && fabs(n2) < 0.0001f && fabs(denom) < 0.0001f){
-		p->x = (p1.x + p2.x) / 2;
-		p->y = (p1.y + p2.y) / 2;
-		return 1;
-	}
-
-	if(fabs(denom) < 0.0001f){
-		return 0;
-	}
-
-	n1 /= denom;
-	n2 /= denom;
-	if(n1 < 0 || n1 > 1 || n2 < 0 || n2 > 1){
-		return 0;
-	}
-
-	p->x = p1.x + n1 * (p2.x - p1.x);
-	p->y = p1.y + n1 * (p2.y - p1.y);
-	return 1;
-}
-
-int lineSegmentIntersect(xy_t point, xy_t dir, xy_t s0, xy_t s1, xy_t *p)
-{
-	xy_t delta, diff;
-	float part;
-
-	delta.x = s1.x - s0.x;
-	delta.y = s1.y - s0.y;
-
-	diff.x = s0.x - point.x;
-	diff.y = s0.y - point.y;
- 
-	part = vectorCrossProduct(diff, delta) / vectorCrossProduct(dir, delta);
-	if(part < 0 || part > 1){
-		return 0;
-	}
-	
-	p->x = s0.x + part * delta.x;
-	p->y = s0.y + part * delta.y;
-	return 1;
-}
-
-bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
-{
-	float leftRight;
-
-	leftRight = vectorDotProduct(left, right);
-
-	return leftRight < vectorDotProduct(left, p) && leftRight < vectorDotProduct(right, p);
-}
-
-xy_t vectorProject(xy_t p1, xy_t p2)
-{
-	float scalar;
-	xy_t normal;
-
-	normal = vectorUnit(p2);
-	scalar = p1.x * normal.x + p1.y * normal.y;
-	normal.x *= scalar;
-	normal.y *= scalar;
-
-	return normal;
-}
-
 void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 {
 	pixelRGB_t *pixel;
@@ -210,6 +117,107 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 			y1 += sy;
 		}
 	}
+}
+
+xy_t vectorUnit(xy_t p)
+{
+	float len;
+
+	len = sqrt(p.x * p.x + p.y * p.y);
+	p.x /= len;
+	p.y /= len;
+
+	return p;
+}
+
+float vectorDotProduct(xy_t p1, xy_t p2)
+{
+	return p1.x * p2.x + p1.y * p2.y;
+}
+
+float vectorCrossProduct(xy_t p1, xy_t p2)
+{
+		return p1.x * p2.y - p1.y * p2.x;
+}
+
+int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
+{
+	float denom, n1, n2;
+
+	denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+	n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
+	n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
+
+	if(fabs(n1) < 0.0001f && fabs(n2) < 0.0001f && fabs(denom) < 0.0001f){
+		p->x = (p1.x + p2.x) / 2;
+		p->y = (p1.y + p2.y) / 2;
+		return 1;
+	}
+
+	if(fabs(denom) < 0.0001f){
+		return 0;
+	}
+
+	n1 /= denom;
+	n2 /= denom;
+	if(n1 < 0 || n1 > 1 || n2 < 0 || n2 > 1){
+		return 0;
+	}
+
+	p->x = p1.x + n1 * (p2.x - p1.x);
+	p->y = p1.y + n1 * (p2.y - p1.y);
+	return 1;
+}
+
+// http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
+int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
+{
+	xy_t s, diff;
+	float u;
+
+	s.x = q1.x - q.x;
+	s.y = q1.y - q.y;
+
+	diff.x = q.x - p.x;
+	diff.y = q.y - p.y;
+ 
+	u = vectorCrossProduct(r, s);
+	if(u < 0.0001f && u > -0.00001f){
+		return 0;
+	}
+
+	u = vectorCrossProduct(diff, r) / u;
+	if(u < 0 || u > 1){
+		return 0;
+	}
+	
+	result->x = q.x + u * s.x;
+	result->y = q.y + u * s.y;
+
+	//drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - p->x, HHEIGHT - p->y}, 255, 0, 255, 0.5f);
+	return 1;
+}
+
+bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
+{
+	float leftRight;
+
+	leftRight = vectorDotProduct(left, right);
+
+	return leftRight < vectorDotProduct(left, p) && leftRight < vectorDotProduct(right, p);
+}
+
+xy_t vectorProject(xy_t p1, xy_t p2)
+{
+	float scalar;
+	xy_t normal;
+
+	normal = vectorUnit(p2);
+	scalar = p1.x * normal.x + p1.y * normal.y;
+	normal.x *= scalar;
+	normal.y *= scalar;
+
+	return normal;
 }
 
 void printSectorInfo(unsigned int id)
@@ -335,20 +343,14 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
 				continue;
 			}
-
-			if(lineSegmentIntersect(campos, camleftnorm, tv1, tv2, &tv1) == 0){
-				lineSegmentIntersect(campos, camrightnorm, tv1, tv2, &tv1);
-			}
-			if(lineSegmentIntersect(campos, camrightnorm, tv1, tv2, &tv2) == 0){
-				lineSegmentIntersect(campos, camleftnorm, tv1, tv2, &tv2);
-			}
+			// TODO handle this case
 		}else if(notbetween1){
-			if(lineSegmentIntersect(campos, camleftnorm, tv1, tv2, &tv1) == 0){
-				lineSegmentIntersect(campos, camrightnorm, tv1, tv2, &tv1);
+			if(lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv2, tv1, &tv1) == 0){
+				lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv2, tv1, &tv1);
 			}
 		}else if(notbetween2){
-			if(lineSegmentIntersect(campos, camrightnorm, tv1, tv2, &tv2) == 0){
-				lineSegmentIntersect(campos, camleftnorm, tv1, tv2, &tv2);
+			if(lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv1, tv2, &tv2) == 0){
+				lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv1, tv2, &tv2);
 			}
 		}
 
@@ -395,6 +397,7 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 void renderWalls()
 {
 	unsigned int i;
+	xy_t camleft, camright;
 
 	for(i = 0; i < nsectors; i++){
 		if(sectors[i].nvisited > 0){
@@ -402,7 +405,10 @@ void renderWalls()
 			sectors[i].nvisited = 0;
 		}
 	}
-	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, (xy_t){-sqrt(2), sqrt(2)}, (xy_t){sqrt(2), sqrt(2)}, 1000, player.sector);
+
+	camleft = (xy_t){-1000, 1000};
+	camright = (xy_t){1000, 1000};
+	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, player.sector);
 }
 
 void render()
