@@ -59,7 +59,28 @@ pixelRGB_t pixels[WIDTH * HEIGHT];
 sector_t *sectors = NULL;
 unsigned int nsectors = 0;
 
-int lineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
+xy_t vectorUnit(xy_t p)
+{
+	float len;
+
+	len = sqrt(p.x * p.x + p.y * p.y);
+	p.x /= len;
+	p.y /= len;
+
+	return p;
+}
+
+float vectorDotProduct(xy_t p1, xy_t p2)
+{
+	return p1.x * p2.x + p1.y * p2.y;
+}
+
+float vectorCrossProduct(xy_t p1, xy_t p2)
+{
+		return p1.x * p2.y - p1.y * p2.x;
+}
+
+int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
 	float denom, n1, n2;
 
@@ -88,20 +109,25 @@ int lineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 	return 1;
 }
 
-xy_t vectorUnit(xy_t p)
+int lineSegmentIntersect(xy_t point, xy_t dir, xy_t s0, xy_t s1, xy_t *p)
 {
-	float len;
+	xy_t delta, diff;
+	float part;
 
-	len = sqrt(p.x * p.x + p.y * p.y);
-	p.x /= len;
-	p.y /= len;
+	delta.x = s1.x - s0.x;
+	delta.y = s1.y - s0.y;
 
-	return p;
-}
-
-float vectorDotProduct(xy_t p1, xy_t p2)
-{
-	return p1.x * p2.x + p1.y * p2.y;
+	diff.x = s0.x - point.x;
+	diff.y = s0.y - point.y;
+ 
+	part = vectorCrossProduct(diff, delta) / vectorCrossProduct(dir, delta);
+	if(part < 0 || part > 1){
+		return 0;
+	}
+	
+	p->x = s0.x + part * delta.x;
+	p->y = s0.y + part * delta.y;
+	return 1;
 }
 
 bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
@@ -309,30 +335,22 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
 				continue;
 			}
-		}
-		/* else if(notbetween1){
-			// Find the vector to the frustrum
-			if(uv1.x < camleftnorm.x){
-				if(lineIntersect(tv1, tv2, campos, camleft, &tv1) == 0){
-					continue;
-				}
-			}else{
-				if(lineIntersect(tv1, tv2, campos, camright, &tv1) == 0){
-					continue;
-				}
+
+			if(lineSegmentIntersect(campos, camleftnorm, tv1, tv2, &tv1) == 0){
+				lineSegmentIntersect(campos, camrightnorm, tv1, tv2, &tv1);
+			}
+			if(lineSegmentIntersect(campos, camrightnorm, tv1, tv2, &tv2) == 0){
+				lineSegmentIntersect(campos, camleftnorm, tv1, tv2, &tv2);
+			}
+		}else if(notbetween1){
+			if(lineSegmentIntersect(campos, camleftnorm, tv1, tv2, &tv1) == 0){
+				lineSegmentIntersect(campos, camrightnorm, tv1, tv2, &tv1);
 			}
 		}else if(notbetween2){
-			if(uv1.x < camleftnorm.x){
-				if(lineIntersect(tv2, tv1, campos, camleft, &tv2) == 0){
-					continue;
-				}
-			}else{
-				if(lineIntersect(tv2, tv1, campos, camright, &tv2) == 0){
-					continue;
-				}
+			if(lineSegmentIntersect(campos, camrightnorm, tv1, tv2, &tv2) == 0){
+				lineSegmentIntersect(campos, camleftnorm, tv1, tv2, &tv2);
 			}
 		}
-		*/
 
 		if(i > 0){
 			v1 = sect.vertex[i];
@@ -466,7 +484,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 				v2 = sect.vertex[sect.npoints - 1];
 			}
 			// Find which segment the player wants to pass throught
-			if(!lineIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
+			if(!lineLineIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 				continue;
 			}
 			for(j = 0; j < sect.nneighbors; j++){
