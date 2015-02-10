@@ -298,6 +298,9 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	camleftnorm = vectorUnit(camleft);
 	camrightnorm = vectorUnit(camright);
 
+	drawLine((xy_t){HWIDTH - camleft.x, HHEIGHT - camleft.y}, (xy_t){HWIDTH - camleft.x - camleftnorm.x * 50, HHEIGHT - camleft.y - camleftnorm.y * 50}, 255, 255, 255, 0.5f);
+	drawLine((xy_t){HWIDTH - camright.x, HHEIGHT - camright.y}, (xy_t){HWIDTH - camright.x - camrightnorm.x * 50, HHEIGHT - camright.y - camrightnorm.y * 50}, 255, 255, 255, 0.5f);
+
 	sect = sectors[id];
 	for(i = 0; i < sect.npoints; i++){
 		if(i > 0){
@@ -340,8 +343,15 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			}else if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x < 0){
 				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
 				continue;
+			}else{
+				uv1 = tv1;
+				if(lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv2, tv1, &tv1) == 0){
+					lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv2, tv1, &tv1);
+				}
+				if(lineSegmentIntersect((xy_t){0, 0}, camrightnorm, uv1, tv2, &tv2) == 0){
+					lineSegmentIntersect((xy_t){0, 0}, camleftnorm, uv1, tv2, &tv2);
+				}
 			}
-			// TODO handle this case
 		}else if(notbetween1){
 			if(lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv2, tv1, &tv1) == 0){
 				lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv2, tv1, &tv1);
@@ -366,6 +376,8 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			}else{
 				renderSector(near, campos, tv2, tv1, camlen, id);
 			}
+			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - tv1.x, HHEIGHT - tv1.y}, 255, 255, 0, 0.1f);
+			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - tv2.x, HHEIGHT - tv2.y}, 255, 255, 0, 0.1f);
 		}
 
 		v1.x = HWIDTH - tv1.x;
@@ -379,7 +391,11 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		}
 
 		if(near != -1){
-			drawLine(v1, v2, 0, 0, 255, 0.25f);
+			drawLine(v1, v2, 0, 0, 255, 0.05f);
+		}else if(id == player.sector){
+			drawLine(v1, v2, 255, 0, 0, 0.25f);
+		}else{
+			drawLine(v1, v2, 0, 255, 0, 0.25f);
 		}
 	}
 }
@@ -396,8 +412,8 @@ void renderWalls()
 		}
 	}
 
-	camleft = (xy_t){-1000, 1000};
-	camright = (xy_t){1000, 1000};
+	camleft = (xy_t){-200, 200};
+	camright = (xy_t){200, 200};
 	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, player.sector);
 }
 
