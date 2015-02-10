@@ -140,6 +140,21 @@ float vectorCrossProduct(xy_t p1, xy_t p2)
 		return p1.x * p2.y - p1.y * p2.x;
 }
 
+char pointLineSide(xy_t p, xy_t l1, xy_t l2)
+{
+	float result;
+
+	result = (l2.x - l1.x) * (p.y - l1.y) - (l2.y - l1.y) * (p.x - l1.x);
+
+	if(result > 0){
+		return 1;
+	}else if(result < 0){
+		return -1;
+	}
+
+	return 0;
+}
+
 int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
 	float denom, n1, n2;
@@ -182,7 +197,7 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 	diff.y = q.y - p.y;
  
 	u = vectorCrossProduct(r, s);
-	if(u < 0.0001f && u > -0.00001f){
+	if(u < 0.00000001f && u > -0.00000001f){
 		return 0;
 	}
 
@@ -298,8 +313,8 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	camleftnorm = vectorUnit(camleft);
 	camrightnorm = vectorUnit(camright);
 
-	drawLine((xy_t){HWIDTH - camleft.x, HHEIGHT - camleft.y}, (xy_t){HWIDTH - camleft.x - camleftnorm.x * 50, HHEIGHT - camleft.y - camleftnorm.y * 50}, 255, 255, 255, 0.5f);
-	drawLine((xy_t){HWIDTH - camright.x, HHEIGHT - camright.y}, (xy_t){HWIDTH - camright.x - camrightnorm.x * 50, HHEIGHT - camright.y - camrightnorm.y * 50}, 255, 255, 255, 0.5f);
+	drawLine((xy_t){HWIDTH - camleft.x, HHEIGHT - camleft.y}, (xy_t){HWIDTH - camleft.x - camleftnorm.x * 20, HHEIGHT - camleft.y - camleftnorm.y * 20}, 255, 255, 255, 0.5f);
+	drawLine((xy_t){HWIDTH - camright.x, HHEIGHT - camright.y}, (xy_t){HWIDTH - camright.x - camrightnorm.x * 20, HHEIGHT - camright.y - camrightnorm.y * 20}, 255, 255, 255, 0.5f);
 
 	sect = sectors[id];
 	for(i = 0; i < sect.npoints; i++){
@@ -338,25 +353,22 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		notbetween2 = !vectorIsBetween(uv2, camleftnorm, camrightnorm);
 		if(notbetween1 && notbetween2){
 			// Remove them if they both lie on the same side
-			if((uv1.x < camleftnorm.x && uv2.x < camleftnorm.x) || (uv1.x > camrightnorm.x && uv2.x > camrightnorm.x)){
+			if(pointLineSide(tv1, (xy_t){0, 0}, camleftnorm) < 0 && pointLineSide(tv2, (xy_t){0, 0}, camleftnorm) < 0){
+				continue;
+			}else if(pointLineSide(tv1, (xy_t){0, 0}, camrightnorm) > 0 && pointLineSide(tv2, (xy_t){0, 0}, camrightnorm) > 0){
 				continue;
 			}else if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x < 0){
 				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
 				continue;
-			}else{
-				uv1 = tv1;
-				if(lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv2, tv1, &tv1) == 0){
-					lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv2, tv1, &tv1);
-				}
-				if(lineSegmentIntersect((xy_t){0, 0}, camrightnorm, uv1, tv2, &tv2) == 0){
-					lineSegmentIntersect((xy_t){0, 0}, camleftnorm, uv1, tv2, &tv2);
-				}
 			}
-		}else if(notbetween1){
+		}
+		
+		if(notbetween1){
 			if(lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv2, tv1, &tv1) == 0){
 				lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv2, tv1, &tv1);
 			}
-		}else if(notbetween2){
+		}
+		if(notbetween2){
 			if(lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv1, tv2, &tv2) == 0){
 				lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv1, tv2, &tv2);
 			}
@@ -376,8 +388,8 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			}else{
 				renderSector(near, campos, tv2, tv1, camlen, id);
 			}
-			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - tv1.x, HHEIGHT - tv1.y}, 255, 255, 0, 0.1f);
-			drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - tv2.x, HHEIGHT - tv2.y}, 255, 255, 0, 0.1f);
+			//drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - tv1.x, HHEIGHT - tv1.y}, 255, 255, 0, 0.1f);
+			//drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - tv2.x, HHEIGHT - tv2.y}, 255, 255, 0, 0.1f);
 		}
 
 		v1.x = HWIDTH - tv1.x;
