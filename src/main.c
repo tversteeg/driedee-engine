@@ -286,18 +286,15 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
 	xy_t cam;
 
-	if(p1->y >= 0){
-		if(pointIsLeft(*p1, (xy_t){0, 0}, camleft)){
-			cam = camleft;
-		}else{
-			cam = camright;
-		}
+	if(p1->y < 0.001f){
+		p1->x += (0.001f - p1->y) * (p2.x - p1->x) / (p2.y - p1->y);
+		p1->y = 0.001f;
+	}
+
+	if(pointIsLeft(*p1, (xy_t){0, 0}, camleft)){
+		cam = camleft;
 	}else{
-		if(pointIsLeft(*p1, (xy_t){0, 0}, camright)){
-			cam = camleft;
-		}else if(!pointIsLeft(*p1, (xy_t){0, 0}, camleft)){
-			cam = camright;
-		}
+		cam = camright;
 	}
 			
 	if(lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1) == 0){
@@ -360,16 +357,16 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		v2.y = campos.y - v2.y;
 
 		// 2D transformation matrix for rotations
-		tv1.x = cosa * v1.x - sina * v1.y;
 		tv1.y = sina * v1.x + cosa * v1.y;
-
-		tv2.x = cosa * v2.x - sina * v2.y;
 		tv2.y = sina * v2.x + cosa * v2.y;
 
 		// Clip everything behind the player
 		if(tv1.y < 0 && tv2.y < 0){
 			continue;
 		}
+
+		tv1.x = cosa * v1.x - sina * v1.y;
+		tv2.x = cosa * v2.x - sina * v2.y;
 
 		// Clip everything outside of the field of view
 		uv1 = vectorUnit(tv1);
