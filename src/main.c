@@ -174,60 +174,11 @@ int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 	return 1;
 }
 
-// Returns 1 if the lines intersect, otherwise 0. In addition, if the lines 
-// // intersect the intersection point may be stored in the floats i_x and i_y.
-char get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y, 
-		float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y)
-{
-	float s1_x, s1_y, s2_x, s2_y;
-	s1_x = p1_x - p0_x;     s1_y = p1_y - p0_y;
-	s2_x = p3_x - p2_x;     s2_y = p3_y - p2_y;
-
-	float s, t;
-	s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
-	t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
-
-	if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
-	{
-		// Collision detected
-		if (i_x != NULL)
-			*i_x = p0_x + (t * s1_x);
-		if (i_y != NULL)
-			*i_y = p0_y + (t * s1_y);
-		return 1;
-	}
-
-	return 0; // No collision
-}
-
-char segmentDirIntersection(xy_t dir, xy_t p1, xy_t p2, xy_t *result)
-{
-	xy_t det, diff;
-	float cross, divisor;
-
-	diff.x = p1.x - p2.x;
-	diff.y = p1.y - p2.y;
-
-	cross = vectorCrossProduct(p1, p2);
-	divisor = -dir.x * diff.y + dir.y * diff.x;
-	if(divisor < 0.0001f && divisor > -0.00001f){
-		return -1;
-	}
-
-	det.x = (diff.x + dir.x * cross) / divisor;
-	det.y = (diff.y + dir.y * cross) / divisor;
-
-	result->x = det.x;
-	result->y = det.y;
-
-	return 0;
-}
-
 // http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
 int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 {
 	xy_t s, diff;
-	float u, v, denom;
+	float u, denom;
 
 	s.x = q1.x - q.x;
 	s.y = q1.y - q.y;
@@ -237,9 +188,8 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 
 	denom = vectorCrossProduct(r, s);
 	u = vectorCrossProduct(diff, r);
-	v = vectorCrossProduct(diff, s);
 	if(denom == 0){
-		if(u == 0 && v == 0){
+		if(u == 0){
 			result->x = (p.x + q.x) / 2;
 			result->y = (p.y + q.y) / 2;
 			return 1;
@@ -250,11 +200,6 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 
 	u /= denom;
 	if(u < 0 || u > 1){
-		return 0;
-	}
-
-	v /= denom;
-	if(v < 0){
 		return 0;
 	}
 
