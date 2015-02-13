@@ -293,9 +293,9 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 			cam = camright;
 		}
 	}else{
-		if(pointIsLeft(p2, (xy_t){0, 0}, camleft)){
+		if(pointIsLeft(*p1, (xy_t){0, 0}, camright)){
 			cam = camleft;
-		}else{
+		}else if(!pointIsLeft(*p1, (xy_t){0, 0}, camleft)){
 			cam = camright;
 		}
 	}
