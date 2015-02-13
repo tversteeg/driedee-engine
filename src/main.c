@@ -337,6 +337,29 @@ int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 	return -1;
 }
 
+void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
+{
+	xy_t cam;
+
+	if(p1->y >= 0){
+		if(pointIsLeft(*p1, (xy_t){0, 0}, camleft)){
+			cam = camleft;
+		}else{
+			cam = camright;
+		}
+	}else{
+		if(pointIsLeft(p2, (xy_t){0, 0}, camleft)){
+			cam = camleft;
+		}else{
+			cam = camright;
+		}
+	}
+			
+	if(lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1) == 0){
+		drawLine((xy_t){HWIDTH - p2.x - 5, HHEIGHT - p2.y}, (xy_t){HWIDTH - p1->x - 5, HHEIGHT - p1->y}, 128, 255, 128, 1);
+	}
+}
+
 void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
 {
 	unsigned int i;
@@ -423,24 +446,10 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		v1.x = tv1.x;
 		v1.y = tv1.y;
 		if(notbetween1){
-			if(pointIsLeft(tv1, (xy_t){0, 0}, camleftnorm)){
-				//if(get_line_intersection(0, 0, camleftnorm.x * 10000, camleftnorm.y * 10000, tv2.x, tv2.y, tv1.x, tv1.y, &v1.x, &v1.y) == 0){
-				if(lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv2, tv1, &v1) == 0){
-					drawLine((xy_t){HWIDTH - tv2.x - 5, HHEIGHT - tv2.y}, (xy_t){HWIDTH - v1.x - 5, HHEIGHT - v1.y}, 128, 255, 128, 1);
-				}
-			//}else if(get_line_intersection(0, 0, camrightnorm.x * 10000, camrightnorm.y * 10000, tv2.x, tv2.y, tv1.x, tv1.y, &v1.x, &v1.y) == 0){
-			}else if(lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv2, tv1, &v1) == 0){
-				drawLine((xy_t){HWIDTH - tv2.x + 5, HHEIGHT - tv2.y}, (xy_t){HWIDTH - v1.x + 5, HHEIGHT - v1.y}, 0, 255, 128, 1);
-			}
+			clipPointToCamera(camleftnorm, camrightnorm, &v1, tv2);
 		}
 		if(notbetween2){
-			if(pointIsLeft(tv2, (xy_t){0, 0}, camleftnorm)){
-				if(lineSegmentIntersect((xy_t){0, 0}, camleftnorm, tv2, tv1, &tv2) == 0){
-					drawLine((xy_t){HWIDTH - tv2.x - 5, HHEIGHT - tv2.y}, (xy_t){HWIDTH - v1.x - 5, HHEIGHT - v1.y}, 255, 128, 128, 1);
-				}
-			}else if(lineSegmentIntersect((xy_t){0, 0}, camrightnorm, tv2, tv1, &tv2) == 0){
-				drawLine((xy_t){HWIDTH - tv2.x + 5, HHEIGHT - tv2.y}, (xy_t){HWIDTH - v1.x + 5, HHEIGHT - v1.y}, 255, 0, 128, 1);
-			}
+			clipPointToCamera(camleftnorm, camrightnorm, &tv2, tv1);
 		}
 		tv1.x = v1.x;
 		tv1.y = v1.y;
