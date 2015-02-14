@@ -345,10 +345,10 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
 }
 
-void renderWall(xy_t left, xy_t right, float camlen)
+void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 {
-	float tleftx, trightx;
-	int sleftx, srightx;
+	float tleftx, trightx, dist, diffy;
+	int x, sleftx, srightx, slefty, srighty, diffx;
 
 	if(left.y < 1 || right.y < 1){
 		return;
@@ -358,17 +358,25 @@ void renderWall(xy_t left, xy_t right, float camlen)
 	tleftx = (left.x / left.y) * player.fov;
 	trightx = (right.x / right.y) * player.fov;
 
-	drawLine((xy_t){HWIDTH - tleftx, HHEIGHT - 1}, (xy_t){HWIDTH - left.x, HHEIGHT - left.y}, 255, 255, 255, 0.1f);
-	drawLine((xy_t){HWIDTH - trightx, HHEIGHT - 1}, (xy_t){HWIDTH - right.x, HHEIGHT - right.y}, 255, 255, 255, 0.1f);
-
 	// Convert to screen coordinates
-	sleftx = HWIDTH - tleftx * HWIDTH;
-	srightx = HWIDTH - trightx * HWIDTH;
+	sleftx = HWIDTH + tleftx * HWIDTH;
+	srightx = HWIDTH + trightx * HWIDTH;
 
-	vline(sleftx, 0, 10, 255, 255, 255, 1);
-	vline(srightx, 0, 10, 255, 255, 0, 1);
+	if(sleftx == srightx){
+		return;
+	}
 
-	//drawLine(begin, end, 255, 255, 255, 1);
+	slefty = ((ceil - floor) / left.y) * HHEIGHT;
+	srighty = ((ceil - floor) / right.y) * HHEIGHT;
+
+	diffx = srightx - sleftx;
+	diffy = srighty - slefty;
+
+	for(x = sleftx; x < srightx; x++){
+		dist = ((x - sleftx) / (float)diffx) * diffy + slefty;
+		vline(x, HHEIGHT - dist, HHEIGHT + dist, min(dist, 255), min(dist, 255), min(dist, 255), 1);
+	}
+
 }
 
 void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
@@ -478,11 +486,12 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 				renderSector(near, campos, tv2, tv1, camlen, id, v2, v1);
 			}
 		}else if(cross < 0){
-			renderWall(tv1, tv2, camlen);
+			renderWall(tv1, tv2, camlen, sect.floor.start.z, sect.ceil.start.z);
 		}else{
-			renderWall(tv2, tv1, camlen);
+			renderWall(tv2, tv1, camlen, sect.floor.start.z, sect.ceil.start.z);
 		}
 
+		/*
 		v1.x = HWIDTH - tv1.x;
 		v1.y = HHEIGHT - tv1.y;
 		v2.x = HWIDTH - tv2.x;
@@ -495,6 +504,7 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		}else{
 			drawLine(v1, v2, 128, 255, 255, 0.5f);
 		}
+		*/
 	}
 }
 
@@ -526,9 +536,10 @@ void render()
 	renderScene();
 
 	// Render player on map
-	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH, HHEIGHT - 20}, 255, 0, 255, 0.5f);
+	/*drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH, HHEIGHT - 20}, 255, 0, 255, 0.5f);
 	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - 100, HHEIGHT - 100}, 0, 0, 255, 0.25f);
 	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH + 100, HHEIGHT - 100}, 0, 0, 255, 0.25f);
+	*/
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -572,7 +583,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 			player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED;
 			player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED;
 		}else{
-			player.angle += 0.035f;
+			player.angle -= 0.035f;
 		}
 	}
 	if(rightPressed){
@@ -580,7 +591,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 			player.vel.x += cos(player.angle) * PLAYER_SPEED;
 			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
 		}else{
-			player.angle -= 0.035f;
+			player.angle += 0.035f;
 		}
 	}
 
