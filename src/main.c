@@ -22,7 +22,7 @@
 #define HWIDTH (WIDTH / 2)
 #define HHEIGHT (HEIGHT / 2)
 
-#define PLAYER_SPEED 1.0f
+#define PLAYER_SPEED 0.5f
 #define PLAYER_FRICTION 0.8f
 
 typedef struct {
@@ -130,6 +130,11 @@ xy_t vectorUnit(xy_t p)
 	return p;
 }
 
+bool vectorIsEqual(xy_t p1, xy_t p2)
+{
+	return p1.x - 0.01f < p2.x && p1.x + 0.01f > p2.x && p1.y - 0.01f < p2.y && p1.y + 0.01f > p2.y;
+}
+
 float vectorDotProduct(xy_t p1, xy_t p2)
 {
 	return p1.x * p2.x + p1.y * p2.y;
@@ -188,8 +193,8 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 
 	denom = vectorCrossProduct(r, s);
 	u = vectorCrossProduct(diff, r);
-	if(denom == 0){
-		if(u == 0){
+	if(denom < 0.001f && denom > -0.001f){
+		if(u < 0.001f && u > -0.001f){
 			result->x = (p.x + q.x) / 2;
 			result->y = (p.y + q.y) / 2;
 			return 1;
@@ -199,7 +204,7 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 	}
 
 	u /= denom;
-	if(u < 0 || u > 1){
+	if(u < -0.001f || u > 1.001f){
 		return 0;
 	}
 
@@ -286,9 +291,9 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
 	xy_t cam;
 
-	if(p1->y < 0.001f){
-		p1->x += (0.001f - p1->y) * (p2.x - p1->x) / (p2.y - p1->y);
-		p1->y = 0.001f;
+	if(p1->y < 0){
+		p1->x += -p1->y * (p2.x - p1->x) / (p2.y - p1->y);
+		p1->y = 0;
 	}
 
 	if(pointIsLeft(*p1, (xy_t){0, 0}, camleft)){
@@ -296,10 +301,8 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	}else{
 		cam = camright;
 	}
-			
-	if(lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1) == 0){
-		drawLine((xy_t){HWIDTH - p2.x - 5, HHEIGHT - p2.y}, (xy_t){HWIDTH - p1->x - 5, HHEIGHT - p1->y}, 128, 255, 128, 1);
-	}
+	
+	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
 }
 
 void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
@@ -330,9 +333,6 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	camleftnorm = vectorUnit(camleft);
 	camrightnorm = vectorUnit(camright);
 
-	drawLine((xy_t){HWIDTH - camleft.x, HHEIGHT - camleft.y}, (xy_t){HWIDTH - camleft.x - camleftnorm.x * 20, HHEIGHT - camleft.y - camleftnorm.y * 20}, 255, 0, 0, 0.9f);
-	drawLine((xy_t){HWIDTH - camright.x, HHEIGHT - camright.y}, (xy_t){HWIDTH - camright.x - camrightnorm.x * 20, HHEIGHT - camright.y - camrightnorm.y * 20}, 0, 255, 0, 0.9f);
-
 	sect = sectors[id];
 	for(i = 0; i < sect.npoints; i++){
 		if(i > 0){
@@ -361,7 +361,7 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		tv2.y = sina * v2.x + cosa * v2.y;
 
 		// Clip everything behind the player
-		if(tv1.y < 0 && tv2.y < 0){
+		if(tv1.y <= 0 && tv2.y <= 0){
 			continue;
 		}
 
@@ -379,7 +379,7 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 				continue;
 			}else if(!pointIsLeft(tv1, (xy_t){0, 0}, camrightnorm) && !pointIsLeft(tv2, (xy_t){0, 0}, camrightnorm)){
 				continue;
-			}else if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x < 0){
+			}else if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x <= 0){
 				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
 				continue;
 			}
@@ -387,10 +387,10 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 
 		v1.x = tv1.x;
 		v1.y = tv1.y;
-		if(notbetween1){
+		if(notbetween1 && !vectorIsEqual(tv1, camleft) && !vectorIsEqual(tv1, camright)){
 			clipPointToCamera(camleftnorm, camrightnorm, &v1, tv2);
 		}
-		if(notbetween2){
+		if(notbetween2 && !vectorIsEqual(tv2, camleft) && !vectorIsEqual(tv2, camright)){
 			clipPointToCamera(camleftnorm, camrightnorm, &tv2, tv1);
 		}
 		tv1.x = v1.x;
@@ -410,8 +410,6 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			}else{
 				renderSector(near, campos, tv2, tv1, camlen, id, v2, v1);
 			}
-			//drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - tv1.x, HHEIGHT - tv1.y}, 255, 255, 0, 0.1f);
-			//drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - tv2.x, HHEIGHT - tv2.y}, 255, 255, 0, 0.1f);
 		}
 
 		v1.x = HWIDTH - tv1.x;
@@ -499,7 +497,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 			player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED;
 			player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED;
 		}else{
-			player.angle += 0.05f;
+			player.angle += 0.035f;
 		}
 	}
 	if(rightPressed){
@@ -507,7 +505,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 			player.vel.x += cos(player.angle) * PLAYER_SPEED;
 			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
 		}else{
-			player.angle -= 0.05f;
+			player.angle -= 0.035f;
 		}
 	}
 
