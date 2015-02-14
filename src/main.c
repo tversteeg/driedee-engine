@@ -22,6 +22,8 @@
 #define HWIDTH (WIDTH / 2)
 #define HHEIGHT (HEIGHT / 2)
 
+#define ASPECT (WIDTH / (float)HEIGHT)
+
 #define PLAYER_SPEED 0.5f
 #define PLAYER_FRICTION 0.8f
 
@@ -50,7 +52,7 @@ typedef struct {
 
 struct player {
 	xyz_t pos, vel;
-	float angle;
+	float angle, fov;
 	unsigned int sector;
 } player;
 
@@ -119,6 +121,44 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 	}
 }
 
+void vline(int x, int top, int bot, int r, int g, int b, float a)
+{
+	int y, tmp;
+	float mina;
+	pixelRGB_t *pixel;
+
+	if(x < 0 || x >= WIDTH){
+		return;
+	}
+
+	if(top < bot){
+		tmp = top;
+		top = bot;
+		bot = tmp;
+	}
+
+	if(top >= HEIGHT){
+		top = HEIGHT - 1;
+	}
+	if(bot < 0){
+		bot = 0;
+	}
+
+	for(y = bot; y <= top; y++){
+		pixel = &pixels[x + y * WIDTH];
+		if(a == 1){
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}else{
+			mina = 1 - a;
+			pixel->r = pixel->r * mina + r * a;
+			pixel->g = pixel->g * mina + g * a;
+			pixel->b = pixel->b * mina + b * a;
+		}
+	}
+}
+
 xy_t vectorUnit(xy_t p)
 {
 	float len;
@@ -170,7 +210,7 @@ int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 
 	n1 /= denom;
 	n2 /= denom;
-	if(n1 < 0 || n1 > 1 || n2 < 0 || n2 > 1){
+	if(n1 < -0.001f || n1 > 1.001f || n2 < -0.001f || n2 > 1.001f){
 		return 0;
 	}
 
@@ -305,13 +345,39 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
 }
 
+void renderWall(xy_t left, xy_t right, float camlen)
+{
+	float tleftx, trightx;
+	int sleftx, srightx;
+
+	if(left.y < 1 || right.y < 1){
+		return;
+	}
+
+	// Near plane is 1, find x position on the plane
+	tleftx = (left.x / left.y) * player.fov;
+	trightx = (right.x / right.y) * player.fov;
+
+	drawLine((xy_t){HWIDTH - tleftx, HHEIGHT - 1}, (xy_t){HWIDTH - left.x, HHEIGHT - left.y}, 255, 255, 255, 0.1f);
+	drawLine((xy_t){HWIDTH - trightx, HHEIGHT - 1}, (xy_t){HWIDTH - right.x, HHEIGHT - right.y}, 255, 255, 255, 0.1f);
+
+	// Convert to screen coordinates
+	sleftx = HWIDTH - tleftx * HWIDTH;
+	srightx = HWIDTH - trightx * HWIDTH;
+
+	vline(sleftx, 0, 10, 255, 255, 255, 1);
+	vline(srightx, 0, 10, 255, 255, 0, 1);
+
+	//drawLine(begin, end, 255, 255, 255, 1);
+}
+
 void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
 {
 	unsigned int i;
 	int near;
 	sector_t sect;
 	xy_t v1, v2, tv1, tv2, uv1, uv2, camleftnorm, camrightnorm;
-	float cosa, sina;
+	float cosa, sina, cross;
 	bool notbetween1, notbetween2;
 
 	for(i = 0; i < sectors[id].nvisited; i++){
@@ -404,12 +470,17 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			v2 = sect.vertex[sect.npoints - 1];
 		}
 
+		cross = vectorCrossProduct(tv1, tv2);
 		if((near = findNeighborSector(id, v1, v2)) != -1){
-			if(vectorCrossProduct(tv1, tv2) < 0){
+			if(cross < 0){
 				renderSector(near, campos, tv1, tv2, camlen, id, v1, v2);
 			}else{
 				renderSector(near, campos, tv2, tv1, camlen, id, v2, v1);
 			}
+		}else if(cross < 0){
+			renderWall(tv1, tv2, camlen);
+		}else{
+			renderWall(tv2, tv1, camlen);
 		}
 
 		v1.x = HWIDTH - tv1.x;
@@ -427,10 +498,10 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	}
 }
 
-void renderWalls()
+void renderScene()
 {
 	unsigned int i;
-	xy_t camleft, camright;
+	xy_t camleft, camright, camunit;
 
 	for(i = 0; i < nsectors; i++){
 		if(sectors[i].nvisited > 0){
@@ -441,6 +512,10 @@ void renderWalls()
 
 	camleft = (xy_t){-200, 200};
 	camright = (xy_t){200, 200};
+
+	camunit = vectorUnit(camright);
+	player.fov = (camunit.x * camunit.y) * 2;
+
 	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, player.sector, (xy_t){-1, -1}, (xy_t){-1, -1});
 }
 
@@ -448,7 +523,7 @@ void render()
 {
 	unsigned int i;
 
-	renderWalls();
+	renderScene();
 
 	// Render player on map
 	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH, HHEIGHT - 20}, 255, 0, 255, 0.5f);
