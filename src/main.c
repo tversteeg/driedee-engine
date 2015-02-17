@@ -17,8 +17,8 @@
 #include <GL/glew.h>
 #endif
 
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH 640
+#define HEIGHT 480
 #define HWIDTH (WIDTH / 2)
 #define HHEIGHT (HEIGHT / 2)
 
@@ -374,7 +374,7 @@ void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 
 	for(x = sleftx; x <= srightx; x++){
 		dist = ((x - sleftx) / (float)diffx) * diffy + slefty;
-		vline(x, HHEIGHT - dist, HHEIGHT + dist, min(dist, 255), min(dist, 255), min(dist, 255), 1);
+		vline(x, HHEIGHT - dist + player.pos.z, HHEIGHT + dist + player.pos.z, min(dist, 255), min(dist, 255), min(dist, 255), 1);
 	}
 
 }
@@ -524,7 +524,7 @@ void renderScene()
 	camright = (xy_t){200, 200};
 
 	camunit = vectorUnit(camright);
-	player.fov = (camunit.x * camunit.y) * 2;
+	player.fov = (camunit.x * camunit.y) * 2 * ASPECT;
 
 	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, player.sector, (xy_t){-1, -1}, (xy_t){-1, -1});
 }
@@ -730,6 +730,7 @@ void load(char *map)
 int main(int argc, char **argv)
 {
 	bool loop, upPressed, downPressed, leftPressed, rightPressed;
+	ccDisplayData windowpos;
 
 	load(argv[1]);
 
@@ -737,6 +738,11 @@ int main(int argc, char **argv)
 
 	ccWindowCreate((ccRect){0, 0, WIDTH, HEIGHT}, "3D", CC_WINDOW_FLAG_NORESIZE);
 	ccWindowMouseSetCursor(CC_CURSOR_NONE);
+
+	windowpos = *ccDisplayResolutionGetCurrent(ccDisplayGetDefault());
+	windowpos.width += ccDisplayGetDefault()->x - WIDTH - 10;
+	windowpos.height += ccDisplayGetDefault()->y - HEIGHT - 30;
+	ccWindowResizeMove((ccRect){windowpos.width, windowpos.height, WIDTH, HEIGHT});
 
 	ccGLContextBind();
 
