@@ -411,7 +411,6 @@ void populateLookupTables()
 
 	for(i = 1; i < HHEIGHT; i++){
 		yLookup[i] = HEIGHT / (float)(i * 2.0f);
-		printf("%f\n", yLookup[i]);
 	}
 }
 
@@ -452,17 +451,16 @@ void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 	for(y = top; y < HEIGHT; y++){
 		vdist = yLookup[y - HHEIGHT];
 
-		color = max(256 - vdist, 0);
-		hline(y, sleftx, srightx, color, color, color, 1);
+		color = max(256 - min(vdist * 20, 256), 0);
+		hline(y, sleftx, srightx - 1, color, color, color, 1);
 	}
 
 	// Render wall
 	for(x = sleftx; x < srightx; x++){
 		hdist = ((x - sleftx) / (float)diffx) * diffy + slefty;
-		vdist = yLookup[(int)(hdist + player.pos.z)];
 		vdist = HEIGHT / (float)((HHEIGHT + hdist + player.pos.z) * 2.0f - HEIGHT);
 
-		color = max(256 - vdist, 0);
+		color = max(256 - min(vdist * 20, 256), 0);
 		vline(x, HHEIGHT - hdist + player.pos.z, HHEIGHT + hdist + player.pos.z, color, color, color, 1);
 	}
 }
