@@ -17,8 +17,8 @@
 #include <GL/glew.h>
 #endif
 
-#define WIDTH 640
-#define HEIGHT 480
+#define WIDTH 1024
+#define HEIGHT 768
 #define HWIDTH (WIDTH / 2)
 #define HHEIGHT (HEIGHT / 2)
 
@@ -60,6 +60,28 @@ GLuint texture;
 pixelRGB_t pixels[WIDTH * HEIGHT];
 sector_t *sectors = NULL;
 unsigned int nsectors = 0;
+
+float yLookup[HHEIGHT];
+
+void drawPixel(int x, int y, int r, int g, int b, float a)
+{
+	pixelRGB_t *pixel;
+	float mina;
+
+	if(x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT){
+		pixel = &pixels[x + y * WIDTH];
+			if(a == 1){
+				pixel->r = r;
+				pixel->g = g;
+				pixel->b = b;
+			}else{
+				mina = 1 - a;
+				pixel->r = pixel->r * mina + r * a;
+				pixel->g = pixel->g * mina + g * a;
+				pixel->b = pixel->b * mina + b * a;
+			}
+	}
+}
 
 void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 {
@@ -345,10 +367,19 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
 }
 
+void populateYLookup()
+{
+	int i;
+
+	for(i = 0; i < HHEIGHT; i++){
+		yLookup[i] = HEIGHT / (float)(i * 2.0f);
+	}
+}
+
 void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 {
-	float tleftx, trightx, dist, diffy;
-	int x, sleftx, srightx, slefty, srighty, diffx;
+	float tleftx, trightx, hdist, vdist, diffy;
+	int x, y, sleftx, srightx, slefty, srighty, diffx, color;
 
 	if(left.y < 1 || right.y < 1){
 		return;
@@ -372,11 +403,23 @@ void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 	diffx = srightx - sleftx;
 	diffy = srighty - slefty;
 
-	for(x = sleftx; x <= srightx; x++){
-		dist = ((x - sleftx) / (float)diffx) * diffy + slefty;
-		vline(x, HHEIGHT - dist + player.pos.z, HHEIGHT + dist + player.pos.z, min(dist, 255), min(dist, 255), min(dist, 255), 1);
-	}
+	for(x = sleftx; x < srightx; x++){
+		hdist = ((x - sleftx) / (float)diffx) * diffy + slefty;
+		vdist = HEIGHT / (float)((HHEIGHT + hdist + player.pos.z) * 2.0f - HEIGHT) * 20;
 
+		color = max(256 - vdist, 0);
+		// Draw the wall
+		vline(x, HHEIGHT - hdist + player.pos.z, HHEIGHT + hdist + player.pos.z, color, color, color, 1);
+
+		// Draw the floor & ceiling
+		for(y = HHEIGHT + hdist + player.pos.z + 1; y < HEIGHT; y++){
+			vdist = yLookup[y - HHEIGHT] * 20.0f;
+
+			color = max(256 - vdist, 0);
+
+			drawPixel(x, y, color, color, color, 1);
+		}
+	}
 }
 
 void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
@@ -490,21 +533,6 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		}else{
 			renderWall(tv2, tv1, camlen, sect.floor.start.z, sect.ceil.start.z);
 		}
-
-		/*
-		v1.x = HWIDTH - tv1.x;
-		v1.y = HHEIGHT - tv1.y;
-		v2.x = HWIDTH - tv2.x;
-		v2.y = HHEIGHT - tv2.y;
-
-		if(near != -1){
-			drawLine(v1, v2, 0, 0, 255, 0.5f);
-		}else if(id == player.sector){
-			drawLine(v1, v2, 255, 255, 128, 0.5f);
-		}else{
-			drawLine(v1, v2, 128, 255, 255, 0.5f);
-		}
-		*/
 	}
 }
 
@@ -534,12 +562,6 @@ void render()
 	unsigned int i;
 
 	renderScene();
-
-	// Render player on map
-	/*drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH, HHEIGHT - 20}, 255, 0, 255, 0.5f);
-	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH - 100, HHEIGHT - 100}, 0, 0, 255, 0.25f);
-	drawLine((xy_t){HWIDTH, HHEIGHT}, (xy_t){HWIDTH + 100, HHEIGHT - 100}, 0, 0, 255, 0.25f);
-	*/
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -734,15 +756,18 @@ int main(int argc, char **argv)
 
 	load(argv[1]);
 
+	populateYLookup();
+
 	ccDisplayInitialize();
 
 	ccWindowCreate((ccRect){0, 0, WIDTH, HEIGHT}, "3D", CC_WINDOW_FLAG_NORESIZE);
 	ccWindowMouseSetCursor(CC_CURSOR_NONE);
 
-	windowpos = *ccDisplayResolutionGetCurrent(ccDisplayGetDefault());
+/*	windowpos = *ccDisplayResolutionGetCurrent(ccDisplayGetDefault());
 	windowpos.width += ccDisplayGetDefault()->x - WIDTH - 10;
 	windowpos.height += ccDisplayGetDefault()->y - HEIGHT - 30;
 	ccWindowResizeMove((ccRect){windowpos.width, windowpos.height, WIDTH, HEIGHT});
+	*/
 
 	ccGLContextBind();
 
