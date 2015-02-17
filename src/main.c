@@ -450,7 +450,7 @@ void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 
 	// Render floor
 	for(y = top; y < HEIGHT; y++){
-		vdist = yLookup[y - HHEIGHT] * 20;
+		vdist = yLookup[y - HHEIGHT];
 
 		color = max(256 - vdist, 0);
 		hline(y, sleftx, srightx, color, color, color, 1);
@@ -459,7 +459,8 @@ void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 	// Render wall
 	for(x = sleftx; x < srightx; x++){
 		hdist = ((x - sleftx) / (float)diffx) * diffy + slefty;
-		vdist = HEIGHT / (float)((HHEIGHT + hdist + player.pos.z) * 2.0f - HEIGHT) * 20;
+		vdist = yLookup[(int)(hdist + player.pos.z)];
+		vdist = HEIGHT / (float)((HHEIGHT + hdist + player.pos.z) * 2.0f - HEIGHT);
 
 		color = max(256 - vdist, 0);
 		vline(x, HHEIGHT - hdist + player.pos.z, HHEIGHT + hdist + player.pos.z, color, color, color, 1);
