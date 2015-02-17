@@ -17,8 +17,8 @@
 #include <GL/glew.h>
 #endif
 
-#define WIDTH 1024
-#define HEIGHT 768
+#define WIDTH 1980
+#define HEIGHT 1080
 #define HWIDTH (WIDTH / 2)
 #define HHEIGHT (HEIGHT / 2)
 
@@ -167,6 +167,44 @@ void vline(int x, int top, int bot, int r, int g, int b, float a)
 	}
 
 	for(y = bot; y <= top; y++){
+		pixel = &pixels[x + y * WIDTH];
+		if(a == 1){
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}else{
+			mina = 1 - a;
+			pixel->r = pixel->r * mina + r * a;
+			pixel->g = pixel->g * mina + g * a;
+			pixel->b = pixel->b * mina + b * a;
+		}
+	}
+}
+
+void hline(int y, int left, int right, int r, int g, int b, float a)
+{
+	int x, tmp;
+	float mina;
+	pixelRGB_t *pixel;
+
+	if(y < 0 || y >= WIDTH){
+		return;
+	}
+
+	if(right < left){
+		tmp = right;
+		right = left;
+		left = tmp;
+	}
+
+	if(right >= WIDTH){
+		right = WIDTH - 1;
+	}
+	if(left < 0){
+		left = 0;
+	}
+
+	for(x = left; x <= right; x++){
 		pixel = &pixels[x + y * WIDTH];
 		if(a == 1){
 			pixel->r = r;
@@ -367,21 +405,22 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
 }
 
-void populateYLookup()
+void populateLookupTables()
 {
 	int i;
 
-	for(i = 0; i < HHEIGHT; i++){
+	for(i = 1; i < HHEIGHT; i++){
 		yLookup[i] = HEIGHT / (float)(i * 2.0f);
+		printf("%f\n", yLookup[i]);
 	}
 }
 
 void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 {
 	float tleftx, trightx, hdist, vdist, diffy;
-	int x, y, sleftx, srightx, slefty, srighty, diffx, color;
+	int x, y, sleftx, srightx, slefty, srighty, diffx, color, top;
 
-	if(left.y < 1 || right.y < 1){
+	if(left.y < 0 || right.y < 0){
 		return;
 	}
 
@@ -403,22 +442,27 @@ void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 	diffx = srightx - sleftx;
 	diffy = srighty - slefty;
 
+	if(slefty > srighty){
+		top = slefty;
+	}else{
+		top = srighty;
+	}
+
+	// Render floor
+	for(y = top; y < HEIGHT; y++){
+		vdist = yLookup[y - HHEIGHT] * 20;
+
+		color = max(256 - vdist, 0);
+		hline(y, sleftx, srightx, color, color, color, 1);
+	}
+
+	// Render wall
 	for(x = sleftx; x < srightx; x++){
 		hdist = ((x - sleftx) / (float)diffx) * diffy + slefty;
 		vdist = HEIGHT / (float)((HHEIGHT + hdist + player.pos.z) * 2.0f - HEIGHT) * 20;
 
 		color = max(256 - vdist, 0);
-		// Draw the wall
 		vline(x, HHEIGHT - hdist + player.pos.z, HHEIGHT + hdist + player.pos.z, color, color, color, 1);
-
-		// Draw the floor & ceiling
-		for(y = HHEIGHT + hdist + player.pos.z + 1; y < HEIGHT; y++){
-			vdist = yLookup[y - HHEIGHT] * 20.0f;
-
-			color = max(256 - vdist, 0);
-
-			drawPixel(x, y, color, color, color, 1);
-		}
 	}
 }
 
@@ -617,6 +661,7 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 		}
 	}
 
+	found = 0;
 	if(player.vel.x > 0.01f || player.vel.x < -0.01f || player.vel.y > 0.01f || player.vel.y < -0.01f){
 		sect = sectors[player.sector];
 		for(i = 0; i < sect.npoints; i++){
@@ -752,11 +797,11 @@ void load(char *map)
 int main(int argc, char **argv)
 {
 	bool loop, upPressed, downPressed, leftPressed, rightPressed;
-	ccDisplayData windowpos;
+	//ccDisplayData windowpos;
 
 	load(argv[1]);
 
-	populateYLookup();
+	populateLookupTables();
 
 	ccDisplayInitialize();
 
@@ -784,7 +829,7 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	loop = true;
-	upPressed = downPressed = false;
+	leftPressed = rightPressed = upPressed = downPressed = false;
 	while(loop){
 		while(ccWindowEventPoll()){
 			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
