@@ -372,7 +372,7 @@ void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
 	diffx = srightx - sleftx;
 	diffy = srighty - slefty;
 
-	for(x = sleftx; x < srightx; x++){
+	for(x = sleftx; x <= srightx; x++){
 		dist = ((x - sleftx) / (float)diffx) * diffy + slefty;
 		vline(x, HHEIGHT - dist, HHEIGHT + dist, min(dist, 255), min(dist, 255), min(dist, 255), 1);
 	}
