@@ -418,7 +418,7 @@ void populateLookupTables()
 	}
 }
 
-void renderWall(xy_t left, xy_t right, float camlen, sector_t sect)
+void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 {
 	if(left.y <= 1 || right.y <= 1){
 		return;
@@ -438,10 +438,10 @@ void renderWall(xy_t left, xy_t right, float camlen, sector_t sect)
 
 	// Divide by the y value to get the distance and use that to calculate the height
 	float eyeheight = player.pos.z - player.height;
-	float projtoplefty = (sect.ceil.start.z + eyeheight) / left.y;
-	float projbotlefty = (sect.floor.start.z + eyeheight) / left.y;
-	float projtoprighty = (sect.ceil.start.z + eyeheight) / right.y;
-	float projbotrighty = (sect.floor.start.z + eyeheight) / right.y;
+	float projtoplefty = (top + eyeheight) / left.y;
+	float projbotlefty = (bottom + eyeheight) / left.y;
+	float projtoprighty = (top + eyeheight) / right.y;
+	float projbotrighty = (bottom + eyeheight) / right.y;
 
 	int screentoplefty = HHEIGHT - projtoplefty * HHEIGHT;
 	int screenbotlefty = HHEIGHT - projbotlefty * HHEIGHT;
@@ -551,16 +551,24 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		tv1.y = v1.y;
 
 		cross = vectorCrossProduct(tv1, tv2);
+		if(cross > 0){
+			xy_t temp = tv1;
+			tv1 = tv2;
+			tv2 = temp;
+		}
 		if((near = findNeighborSector(id, p1, p2)) != -1){
-			if(cross < 0){
-				renderSector(near, campos, tv1, tv2, camlen, id, p1, p2);
-			}else{
-				renderSector(near, campos, tv2, tv1, camlen, id, p2, p1);
+			renderSector(near, campos, tv1, tv2, camlen, id, p1, p2);
+			
+			// Check if we need to render the bottom or upper edge
+			sector_t neighbor = sectors[near];
+			if(neighbor.ceil.start.z < sect.ceil.start.z){
+				renderWall(tv1, tv2, camlen, sect.ceil.start.z, neighbor.ceil.start.z);
 			}
-		}else if(cross < 0){
-			renderWall(tv1, tv2, camlen, sect);
+			if(neighbor.floor.start.z > sect.floor.start.z){
+				renderWall(tv1, tv2, camlen, neighbor.ceil.start.z, sect.ceil.start.z);
+			}
 		}else{
-			renderWall(tv2, tv1, camlen, sect);
+			renderWall(tv1, tv2, camlen, sect.ceil.start.z, sect.floor.start.z);
 		}
 	}
 }
