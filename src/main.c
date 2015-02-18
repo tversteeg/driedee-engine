@@ -17,15 +17,19 @@
 #include <GL/glew.h>
 #endif
 
-#define WIDTH 1980
-#define HEIGHT 1080
+#define WIDTH 800
+#define HEIGHT 600
 #define HWIDTH (WIDTH / 2)
 #define HHEIGHT (HEIGHT / 2)
 
 #define ASPECT (WIDTH / (float)HEIGHT)
 
 #define PLAYER_SPEED 0.5f
+#define PLAYER_JUMP -1.8f
 #define PLAYER_FRICTION 0.8f
+#define PLAYER_GRAVITY 0.1f
+
+#define RENDER_MAP
 
 typedef struct {
 	unsigned char r, g, b;
@@ -52,7 +56,7 @@ typedef struct {
 
 struct player {
 	xyz_t pos, vel;
-	float angle, fov;
+	float angle, fov, yaw, height;
 	unsigned int sector;
 } player;
 
@@ -414,55 +418,48 @@ void populateLookupTables()
 	}
 }
 
-void renderWall(xy_t left, xy_t right, float camlen, float floor, float ceil)
+void renderWall(xy_t left, xy_t right, float camlen, sector_t sect)
 {
-	float tleftx, trightx, hdist, vdist, diffy;
-	int x, y, sleftx, srightx, slefty, srighty, diffx, color, top;
-
-	if(left.y < 0 || right.y < 0){
+	if(left.y <= 1 || right.y <= 1){
 		return;
 	}
 
 	// Near plane is 1, find x position on the plane
-	tleftx = (left.x / left.y) * player.fov;
-	trightx = (right.x / right.y) * player.fov;
+	float projleftx = (left.x / left.y) * player.fov;
+	float projrightx = (right.x / right.y) * player.fov;
 
 	// Convert to screen coordinates
-	sleftx = HWIDTH + tleftx * HWIDTH;
-	srightx = HWIDTH + trightx * HWIDTH;
+	int screenleftx = HWIDTH + projleftx * HWIDTH;
+	int screenrightx = HWIDTH + projrightx * HWIDTH;
 
-	if(sleftx == srightx){
+	if(screenleftx == screenrightx){
 		return;
 	}
 
-	slefty = ((ceil - floor) / left.y) * HHEIGHT;
-	srighty = ((ceil - floor) / right.y) * HHEIGHT;
+	// Divide by the y value to get the distance and use that to calculate the height
+	float eyeheight = player.pos.z - player.height;
+	float projtoplefty = (sect.ceil.start.z + eyeheight) / left.y;
+	float projbotlefty = (sect.floor.start.z + eyeheight) / left.y;
+	float projtoprighty = (sect.ceil.start.z + eyeheight) / right.y;
+	float projbotrighty = (sect.floor.start.z + eyeheight) / right.y;
 
-	diffx = srightx - sleftx;
-	diffy = srighty - slefty;
+	int screentoplefty = HHEIGHT - projtoplefty * HHEIGHT;
+	int screenbotlefty = HHEIGHT - projbotlefty * HHEIGHT;
+	int screentoprighty = HHEIGHT - projtoprighty * HHEIGHT;
+	int screenbotrighty = HHEIGHT - projbotrighty * HHEIGHT;
 
-	if(slefty > srighty){
-		top = slefty;
-	}else{
-		top = srighty;
-	}
+	drawLine((xy_t){(float)screenleftx, (float)screentoplefty}, (xy_t){(float)screenrightx, (float)screentoprighty}, 255, 255, 255, 1);
+	drawLine((xy_t){(float)screenleftx, (float)screenbotlefty}, (xy_t){(float)screenrightx, (float)screenbotrighty}, 255, 255, 255, 1);
 
-	// Render floor
-	for(y = top; y < HEIGHT; y++){
-		vdist = yLookup[y - HHEIGHT];
-
-		color = max(256 - min(vdist * 20, 256), 0);
-		hline(y, sleftx, srightx - 1, color, color, color, 1);
-	}
-
+	drawLine((xy_t){(float)screenleftx, (float)screentoplefty}, (xy_t){(float)screenleftx, (float)screenbotlefty}, 255, 255, 255, 1);
+	drawLine((xy_t){(float)screenrightx, (float)screentoprighty}, (xy_t){(float)screenrightx, (float)screenbotrighty}, 255, 255, 255, 1);
 	// Render wall
-	for(x = sleftx; x < srightx; x++){
-		hdist = ((x - sleftx) / (float)diffx) * diffy + slefty;
-		vdist = HEIGHT / (float)((HHEIGHT + hdist + player.pos.z) * 2.0f - HEIGHT);
+	/*int x;
+	for(x = screenleftx; x < screenrightx; x++){
+		int topy = (x - screenleftx) * topstepsize; 
 
-		color = max(256 - min(vdist * 20, 256), 0);
-		vline(x, HHEIGHT - hdist + player.pos.z, HHEIGHT + hdist + player.pos.z, color, color, color, 1);
-	}
+		vline(x, topy, topy + 10, 255, 255, 255, 1);
+	}*/
 }
 
 void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
@@ -470,7 +467,7 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	unsigned int i;
 	int near;
 	sector_t sect;
-	xy_t v1, v2, tv1, tv2, uv1, uv2, camleftnorm, camrightnorm;
+	xy_t p1, p2, v1, v2, tv1, tv2, uv1, uv2, camleftnorm, camrightnorm;
 	float cosa, sina, cross;
 	bool notbetween1, notbetween2;
 
@@ -496,25 +493,22 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 	sect = sectors[id];
 	for(i = 0; i < sect.npoints; i++){
 		if(i > 0){
-			if(sect.npoints == 2){
-				break;
-			}
-			v1 = sect.vertex[i];
-			v2 = sect.vertex[i - 1];
+			p1 = sect.vertex[i];
+			p2 = sect.vertex[i - 1];
 		}else{
-			v1 = sect.vertex[0];
-			v2 = sect.vertex[sect.npoints - 1];
+			p1 = sect.vertex[0];
+			p2 = sect.vertex[sect.npoints - 1];
 		}
 
-		if((v1.x == leftWall.x && v1.y == leftWall.y && v2.x == rightWall.x && v2.y == rightWall.y) ||
-				(v2.x == leftWall.x && v2.y == leftWall.y && v1.x == rightWall.x && v1.y == rightWall.y)){
+		if((p1.x == leftWall.x && p1.y == leftWall.y && p2.x == rightWall.x && p2.y == rightWall.y) ||
+				(p2.x == leftWall.x && p2.y == leftWall.y && p1.x == rightWall.x && p1.y == rightWall.y)){
 			continue;
 		}
 
-		v1.x = campos.x - v1.x;
-		v1.y = campos.y - v1.y;
-		v2.x = campos.x - v2.x;
-		v2.y = campos.y - v2.y;
+		v1.x = campos.x - p1.x;
+		v1.y = campos.y - p1.y;
+		v2.x = campos.x - p2.x;
+		v2.y = campos.y - p2.y;
 
 		// 2D transformation matrix for rotations
 		tv1.y = sina * v1.x + cosa * v1.y;
@@ -556,25 +550,52 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		tv1.x = v1.x;
 		tv1.y = v1.y;
 
-		if(i > 0){
-			v1 = sect.vertex[i];
-			v2 = sect.vertex[i - 1];
-		}else{
-			v1 = sect.vertex[0];
-			v2 = sect.vertex[sect.npoints - 1];
-		}
-
 		cross = vectorCrossProduct(tv1, tv2);
-		if((near = findNeighborSector(id, v1, v2)) != -1){
+		if((near = findNeighborSector(id, p1, p2)) != -1){
 			if(cross < 0){
-				renderSector(near, campos, tv1, tv2, camlen, id, v1, v2);
+				renderSector(near, campos, tv1, tv2, camlen, id, p1, p2);
 			}else{
-				renderSector(near, campos, tv2, tv1, camlen, id, v2, v1);
+				renderSector(near, campos, tv2, tv1, camlen, id, p2, p1);
 			}
 		}else if(cross < 0){
-			renderWall(tv1, tv2, camlen, sect.floor.start.z, sect.ceil.start.z);
+			renderWall(tv1, tv2, camlen, sect);
 		}else{
-			renderWall(tv2, tv1, camlen, sect.floor.start.z, sect.ceil.start.z);
+			renderWall(tv2, tv1, camlen, sect);
+		}
+	}
+}
+
+void renderMap()
+{
+	xy_t pos;
+	pos.x = player.pos.x / 2;
+	pos.y = player.pos.y / 2;
+
+	xy_t lookat;
+	lookat.x = pos.x - sin(player.angle) * 10;
+	lookat.y = pos.y - cos(player.angle) * 10;
+
+	drawLine(pos, lookat, 255, 0, 0, 1);
+
+	unsigned int i;
+	for(i = 0; i < nsectors; i++){
+		sector_t sect = sectors[i];
+		unsigned int j;
+		for(j = 0; j < sect.npoints; j++){
+			xy_t v1, v2;
+			if(j > 0){
+				v1 = sect.vertex[j];
+				v2 = sect.vertex[j - 1];
+			}else{
+				v1 = sect.vertex[0];
+				v2 = sect.vertex[sect.npoints - 1];
+			}
+
+			v1.x /= 2;
+			v1.y /= 2;
+			v2.x /= 2;
+			v2.y /= 2;
+			drawLine(v1, v2, 0, 255, 0, 0.5f);
 		}
 	}
 }
@@ -598,6 +619,10 @@ void renderScene()
 	player.fov = (camunit.x * camunit.y) * 2 * ASPECT;
 
 	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, player.sector, (xy_t){-1, -1}, (xy_t){-1, -1});
+
+#ifdef RENDER_MAP
+	renderMap();
+#endif
 }
 
 void render()
@@ -629,7 +654,7 @@ void render()
 	}
 }
 
-void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPressed, bool rightPressed)
+void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
 {
 	sector_t sect, neighbor;
 	xy_t v1, v2, isect, proj;
@@ -645,18 +670,24 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 	}
 	if(leftPressed){
 		if(useMouse){
-			player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED;
-			player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED;
+			player.vel.x += cos(player.angle) * PLAYER_SPEED;
+			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
 		}else{
 			player.angle -= 0.035f;
 		}
 	}
 	if(rightPressed){
 		if(useMouse){
-			player.vel.x += cos(player.angle) * PLAYER_SPEED;
-			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
+			player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED / 2;
+			player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED / 2;
 		}else{
 			player.angle += 0.035f;
+		}
+	}
+	if(spacePressed){
+		if(player.pos.z >= 0){
+			player.vel.z = PLAYER_JUMP;
+			player.pos.z = -0.1f;
 		}
 	}
 
@@ -711,8 +742,15 @@ foundAll:
 		player.vel.x *= PLAYER_FRICTION;
 		player.vel.y *= PLAYER_FRICTION;
 	}
+	if(player.pos.z < 0){
+		player.pos.z += player.vel.z;
+		player.vel.z += PLAYER_GRAVITY;
+	}else{
+		player.pos.z = 0;
+	}
 	if(useMouse){
 		player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
+		player.yaw += (ccWindowGetMouse().y - HHEIGHT) / 1000.0f;
 		ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
 	}
 }
@@ -781,9 +819,10 @@ void load(char *map)
 				printSectorInfo(nsectors - 1);
 				break;
 			case 'p':
-				sscanf(line, "%*s %f %f %f", &player.pos.x, &player.pos.y, &player.pos.z);
+				sscanf(line, "%*s %f %f %f %f", &player.height, &player.pos.x, &player.pos.y, &player.pos.z);
 				player.angle = M_PI / 2;
 				player.sector = 0;
+				player.yaw = 0;
 				break;
 		}
 	}
@@ -795,8 +834,7 @@ void load(char *map)
 
 int main(int argc, char **argv)
 {
-	bool loop, upPressed, downPressed, leftPressed, rightPressed;
-	//ccDisplayData windowpos;
+	bool loop, upPressed, downPressed, leftPressed, rightPressed, spacePressed;
 
 	load(argv[1]);
 
@@ -806,12 +844,6 @@ int main(int argc, char **argv)
 
 	ccWindowCreate((ccRect){0, 0, WIDTH, HEIGHT}, "3D", CC_WINDOW_FLAG_NORESIZE);
 	ccWindowMouseSetCursor(CC_CURSOR_NONE);
-
-/*	windowpos = *ccDisplayResolutionGetCurrent(ccDisplayGetDefault());
-	windowpos.width += ccDisplayGetDefault()->x - WIDTH - 10;
-	windowpos.height += ccDisplayGetDefault()->y - HEIGHT - 30;
-	ccWindowResizeMove((ccRect){windowpos.width, windowpos.height, WIDTH, HEIGHT});
-	*/
 
 	ccGLContextBind();
 
@@ -828,7 +860,7 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	loop = true;
-	leftPressed = rightPressed = upPressed = downPressed = false;
+	spacePressed = leftPressed = rightPressed = upPressed = downPressed = false;
 	while(loop){
 		while(ccWindowEventPoll()){
 			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
@@ -854,6 +886,9 @@ int main(int argc, char **argv)
 					case CC_KEY_RIGHT:
 						rightPressed = true;
 						break;
+					case CC_KEY_SPACE:
+						spacePressed = true;
+						break;
 				}
 			}else if(ccWindowEventGet().type == CC_EVENT_KEY_UP){
 				switch(ccWindowEventGet().keyCode){
@@ -873,11 +908,14 @@ int main(int argc, char **argv)
 					case CC_KEY_RIGHT:
 						rightPressed = false;
 						break;
+					case CC_KEY_SPACE:
+						spacePressed = false;
+						break;
 				}
 			}
 		}
 
-		movePlayer(false, upPressed, downPressed, leftPressed, rightPressed);
+		movePlayer(true, upPressed, downPressed, leftPressed, rightPressed, spacePressed);
 
 		render();
 		ccGLBuffersSwap();
