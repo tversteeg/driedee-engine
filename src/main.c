@@ -30,6 +30,7 @@
 #define PLAYER_GRAVITY 0.1f
 
 #define RENDER_MAP
+//#define USE_MOUSE
 
 typedef struct {
 	unsigned char r, g, b;
@@ -66,6 +67,82 @@ sector_t *sectors = NULL;
 unsigned int nsectors = 0;
 
 float yLookup[HHEIGHT];
+
+void vline(int x, int top, int bot, int r, int g, int b, float a)
+{
+	int y, tmp;
+	float mina;
+	pixelRGB_t *pixel;
+
+	if(x < 0 || x >= WIDTH){
+		return;
+	}
+
+	if(top < bot){
+		tmp = top;
+		top = bot;
+		bot = tmp;
+	}
+
+	if(top >= HEIGHT){
+		top = HEIGHT - 1;
+	}
+	if(bot < 0){
+		bot = 0;
+	}
+
+	for(y = bot; y <= top; y++){
+		pixel = &pixels[x + y * WIDTH];
+		if(a == 1){
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}else{
+			mina = 1 - a;
+			pixel->r = pixel->r * mina + r * a;
+			pixel->g = pixel->g * mina + g * a;
+			pixel->b = pixel->b * mina + b * a;
+		}
+	}
+}
+
+void hline(int y, int left, int right, int r, int g, int b, float a)
+{
+	int x, tmp;
+	float mina;
+	pixelRGB_t *pixel;
+
+	if(y < 0 || y >= WIDTH){
+		return;
+	}
+
+	if(right < left){
+		tmp = right;
+		right = left;
+		left = tmp;
+	}
+
+	if(right >= WIDTH){
+		right = WIDTH - 1;
+	}
+	if(left < 0){
+		left = 0;
+	}
+
+	for(x = left; x <= right; x++){
+		pixel = &pixels[x + y * WIDTH];
+		if(a == 1){
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}else{
+			mina = 1 - a;
+			pixel->r = pixel->r * mina + r * a;
+			pixel->g = pixel->g * mina + g * a;
+			pixel->b = pixel->b * mina + b * a;
+		}
+	}
+}
 
 void drawPixel(int x, int y, int r, int g, int b, float a)
 {
@@ -147,78 +224,30 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 	}
 }
 
-void vline(int x, int top, int bot, int r, int g, int b, float a)
+void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop, bool flippedleft, int r, int g, int b)
 {
-	int y, tmp;
-	float mina;
-	pixelRGB_t *pixel;
+	float angle = (right - left) / (float)(top - bottom);
 
-	if(x < 0 || x >= WIDTH){
-		return;
-	}
-
-	if(top < bot){
-		tmp = top;
-		top = bot;
-		bot = tmp;
-	}
-
-	if(top >= HEIGHT){
-		top = HEIGHT - 1;
-	}
-	if(bot < 0){
-		bot = 0;
-	}
-
-	for(y = bot; y <= top; y++){
-		pixel = &pixels[x + y * WIDTH];
-		if(a == 1){
-			pixel->r = r;
-			pixel->g = g;
-			pixel->b = b;
+	int y;
+	if(flippedleft){
+		if(flippedtop){
+			for(y = bottom; y < top; y++){
+				hline(y, left, right - (y - bottom) * angle, r, g, b, 1);
+			}
 		}else{
-			mina = 1 - a;
-			pixel->r = pixel->r * mina + r * a;
-			pixel->g = pixel->g * mina + g * a;
-			pixel->b = pixel->b * mina + b * a;
+			for(y = bottom; y < top; y++){
+				hline(y, left, right + (y - top) * angle, r, g, b, 1);
+			}
 		}
-	}
-}
-
-void hline(int y, int left, int right, int r, int g, int b, float a)
-{
-	int x, tmp;
-	float mina;
-	pixelRGB_t *pixel;
-
-	if(y < 0 || y >= WIDTH){
-		return;
-	}
-
-	if(right < left){
-		tmp = right;
-		right = left;
-		left = tmp;
-	}
-
-	if(right >= WIDTH){
-		right = WIDTH - 1;
-	}
-	if(left < 0){
-		left = 0;
-	}
-
-	for(x = left; x <= right; x++){
-		pixel = &pixels[x + y * WIDTH];
-		if(a == 1){
-			pixel->r = r;
-			pixel->g = g;
-			pixel->b = b;
+	}else{
+		if(flippedtop){
+			for(y = bottom; y < top; y++){
+				hline(y, left + (y - bottom) * angle, right, r, g, b, 1);
+			}
 		}else{
-			mina = 1 - a;
-			pixel->r = pixel->r * mina + r * a;
-			pixel->g = pixel->g * mina + g * a;
-			pixel->b = pixel->b * mina + b * a;
+			for(y = bottom; y < top; y++){
+				hline(y, left - (y - top) * angle, right, r, g, b, 1);
+			}
 		}
 	}
 }
@@ -431,7 +460,6 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	// Convert to screen coordinates
 	int screenleftx = HWIDTH + projleftx * HWIDTH;
 	int screenrightx = HWIDTH + projrightx * HWIDTH;
-
 	if(screenleftx == screenrightx){
 		return;
 	}
@@ -448,18 +476,57 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	int screentoprighty = HHEIGHT - projtoprighty * HHEIGHT;
 	int screenbotrighty = HHEIGHT - projbotrighty * HHEIGHT;
 
+#if 0
+	// Render ceiling and top triangle wall
+	int topy;
+	if(screentoplefty > screentoprighty){
+		drawRightTriangle(screenleftx, screenrightx, screentoplefty, screentoprighty, true, true, 64, 64, 64);
+
+		drawRightTriangle(screenleftx, screenrightx, screentoplefty, screentoprighty, false, false, 64, 32, 64);
+
+		topy = screentoprighty;
+	}else{
+		drawRightTriangle(screenleftx, screenrightx, screentoprighty, screentoplefty, true, false, 64, 64, 64);
+
+		drawRightTriangle(screenleftx, screenrightx, screentoprighty, screentoplefty, false, true, 64, 32, 64);
+
+		topy = screentoplefty;
+	}
+	if(topy >= 0 && topy < HEIGHT){
+		unsigned int y;
+		for(y = 0; y < topy; y++){
+			hline(y, screenleftx, screenrightx, 64, 64, 64, 1);
+		}
+	}
+
+	// Render floor and bottom triangle wall
+	int boty;
+	if(screenbotlefty < screenbotrighty){
+		drawRightTriangle(screenleftx, screenrightx, screenbotrighty, screenbotlefty, false, true, 64, 64, 64);
+
+		drawRightTriangle(screenleftx, screenrightx, screenbotrighty, screenbotlefty, true, false, 64, 32, 64);
+
+		boty = screenbotrighty;
+	}else{
+		drawRightTriangle(screenleftx, screenrightx, screenbotlefty, screenbotrighty, false, false, 64, 64, 64);
+
+		drawRightTriangle(screenleftx, screenrightx, screenbotlefty, screenbotrighty, true, true, 64, 32, 64);
+
+		boty = screenbotlefty;
+	}
+	if(boty >= 0 && boty < HEIGHT){
+		unsigned int y;
+		for(y = boty; y < HEIGHT; y++){
+			hline(y, screenleftx, screenrightx, 64, 64, 64, 1);
+		}
+	}
+#endif
+
 	drawLine((xy_t){(float)screenleftx, (float)screentoplefty}, (xy_t){(float)screenrightx, (float)screentoprighty}, 255, 255, 255, 1);
 	drawLine((xy_t){(float)screenleftx, (float)screenbotlefty}, (xy_t){(float)screenrightx, (float)screenbotrighty}, 255, 255, 255, 1);
 
 	drawLine((xy_t){(float)screenleftx, (float)screentoplefty}, (xy_t){(float)screenleftx, (float)screenbotlefty}, 255, 255, 255, 1);
 	drawLine((xy_t){(float)screenrightx, (float)screentoprighty}, (xy_t){(float)screenrightx, (float)screenbotrighty}, 255, 255, 255, 1);
-	// Render wall
-	/*int x;
-	for(x = screenleftx; x < screenrightx; x++){
-		int topy = (x - screenleftx) * topstepsize; 
-
-		vline(x, topy, topy + 10, 255, 255, 255, 1);
-	}*/
 }
 
 void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
@@ -662,7 +729,7 @@ void render()
 	}
 }
 
-void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
+void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
 {
 	sector_t sect, neighbor;
 	xy_t v1, v2, isect, proj;
@@ -677,20 +744,20 @@ void movePlayer(bool useMouse, bool upPressed, bool downPressed, bool leftPresse
 		player.vel.y -= sin(player.angle - M_PI / 2) * PLAYER_SPEED;
 	}
 	if(leftPressed){
-		if(useMouse){
+#ifdef USE_MOUSE
 			player.vel.x += cos(player.angle) * PLAYER_SPEED;
 			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
-		}else{
+#else
 			player.angle -= 0.035f;
-		}
+#endif
 	}
 	if(rightPressed){
-		if(useMouse){
+#ifdef USE_MOUSE
 			player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED / 2;
 			player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED / 2;
-		}else{
+#else
 			player.angle += 0.035f;
-		}
+#endif
 	}
 	if(spacePressed){
 		if(player.pos.z >= 0){
@@ -756,11 +823,11 @@ foundAll:
 	}else{
 		player.pos.z = 0;
 	}
-	if(useMouse){
-		player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
-		player.yaw += (ccWindowGetMouse().y - HHEIGHT) / 1000.0f;
-		ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
-	}
+#ifdef USE_MOUSE
+	player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
+	player.yaw += (ccWindowGetMouse().y - HHEIGHT) / 1000.0f;
+	ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
+#endif
 }
 
 void load(char *map)
@@ -923,7 +990,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		movePlayer(true, upPressed, downPressed, leftPressed, rightPressed, spacePressed);
+		movePlayer(upPressed, downPressed, leftPressed, rightPressed, spacePressed);
 
 		render();
 		ccGLBuffersSwap();
