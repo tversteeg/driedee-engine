@@ -70,16 +70,12 @@ float yLookup[HHEIGHT];
 
 void vline(int x, int top, int bot, int r, int g, int b, float a)
 {
-	int y, tmp;
-	float mina;
-	pixelRGB_t *pixel;
-
 	if(x < 0 || x >= WIDTH){
 		return;
 	}
 
 	if(top < bot){
-		tmp = top;
+		int tmp = top;
 		top = bot;
 		bot = tmp;
 	}
@@ -91,14 +87,15 @@ void vline(int x, int top, int bot, int r, int g, int b, float a)
 		bot = 0;
 	}
 
+	int y;
 	for(y = bot; y <= top; y++){
-		pixel = &pixels[x + y * WIDTH];
+		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
 		if(a == 1){
 			pixel->r = r;
 			pixel->g = g;
 			pixel->b = b;
 		}else{
-			mina = 1 - a;
+			float mina = 1 - a;
 			pixel->r = pixel->r * mina + r * a;
 			pixel->g = pixel->g * mina + g * a;
 			pixel->b = pixel->b * mina + b * a;
@@ -108,16 +105,12 @@ void vline(int x, int top, int bot, int r, int g, int b, float a)
 
 void hline(int y, int left, int right, int r, int g, int b, float a)
 {
-	int x, tmp;
-	float mina;
-	pixelRGB_t *pixel;
-
 	if(y < 0 || y >= WIDTH){
 		return;
 	}
 
 	if(right < left){
-		tmp = right;
+		int tmp = right;
 		right = left;
 		left = tmp;
 	}
@@ -129,14 +122,15 @@ void hline(int y, int left, int right, int r, int g, int b, float a)
 		left = 0;
 	}
 
+	int x;
 	for(x = left; x <= right; x++){
-		pixel = &pixels[x + y * WIDTH];
+		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
 		if(a == 1){
 			pixel->r = r;
 			pixel->g = g;
 			pixel->b = b;
 		}else{
-			mina = 1 - a;
+			float mina = 1 - a;
 			pixel->r = pixel->r * mina + r * a;
 			pixel->g = pixel->g * mina + g * a;
 			pixel->b = pixel->b * mina + b * a;
@@ -146,17 +140,14 @@ void hline(int y, int left, int right, int r, int g, int b, float a)
 
 void drawPixel(int x, int y, int r, int g, int b, float a)
 {
-	pixelRGB_t *pixel;
-	float mina;
-
 	if(x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT){
-		pixel = &pixels[x + y * WIDTH];
+		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
 			if(a == 1){
 				pixel->r = r;
 				pixel->g = g;
 				pixel->b = b;
 			}else{
-				mina = 1 - a;
+				float mina = 1 - a;
 				pixel->r = pixel->r * mina + r * a;
 				pixel->g = pixel->g * mina + g * a;
 				pixel->b = pixel->b * mina + b * a;
@@ -166,21 +157,17 @@ void drawPixel(int x, int y, int r, int g, int b, float a)
 
 void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 {
-	pixelRGB_t *pixel;
-	int x1, y1, x2, y2, dx, dy, sx, sy, err, err2;
-	float mina;
-
-	x1 = p1.x, y1 = p1.y;
-	x2 = p2.x, y2 = p2.y;
+	int x1 = p1.x, y1 = p1.y;
+	int x2 = p2.x, y2 = p2.y;
 	if(x1 == x2 && y1 == y2){
 		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
-			pixel = &pixels[x1 + y1 * WIDTH];
+			pixelRGB_t *pixel = &pixels[x1 + y1 * WIDTH];
 			if(a == 1){
 				pixel->r = r;
 				pixel->g = g;
 				pixel->b = b;
 			}else{
-				mina = 1 - a;
+				float mina = 1 - a;
 				pixel->r = pixel->r * mina + r * a;
 				pixel->g = pixel->g * mina + g * a;
 				pixel->b = pixel->b * mina + b * a;
@@ -188,21 +175,21 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 		}
 		return;
 	}
-	dx = abs(x2 - x1);
-	dy = abs(y2 - y1);
-	sx = x1 < x2 ? 1 : -1;
-	sy = y1 < y2 ? 1 : -1;
-	err = (dx > dy ? dx : -dy) / 2;
+	int dx = abs(x2 - x1);
+	int dy = abs(y2 - y1);
+	int sx = x1 < x2 ? 1 : -1;
+	int sy = y1 < y2 ? 1 : -1;
+	int err = (dx > dy ? dx : -dy) / 2;
 
 	while(true){
 		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
-			pixel = &pixels[x1 + y1 * WIDTH];
+			pixelRGB_t *pixel = &pixels[x1 + y1 * WIDTH];
 			if(a == 1){
 				pixel->r = r;
 				pixel->g = g;
 				pixel->b = b;
 			}else{
-				mina = 1 - a;
+				float mina = 1 - a;
 				pixel->r = pixel->r * mina + r * a;
 				pixel->g = pixel->g * mina + g * a;
 				pixel->b = pixel->b * mina + b * a;
@@ -212,7 +199,7 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 		if(x1 == x2 && y1 == y2){
 			break;
 		}
-		err2 = err;
+		int err2 = err;
 		if(err2 > -dx) {
 			err -= dy;
 			x1 += sx;
@@ -228,23 +215,26 @@ void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop
 {
 	float angle = (right - left) / (float)(top - bottom);
 
-	int y;
 	if(flippedleft){
 		if(flippedtop){
+			int y;
 			for(y = bottom; y < top; y++){
 				hline(y, left, right - (y - bottom) * angle, r, g, b, 1);
 			}
 		}else{
+			int y;
 			for(y = bottom; y < top; y++){
 				hline(y, left, right + (y - top) * angle, r, g, b, 1);
 			}
 		}
 	}else{
 		if(flippedtop){
+			int y;
 			for(y = bottom; y < top; y++){
 				hline(y, left + (y - bottom) * angle, right, r, g, b, 1);
 			}
 		}else{
+			int y;
 			for(y = bottom; y < top; y++){
 				hline(y, left - (y - top) * angle, right, r, g, b, 1);
 			}
