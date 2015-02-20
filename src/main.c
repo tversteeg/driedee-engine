@@ -244,9 +244,7 @@ void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop
 
 xy_t vectorUnit(xy_t p)
 {
-	float len;
-
-	len = sqrt(p.x * p.x + p.y * p.y);
+	float len = sqrt(p.x * p.x + p.y * p.y);
 	p.x /= len;
 	p.y /= len;
 
@@ -275,11 +273,9 @@ bool pointIsLeft(xy_t p, xy_t l1, xy_t l2)
 
 int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
-	float denom, n1, n2;
-
-	denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-	n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
-	n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
+	float denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+	float n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
+	float n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
 
 	if(fabs(n1) < 0.0001f && fabs(n2) < 0.0001f && fabs(denom) < 0.0001f){
 		p->x = (p1.x + p2.x) / 2;
@@ -305,17 +301,16 @@ int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 // http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
 int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 {
-	xy_t s, diff;
-	float u, denom;
-
+	xy_t s;
 	s.x = q1.x - q.x;
 	s.y = q1.y - q.y;
 
+	xy_t diff;
 	diff.x = q.x - p.x;
 	diff.y = q.y - p.y;
 
-	denom = vectorCrossProduct(r, s);
-	u = vectorCrossProduct(diff, r);
+	float denom = vectorCrossProduct(r, s);
+	float u = vectorCrossProduct(diff, r);
 	if(denom < 0.001f && denom > -0.001f){
 		if(u < 0.001f && u > -0.001f){
 			result->x = (p.x + q.x) / 2;
@@ -338,20 +333,15 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 
 bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
 {
-	float leftRight;
-
-	leftRight = vectorDotProduct(left, right);
+	float leftRight = vectorDotProduct(left, right);
 
 	return leftRight < vectorDotProduct(left, p) && leftRight < vectorDotProduct(right, p);
 }
 
 xy_t vectorProject(xy_t p1, xy_t p2)
 {
-	float scalar;
-	xy_t normal;
-
-	normal = vectorUnit(p2);
-	scalar = p1.x * normal.x + p1.y * normal.y;
+	xy_t normal = vectorUnit(p2);
+	float scalar = p1.x * normal.x + p1.y * normal.y;
 	normal.x *= scalar;
 	normal.y *= scalar;
 
@@ -360,15 +350,13 @@ xy_t vectorProject(xy_t p1, xy_t p2)
 
 void printSectorInfo(unsigned int id)
 {
-	sector_t sect;
-	unsigned int i;
-
-	sect = sectors[id];
+	sector_t sect = sectors[id];
 
 	printf("Sector \"%d\", floor: %g, ceil: %g\n", id, sect.floor.start.z, sect.ceil.start.z);
 	if(sect.npoints > 0){
 		printf("Vertices: ");
 	}
+	unsigned int i;
 	for(i = 0; i < sect.npoints; i++){
 		printf("(%g,%g) ", sect.vertex[i].x, sect.vertex[i].y);
 	}
@@ -384,14 +372,11 @@ void printSectorInfo(unsigned int id)
 
 int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 {
-	int i, j;
-	int found;
-	sector_t s1, s2;
-
-	s1 = sectors[current];
+	sector_t s1 = sectors[current];
+	unsigned int i;
 	for(i = 0; i < s1.nneighbors; i++){
-		s2 = sectors[s1.neighbors[i]];
-		found = 0;
+		sector_t s2 = sectors[s1.neighbors[i]];
+		unsigned int j, found = 0;
 		for(j = 0; j < s2.npoints; j++){
 			if(s2.vertex[j].x == v1.x && s2.vertex[j].y == v1.y){
 				found++;
@@ -412,13 +397,12 @@ int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 
 void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
-	xy_t cam;
-
 	if(p1->y < 0){
 		p1->x += -p1->y * (p2.x - p1->x) / (p2.y - p1->y);
 		p1->y = 0;
 	}
 
+	xy_t cam;
 	if(pointIsLeft(*p1, (xy_t){0, 0}, camleft)){
 		cam = camleft;
 	}else{
@@ -430,8 +414,7 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 
 void populateLookupTables()
 {
-	int i;
-
+	unsigned int i;
 	for(i = 1; i < HHEIGHT; i++){
 		yLookup[i] = HEIGHT / (float)(i * 2.0f);
 	}
@@ -522,12 +505,6 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
 {
 	unsigned int i;
-	int near;
-	sector_t sect;
-	xy_t p1, p2, v1, v2, tv1, tv2, uv1, uv2, camleftnorm, camrightnorm;
-	float cosa, sina, cross;
-	bool notbetween1, notbetween2;
-
 	for(i = 0; i < sectors[id].nvisited; i++){
 		if(sectors[id].visited[i] == oldId || sectors[id].visited[i] == id){
 			return;
@@ -542,13 +519,14 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		sectors[id].visited[sectors[id].nvisited - 1] = oldId;
 	}
 
-	sina = sin(player.angle);
-	cosa = cos(player.angle);
-	camleftnorm = vectorUnit(camleft);
-	camrightnorm = vectorUnit(camright);
+	float sina = sin(player.angle);
+	float cosa = cos(player.angle);
+	xy_t camleftnorm = vectorUnit(camleft);
+	xy_t camrightnorm = vectorUnit(camright);
 
-	sect = sectors[id];
+	sector_t sect = sectors[id];
 	for(i = 0; i < sect.npoints; i++){
+		xy_t p1, p2;
 		if(i > 0){
 			p1 = sect.vertex[i];
 			p2 = sect.vertex[i - 1];
@@ -562,14 +540,12 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			continue;
 		}
 
-		v1.x = campos.x - p1.x;
-		v1.y = campos.y - p1.y;
-		v2.x = campos.x - p2.x;
-		v2.y = campos.y - p2.y;
+		xy_t v1 = {campos.x - p1.x, campos.y - p1.y};
+		xy_t v2 = {campos.x - p2.x, campos.y - p2.y};
 
 		// 2D transformation matrix for rotations
-		tv1.y = sina * v1.x + cosa * v1.y;
-		tv2.y = sina * v2.x + cosa * v2.y;
+		xy_t tv1 = {.y = sina * v1.x + cosa * v1.y};
+		xy_t tv2 = {.y = sina * v2.x + cosa * v2.y};
 
 		// Clip everything behind the player
 		if(tv1.y <= 0 && tv2.y <= 0){
@@ -580,10 +556,10 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		tv2.x = cosa * v2.x - sina * v2.y;
 
 		// Clip everything outside of the field of view
-		uv1 = vectorUnit(tv1);
-		uv2 = vectorUnit(tv2);
-		notbetween1 = !vectorIsBetween(uv1, camleftnorm, camrightnorm);
-		notbetween2 = !vectorIsBetween(uv2, camleftnorm, camrightnorm);
+		xy_t uv1 = vectorUnit(tv1);
+		xy_t uv2 = vectorUnit(tv2);
+		bool notbetween1 = !vectorIsBetween(uv1, camleftnorm, camrightnorm);
+		bool notbetween2 = !vectorIsBetween(uv2, camleftnorm, camrightnorm);
 		if(notbetween1 && notbetween2){
 			// Remove them if they both lie on the same side
 			if(pointIsLeft(tv1, (xy_t){0, 0}, camleftnorm) && pointIsLeft(tv2, (xy_t){0, 0}, camleftnorm)){
@@ -607,12 +583,14 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		tv1.x = v1.x;
 		tv1.y = v1.y;
 
-		cross = vectorCrossProduct(tv1, tv2);
+		float cross = vectorCrossProduct(tv1, tv2);
 		if(cross > 0){
 			xy_t temp = tv1;
 			tv1 = tv2;
 			tv2 = temp;
 		}
+
+		int near;
 		if((near = findNeighborSector(id, p1, p2)) != -1){
 			renderSector(near, campos, tv1, tv2, camlen, id, p1, p2);
 			
@@ -668,8 +646,6 @@ void renderMap()
 void renderScene()
 {
 	unsigned int i;
-	xy_t camleft, camright, camunit;
-
 	for(i = 0; i < nsectors; i++){
 		if(sectors[i].nvisited > 0){
 			free(sectors[i].visited);
@@ -677,10 +653,10 @@ void renderScene()
 		}
 	}
 
-	camleft = (xy_t){-200, 200};
-	camright = (xy_t){200, 200};
+	xy_t camleft = {-200, 200};
+	xy_t camright = {200, 200};
 
-	camunit = vectorUnit(camright);
+	xy_t camunit = vectorUnit(camright);
 	player.fov = (camunit.x * camunit.y) * 2 * ASPECT;
 
 	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, player.sector, (xy_t){-1, -1}, (xy_t){-1, -1});
@@ -692,8 +668,6 @@ void renderScene()
 
 void render()
 {
-	unsigned int i;
-
 	renderScene();
 
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -714,6 +688,7 @@ void render()
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+	unsigned int i;
 	for(i = 0; i < WIDTH * HEIGHT; i++){
 		pixels[i].r = pixels[i].g = pixels[i].b = 0;
 	}
@@ -721,10 +696,6 @@ void render()
 
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
 {
-	sector_t sect, neighbor;
-	xy_t v1, v2, isect, proj;
-	unsigned int i, j, k, found;
-
 	if(upPressed){
 		player.vel.x += cos(player.angle + M_PI / 2) * PLAYER_SPEED;
 		player.vel.y -= sin(player.angle + M_PI / 2) * PLAYER_SPEED;
@@ -756,10 +727,12 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		}
 	}
 
-	found = 0;
+	unsigned int found = 0;
 	if(player.vel.x > 0.01f || player.vel.x < -0.01f || player.vel.y > 0.01f || player.vel.y < -0.01f){
-		sect = sectors[player.sector];
+		sector_t sect = sectors[player.sector];
+		unsigned int i;
 		for(i = 0; i < sect.npoints; i++){
+			xy_t v1, v2;
 			if(i > 0){
 				if(sect.npoints == 2){
 					break;
@@ -771,12 +744,16 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 				v2 = sect.vertex[sect.npoints - 1];
 			}
 			// Find which segment the player wants to pass throught
+			xy_t isect;
 			if(!lineLineIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 				continue;
 			}
+
+			unsigned int j;
 			for(j = 0; j < sect.nneighbors; j++){
-				neighbor = sectors[sect.neighbors[j]];
+				sector_t neighbor = sectors[sect.neighbors[j]];
 				found = 0;
+				unsigned int k;
 				for(k = 0; k < neighbor.npoints; k++){
 					if(v1.x == neighbor.vertex[k].x && v1.y == neighbor.vertex[k].y){
 						found++;
@@ -793,7 +770,7 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 			}
 foundAll:
 			if(found < 2){				
-				proj = vectorProject((xy_t){player.pos.x + player.vel.x - v2.x, player.pos.y + player.vel.y - v2.y}, (xy_t){v1.x - v2.x, v1.y - v2.y});
+				xy_t proj = vectorProject((xy_t){player.pos.x + player.vel.x - v2.x, player.pos.y + player.vel.y - v2.y}, (xy_t){v1.x - v2.x, v1.y - v2.y});
 
 				player.pos.x = proj.x + v2.x - player.vel.x;
 				player.pos.y = proj.y + v2.y - player.vel.y;
