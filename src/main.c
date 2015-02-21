@@ -105,7 +105,7 @@ void vline(int x, int top, int bot, int r, int g, int b, float a)
 
 void hline(int y, int left, int right, int r, int g, int b, float a)
 {
-	if(y < 0 || y >= WIDTH){
+	if(y < 0 || y >= HEIGHT){
 		return;
 	}
 
@@ -213,6 +213,10 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 
 void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop, bool flippedleft, int r, int g, int b)
 {
+	if(top == bottom){
+		return;
+	}
+
 	float angle = (right - left) / (float)(top - bottom);
 
 	if(flippedleft){
@@ -430,6 +434,10 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	float projleftx = (left.x / left.y) * player.fov;
 	float projrightx = (right.x / right.y) * player.fov;
 
+	if(projleftx < -1 || projleftx > 1 || projrightx < -1 || projrightx > 1){
+		printf("%f, %f\n", projleftx, projrightx);
+	}
+
 	// Convert to screen coordinates
 	int screenleftx = HWIDTH + projleftx * HWIDTH;
 	int screenrightx = HWIDTH + projrightx * HWIDTH;
@@ -449,7 +457,6 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	int screentoprighty = HHEIGHT - projtoprighty * HHEIGHT;
 	int screenbotrighty = HHEIGHT - projbotrighty * HHEIGHT;
 
-#if 0
 	// Render ceiling and top triangle wall
 	int topy;
 	if(screentoplefty > screentoprighty){
@@ -493,7 +500,6 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 			hline(y, screenleftx, screenrightx, 64, 64, 64, 1);
 		}
 	}
-#endif
 
 	drawLine((xy_t){(float)screenleftx, (float)screentoplefty}, (xy_t){(float)screenrightx, (float)screentoprighty}, 255, 255, 255, 1);
 	drawLine((xy_t){(float)screenleftx, (float)screenbotlefty}, (xy_t){(float)screenrightx, (float)screenbotrighty}, 255, 255, 255, 1);
@@ -657,7 +663,7 @@ void renderScene()
 	xy_t camright = {200, 200};
 
 	xy_t camunit = vectorUnit(camright);
-	player.fov = (camunit.x * camunit.y) * 2 * ASPECT;
+	player.fov = (camunit.x * camunit.y) * 2;
 
 	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, player.sector, (xy_t){-1, -1}, (xy_t){-1, -1});
 
