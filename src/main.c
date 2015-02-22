@@ -504,12 +504,9 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 		return;
 	}
 
-	if(topy < 0){
-		topy = 0;
-	}
-	if(boty >= HEIGHT){
-		boty = HEIGHT - 1;
-	}
+	topy = min(max(topy, 0), HEIGHT);
+	boty = min(max(boty, 0), HEIGHT);
+
 	unsigned int y;
 	for(y = topy; y < boty; y++){
 		hline(y, screenleftx, screenrightx, 64, 32, 64, 1);
