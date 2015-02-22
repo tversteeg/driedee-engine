@@ -434,10 +434,6 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	float projleftx = (left.x / left.y) * player.fov;
 	float projrightx = (right.x / right.y) * player.fov;
 
-	if(projleftx < -1 || projleftx > 1 || projrightx < -1 || projrightx > 1){
-		printf("%f, %f\n", projleftx, projrightx);
-	}
-
 	// Convert to screen coordinates
 	int screenleftx = HWIDTH + projleftx * HWIDTH;
 	int screenrightx = HWIDTH + projrightx * HWIDTH;
@@ -499,6 +495,24 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 		for(y = boty; y < HEIGHT; y++){
 			hline(y, screenleftx, screenrightx, 64, 64, 64, 1);
 		}
+	}
+
+	// boty should always be the bottom one
+	boty = min(screenbotrighty, screenbotlefty);
+	topy = max(screentoprighty, screentoplefty);
+	if(boty < topy){
+		return;
+	}
+
+	if(topy < 0){
+		topy = 0;
+	}
+	if(boty >= HEIGHT){
+		boty = HEIGHT - 1;
+	}
+	unsigned int y;
+	for(y = topy; y < boty; y++){
+		hline(y, screenleftx, screenrightx, 64, 32, 64, 1);
 	}
 
 	drawLine((xy_t){(float)screenleftx, (float)screentoplefty}, (xy_t){(float)screenrightx, (float)screentoprighty}, 255, 255, 255, 1);
