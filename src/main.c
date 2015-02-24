@@ -22,7 +22,7 @@
 #define HWIDTH (WIDTH / 2)
 #define HHEIGHT (HEIGHT / 2)
 
-#define ASPECT (WIDTH / (float)HEIGHT)
+#define ASPECT (WIDTH / (double)HEIGHT)
 
 #define PLAYER_SPEED 0.5f
 #define PLAYER_JUMP -1.8f
@@ -37,16 +37,16 @@ typedef struct {
 } pixelRGB_t;
 
 typedef struct {
-	float x, y;
+	double x, y;
 } xy_t;
 
 typedef struct {
-	float x, y, z;
+	double x, y, z;
 } xyz_t;
 
 typedef struct {
 	xyz_t start;
-	float angle, slope;
+	double angle, slope;
 } plane_t;
 
 typedef struct {
@@ -57,7 +57,7 @@ typedef struct {
 
 struct player {
 	xyz_t pos, vel;
-	float angle, fov, yaw, height;
+	double angle, fov, yaw, height;
 	unsigned int sector;
 } player;
 
@@ -66,9 +66,9 @@ pixelRGB_t pixels[WIDTH * HEIGHT];
 sector_t *sectors = NULL;
 unsigned int nsectors = 0;
 
-float yLookup[HHEIGHT];
+double yLookup[HHEIGHT];
 
-void vline(int x, int top, int bot, int r, int g, int b, float a)
+void vline(int x, int top, int bot, int r, int g, int b, double a)
 {
 	if(x < 0 || x >= WIDTH){
 		return;
@@ -95,7 +95,7 @@ void vline(int x, int top, int bot, int r, int g, int b, float a)
 			pixel->g = g;
 			pixel->b = b;
 		}else{
-			float mina = 1 - a;
+			double mina = 1 - a;
 			pixel->r = pixel->r * mina + r * a;
 			pixel->g = pixel->g * mina + g * a;
 			pixel->b = pixel->b * mina + b * a;
@@ -103,7 +103,7 @@ void vline(int x, int top, int bot, int r, int g, int b, float a)
 	}
 }
 
-void hline(int y, int left, int right, int r, int g, int b, float a)
+void hline(int y, int left, int right, int r, int g, int b, double a)
 {
 	if(y < 0 || y >= HEIGHT){
 		return;
@@ -130,7 +130,7 @@ void hline(int y, int left, int right, int r, int g, int b, float a)
 			pixel->g = g;
 			pixel->b = b;
 		}else{
-			float mina = 1 - a;
+			double mina = 1 - a;
 			pixel->r = pixel->r * mina + r * a;
 			pixel->g = pixel->g * mina + g * a;
 			pixel->b = pixel->b * mina + b * a;
@@ -138,7 +138,7 @@ void hline(int y, int left, int right, int r, int g, int b, float a)
 	}
 }
 
-void drawPixel(int x, int y, int r, int g, int b, float a)
+void drawPixel(int x, int y, int r, int g, int b, double a)
 {
 	if(x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT){
 		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
@@ -147,7 +147,7 @@ void drawPixel(int x, int y, int r, int g, int b, float a)
 				pixel->g = g;
 				pixel->b = b;
 			}else{
-				float mina = 1 - a;
+				double mina = 1 - a;
 				pixel->r = pixel->r * mina + r * a;
 				pixel->g = pixel->g * mina + g * a;
 				pixel->b = pixel->b * mina + b * a;
@@ -155,7 +155,7 @@ void drawPixel(int x, int y, int r, int g, int b, float a)
 	}
 }
 
-void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
+void drawLine(xy_t p1, xy_t p2, int r, int g, int b, double a)
 {
 	int x1 = p1.x, y1 = p1.y;
 	int x2 = p2.x, y2 = p2.y;
@@ -167,7 +167,7 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 				pixel->g = g;
 				pixel->b = b;
 			}else{
-				float mina = 1 - a;
+				double mina = 1 - a;
 				pixel->r = pixel->r * mina + r * a;
 				pixel->g = pixel->g * mina + g * a;
 				pixel->b = pixel->b * mina + b * a;
@@ -189,7 +189,7 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, float a)
 				pixel->g = g;
 				pixel->b = b;
 			}else{
-				float mina = 1 - a;
+				double mina = 1 - a;
 				pixel->r = pixel->r * mina + r * a;
 				pixel->g = pixel->g * mina + g * a;
 				pixel->b = pixel->b * mina + b * a;
@@ -217,7 +217,7 @@ void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop
 		return;
 	}
 
-	float angle = (right - left) / (float)(top - bottom);
+	double angle = (right - left) / (double)(top - bottom);
 
 	if(flippedleft){
 		if(flippedtop){
@@ -248,7 +248,7 @@ void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop
 
 xy_t vectorUnit(xy_t p)
 {
-	float len = sqrt(p.x * p.x + p.y * p.y);
+	double len = sqrt(p.x * p.x + p.y * p.y);
 	p.x /= len;
 	p.y /= len;
 
@@ -260,14 +260,39 @@ bool vectorIsEqual(xy_t p1, xy_t p2)
 	return p1.x - 0.01f < p2.x && p1.x + 0.01f > p2.x && p1.y - 0.01f < p2.y && p1.y + 0.01f > p2.y;
 }
 
-float vectorDotProduct(xy_t p1, xy_t p2)
+double vectorDotProduct(xy_t p1, xy_t p2)
 {
 	return p1.x * p2.x + p1.y * p2.y;
 }
 
-float vectorCrossProduct(xy_t p1, xy_t p2)
+double vectorCrossProduct(xy_t p1, xy_t p2)
 {
 	return p1.x * p2.y - p1.y * p2.x;
+}
+
+bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
+{
+	double leftRight = vectorDotProduct(left, right);
+
+	return leftRight < vectorDotProduct(left, p) && leftRight < vectorDotProduct(right, p);
+}
+
+xy_t vectorProject(xy_t p1, xy_t p2)
+{
+	xy_t normal = vectorUnit(p2);
+	double scalar = p1.x * normal.x + p1.y * normal.y;
+	normal.x *= scalar;
+	normal.y *= scalar;
+
+	return normal;
+}
+
+double vectorProjectScalar(xy_t p1, xy_t p2)
+{
+	xy_t normal = vectorUnit(p2);
+	double scalar = p1.x * normal.x + p1.y * normal.y;
+
+	return scalar;
 }
 
 bool pointIsLeft(xy_t p, xy_t l1, xy_t l2)
@@ -277,9 +302,9 @@ bool pointIsLeft(xy_t p, xy_t l1, xy_t l2)
 
 int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
-	float denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-	float n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
-	float n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
+	double denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+	double n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
+	double n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
 
 	if(fabs(n1) < 0.0001f && fabs(n2) < 0.0001f && fabs(denom) < 0.0001f){
 		p->x = (p1.x + p2.x) / 2;
@@ -313,10 +338,10 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 	diff.x = q.x - p.x;
 	diff.y = q.y - p.y;
 
-	float denom = vectorCrossProduct(r, s);
-	float u = vectorCrossProduct(diff, r);
-	if(denom < 0.001f && denom > -0.001f){
-		if(u < 0.001f && u > -0.001f){
+	double denom = vectorCrossProduct(r, s);
+	double u = vectorCrossProduct(diff, r);
+	if(fabs(denom) < 0.0001f){
+		if(fabs(u) < 0.0001f){
 			result->x = (p.x + q.x) / 2;
 			result->y = (p.y + q.y) / 2;
 			return 1;
@@ -326,7 +351,7 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 	}
 
 	u /= denom;
-	if(u < -0.001f || u > 1.001f){
+	if(u < -0.0001f || u > 1.0001f){
 		return 0;
 	}
 
@@ -335,21 +360,28 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 	return 1;
 }
 
-bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
+double segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius)
 {
-	float leftRight = vectorDotProduct(left, right);
+	xy_t seg = {p2.x - p1.x, p2.y - p1.y};
+	xy_t cir = {circle.x - p1.x, circle.y - p1.y};
+	double proj = vectorProjectScalar(seg, cir);
 
-	return leftRight < vectorDotProduct(left, p) && leftRight < vectorDotProduct(right, p);
-}
+	xy_t closest;
+	if(proj < 0){
+		closest = p1;
+	}else if(proj > 1){
+		closest = p2;
+	}else{
+		xy_t projv = vectorProject(seg, cir);
+		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
+	}
 
-xy_t vectorProject(xy_t p1, xy_t p2)
-{
-	xy_t normal = vectorUnit(p2);
-	float scalar = p1.x * normal.x + p1.y * normal.y;
-	normal.x *= scalar;
-	normal.y *= scalar;
-
-	return normal;
+	double dist = sqrt((circle.x * closest.x) + (circle.y * closest.y));
+	if(dist < radius){
+		return 0;
+	}else{
+		return 1;
+	}
 }
 
 void printSectorInfo(unsigned int id)
@@ -420,19 +452,19 @@ void populateLookupTables()
 {
 	unsigned int i;
 	for(i = 1; i < HHEIGHT; i++){
-		yLookup[i] = HEIGHT / (float)(i * 2.0f);
+		yLookup[i] = HEIGHT / (double)(i * 2.0f);
 	}
 }
 
-void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
+void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom, double above, double beneath)
 {
 	if(left.y <= 1 || right.y <= 1){
 		return;
 	}
 
 	// Near plane is 1, find x position on the plane
-	float projleftx = (left.x / left.y) * player.fov;
-	float projrightx = (right.x / right.y) * player.fov;
+	double projleftx = (left.x / left.y) * player.fov;
+	double projrightx = (right.x / right.y) * player.fov;
 
 	// Convert to screen coordinates
 	int screenleftx = HWIDTH + projleftx * HWIDTH;
@@ -442,16 +474,18 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	}
 
 	// Divide by the y value to get the distance and use that to calculate the height
-	float eyeheight = player.pos.z - player.height;
-	float projtoplefty = (top + eyeheight) / left.y;
-	float projbotlefty = (bottom + eyeheight) / left.y;
-	float projtoprighty = (top + eyeheight) / right.y;
-	float projbotrighty = (bottom + eyeheight) / right.y;
+	double eyeheight = player.pos.z - player.height;
+	double projtoplefty = (top + eyeheight) / left.y;
+	double projbotlefty = (bottom + eyeheight) / left.y;
+	double projtoprighty = (top + eyeheight) / right.y;
+	double projbotrighty = (bottom + eyeheight) / right.y;
 
 	int screentoplefty = HHEIGHT - projtoplefty * HHEIGHT;
 	int screenbotlefty = HHEIGHT - projbotlefty * HHEIGHT;
 	int screentoprighty = HHEIGHT - projtoprighty * HHEIGHT;
 	int screenbotrighty = HHEIGHT - projbotrighty * HHEIGHT;
+
+#if 0
 
 	// Render ceiling and top triangle wall
 	int topy;
@@ -470,7 +504,10 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	}
 	if(topy >= 0 && topy < HEIGHT){
 		unsigned int y;
-		for(y = 0; y < topy; y++){
+		if(topy < above){
+			above = topy;
+		}
+		for(y = 0; y < above; y++){
 			hline(y, screenleftx, screenrightx, 64, 64, 64, 1);
 		}
 	}
@@ -492,7 +529,10 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	}
 	if(boty >= 0 && boty < HEIGHT){
 		unsigned int y;
-		for(y = boty; y < HEIGHT; y++){
+		if(boty > beneath){
+			beneath = boty;
+		}
+		for(y = beneath; y < HEIGHT; y++){
 			hline(y, screenleftx, screenrightx, 64, 64, 64, 1);
 		}
 	}
@@ -511,15 +551,16 @@ void renderWall(xy_t left, xy_t right, float camlen, float top, float bottom)
 	for(y = topy; y < boty; y++){
 		hline(y, screenleftx, screenrightx, 64, 32, 64, 1);
 	}
+#endif
 
-	drawLine((xy_t){(float)screenleftx, (float)screentoplefty}, (xy_t){(float)screenrightx, (float)screentoprighty}, 255, 255, 255, 1);
-	drawLine((xy_t){(float)screenleftx, (float)screenbotlefty}, (xy_t){(float)screenrightx, (float)screenbotrighty}, 255, 255, 255, 1);
+	drawLine((xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenrightx, (double)screentoprighty}, 255, 255, 255, 1);
+	drawLine((xy_t){(double)screenleftx, (double)screenbotlefty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, 255, 255, 255, 1);
 
-	drawLine((xy_t){(float)screenleftx, (float)screentoplefty}, (xy_t){(float)screenleftx, (float)screenbotlefty}, 255, 255, 255, 1);
-	drawLine((xy_t){(float)screenrightx, (float)screentoprighty}, (xy_t){(float)screenrightx, (float)screenbotrighty}, 255, 255, 255, 1);
+	drawLine((xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenleftx, (double)screenbotlefty}, 255, 255, 255, 1);
+	drawLine((xy_t){(double)screenrightx, (double)screentoprighty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, 255, 255, 255, 1);
 }
 
-void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, float camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
+void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, double camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
 {
 	unsigned int i;
 	for(i = 0; i < sectors[id].nvisited; i++){
@@ -536,8 +577,8 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		sectors[id].visited[sectors[id].nvisited - 1] = oldId;
 	}
 
-	float sina = sin(player.angle);
-	float cosa = cos(player.angle);
+	double sina = sin(player.angle);
+	double cosa = cos(player.angle);
 	xy_t camleftnorm = vectorUnit(camleft);
 	xy_t camrightnorm = vectorUnit(camright);
 
@@ -600,7 +641,7 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 		tv1.x = v1.x;
 		tv1.y = v1.y;
 
-		float cross = vectorCrossProduct(tv1, tv2);
+		double cross = vectorCrossProduct(tv1, tv2);
 		if(cross > 0){
 			xy_t temp = tv1;
 			tv1 = tv2;
@@ -614,13 +655,13 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, flo
 			// Check if we need to render the bottom or upper edge
 			sector_t neighbor = sectors[near];
 			if(neighbor.ceil.start.z < sect.ceil.start.z){
-				renderWall(tv1, tv2, camlen, sect.ceil.start.z, neighbor.ceil.start.z);
+				renderWall(tv1, tv2, camlen, sect.ceil.start.z, neighbor.ceil.start.z, HEIGHT, neighbor.floor.start.z);
 			}
 			if(neighbor.floor.start.z > sect.floor.start.z){
-				renderWall(tv1, tv2, camlen, neighbor.ceil.start.z, sect.ceil.start.z);
+				renderWall(tv1, tv2, camlen, neighbor.ceil.start.z, sect.ceil.start.z, HEIGHT, neighbor.floor.start.z);
 			}
 		}else{
-			renderWall(tv1, tv2, camlen, sect.ceil.start.z, sect.floor.start.z);
+			renderWall(tv1, tv2, camlen, sect.ceil.start.z, sect.floor.start.z, HEIGHT, 0);
 		}
 	}
 }
@@ -840,8 +881,8 @@ void load(char *map)
 		switch(line[0]){
 			case 'v':
 				ptr = line;
-				sscanf(ptr, "%*s %f%n", &vert.y, &scanlen);
-				while(sscanf(ptr += scanlen, "%f%n", &vert.x, &scanlen) == 1){
+				sscanf(ptr, "%*s %lf%n", &vert.y, &scanlen);
+				while(sscanf(ptr += scanlen, "%lf%n", &vert.x, &scanlen) == 1){
 					verts = (xy_t*)realloc(verts, ++nverts * sizeof(*verts));
 					verts[nverts - 1] = vert;
 				}
@@ -858,7 +899,7 @@ void load(char *map)
 				sect->nneighbors = 0;
 				sect->neighbors = NULL;
 
-				sscanf(ptr, "%*s %f %f %f %u %f %f %f %u%n", &sect->floor.start.z, &sect->floor.slope, &sect->floor.angle, &index,
+				sscanf(ptr, "%*s %lf %lf %lf %u %lf %lf %lf %u%n", &sect->floor.start.z, &sect->floor.slope, &sect->floor.angle, &index,
 						&sect->ceil.start.z, &sect->ceil.slope, &sect->ceil.angle, &index2, &scanlen);
 				sect->floor.start.x = verts[index].x;
 				sect->floor.start.y = verts[index].y;
@@ -878,7 +919,7 @@ void load(char *map)
 				printSectorInfo(nsectors - 1);
 				break;
 			case 'p':
-				sscanf(line, "%*s %f %f %f %f", &player.height, &player.pos.x, &player.pos.y, &player.pos.z);
+				sscanf(line, "%*s %lf %lf %lf %lf", &player.height, &player.pos.x, &player.pos.y, &player.pos.z);
 				player.angle = M_PI / 2;
 				player.sector = 0;
 				player.yaw = 0;
