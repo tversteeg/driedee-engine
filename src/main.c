@@ -307,7 +307,7 @@ bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
 xy_t vectorProject(xy_t p1, xy_t p2)
 {
 	xy_t normal = vectorUnit(p2);
-	double scalar = p1.x * normal.x + p1.y * normal.y;
+	double scalar = vectorDotProduct(p1, normal);
 	normal.x *= scalar;
 	normal.y *= scalar;
 
@@ -316,10 +316,7 @@ xy_t vectorProject(xy_t p1, xy_t p2)
 
 double vectorProjectScalar(xy_t p1, xy_t p2)
 {
-	xy_t normal = vectorUnit(p2);
-	double scalar = p1.x * normal.x + p1.y * normal.y;
-
-	return scalar;
+	return vectorDotProduct(p1, vectorUnit(p2));
 }
 
 bool pointIsLeft(xy_t p, xy_t l1, xy_t l2)
@@ -396,18 +393,22 @@ int segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p
 	xy_t closest;
 	if(proj < 0){
 		closest = p1;
+		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 255, 255, 0, 1);
 	}else if(proj > 1){
 		closest = p2;
+		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 255, 255, 0, 1);
 	}else{
 		xy_t projv = vectorProject(seg, cir);
 		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
+		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 255, 0, 0, 1);
 	}
 
-	double dist = sqrt((circle.x - closest.x) * (circle.y - closest.y));
+	double dx = circle.x - closest.x;
+	double dy = circle.y - closest.y;
+	double dist = sqrt(dx * dx + dy * dy);
 	if(dist < radius){
 		p->x = closest.x;
 		p->y = closest.y;
-
 		return 1;
 	}else{
 		return 0;
@@ -834,9 +835,9 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 			// Find which segment the player wants to pass throught
 			xy_t isect;
 			if(!segmentCircleIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, player.radius, &isect)){
-				drawCircle(isect, player.radius, 255, 255, 0, 1);
 				continue;
 			}
+			drawCircle(isect, player.radius, 255, 255, 0, 1);
 			/*
 			if(!segmentSegmentIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 				continue;
