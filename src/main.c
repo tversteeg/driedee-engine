@@ -57,7 +57,7 @@ typedef struct {
 
 struct player {
 	xyz_t pos, vel;
-	double angle, fov, yaw, height;
+	double angle, fov, yaw, height, radius;
 	unsigned int sector;
 } player;
 
@@ -360,7 +360,7 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 	return 1;
 }
 
-double segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius)
+int segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p)
 {
 	xy_t seg = {p2.x - p1.x, p2.y - p1.y};
 	xy_t cir = {circle.x - p1.x, circle.y - p1.y};
@@ -376,11 +376,14 @@ double segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius)
 		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
 	}
 
-	double dist = sqrt((circle.x * closest.x) + (circle.y * closest.y));
+	double dist = sqrt((circle.x - closest.x) * (circle.y - closest.y));
 	if(dist < radius){
-		return 0;
-	}else{
+		p->x = closest.x;
+		p->y = closest.y;
+
 		return 1;
+	}else{
+		return 0;
 	}
 }
 
