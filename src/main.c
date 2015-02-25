@@ -17,6 +17,8 @@
 #include <GL/glew.h>
 #endif
 
+#define FL_ERROR 0.001
+
 #define WIDTH 800
 #define HEIGHT 600
 #define HWIDTH (WIDTH / 2)
@@ -211,6 +213,31 @@ void drawLine(xy_t p1, xy_t p2, int r, int g, int b, double a)
 	}
 }
 
+void drawCircle(xy_t p, int radius, int r, int g, int b, double a)
+{
+	int x = radius;
+	int y = 0;
+	int error = 1 - x;
+
+	while(x >= y){
+		drawPixel(x + p.x, y + p.y, r, g, b, a);
+		drawPixel(y + p.x, x + p.y, r, g, b, a);
+		drawPixel(-x + p.x, y + p.y, r, g, b, a);
+		drawPixel(-y + p.x, x + p.y, r, g, b, a);
+		drawPixel(-x + p.x, -y + p.y, r, g, b, a);
+		drawPixel(-y + p.x, -x + p.y, r, g, b, a);
+		drawPixel(x + p.x, -y + p.y, r, g, b, a);
+		drawPixel(y + p.x, -x + p.y, r, g, b, a);
+		y++;
+		if(error < 0){
+			error += 2 * y + 1;
+		}else{
+			x--;
+			error += 2 * (y - x) + 1;
+		}
+	}
+}
+
 void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop, bool flippedleft, int r, int g, int b)
 {
 	if(top == bottom){
@@ -257,7 +284,7 @@ xy_t vectorUnit(xy_t p)
 
 bool vectorIsEqual(xy_t p1, xy_t p2)
 {
-	return p1.x - 0.01f < p2.x && p1.x + 0.01f > p2.x && p1.y - 0.01f < p2.y && p1.y + 0.01f > p2.y;
+	return p1.x - FL_ERROR < p2.x && p1.x + FL_ERROR > p2.x && p1.y - FL_ERROR < p2.y && p1.y + FL_ERROR > p2.y;
 }
 
 double vectorDotProduct(xy_t p1, xy_t p2)
@@ -306,19 +333,19 @@ int segmentSegmentIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 	double n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
 	double n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
 
-	if(fabs(n1) < 0.0001f && fabs(n2) < 0.0001f && fabs(denom) < 0.0001f){
+	if(fabs(n1) < FL_ERROR && fabs(n2) < FL_ERROR && fabs(denom) < FL_ERROR){
 		p->x = (p1.x + p2.x) / 2;
 		p->y = (p1.y + p2.y) / 2;
 		return 1;
 	}
 
-	if(fabs(denom) < 0.0001f){
+	if(fabs(denom) < FL_ERROR){
 		return 0;
 	}
 
 	n1 /= denom;
 	n2 /= denom;
-	if(n1 < -0.001f || n1 > 1.001f || n2 < -0.001f || n2 > 1.001f){
+	if(n1 < -FL_ERROR || n1 > 1.001f || n2 < -FL_ERROR || n2 > 1.001f){
 		return 0;
 	}
 
@@ -340,8 +367,8 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 
 	double denom = vectorCrossProduct(r, s);
 	double u = vectorCrossProduct(diff, r);
-	if(fabs(denom) < 0.0001f){
-		if(fabs(u) < 0.0001f){
+	if(fabs(denom) < FL_ERROR){
+		if(fabs(u) < FL_ERROR){
 			result->x = (p.x + q.x) / 2;
 			result->y = (p.y + q.y) / 2;
 			return 1;
@@ -351,7 +378,7 @@ int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
 	}
 
 	u /= denom;
-	if(u < -0.0001f || u > 1.0001f){
+	if(u < -FL_ERROR || u > 1.0 + FL_ERROR){
 		return 0;
 	}
 
@@ -789,7 +816,7 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 	}
 
 	unsigned int found = 0;
-	if(player.vel.x > 0.01f || player.vel.x < -0.01f || player.vel.y > 0.01f || player.vel.y < -0.01f){
+	if(player.vel.x > FL_ERROR || player.vel.x < -FL_ERROR || player.vel.y > FL_ERROR || player.vel.y < -FL_ERROR){
 		sector_t sect = sectors[player.sector];
 		unsigned int i;
 		for(i = 0; i < sect.npoints; i++){
@@ -806,9 +833,14 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 			}
 			// Find which segment the player wants to pass throught
 			xy_t isect;
-			if(!segmentSegmentIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
+			if(!segmentCircleIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, player.radius, &isect)){
+				drawCircle(isect, player.radius, 255, 255, 0, 1);
 				continue;
 			}
+			/*
+			if(!segmentSegmentIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
+				continue;
+			}*/
 
 			unsigned int j;
 			for(j = 0; j < sect.nneighbors; j++){
@@ -926,6 +958,7 @@ void load(char *map)
 				player.angle = M_PI / 2;
 				player.sector = 0;
 				player.yaw = 0;
+				player.radius = 5;
 				break;
 		}
 	}
