@@ -300,7 +300,7 @@ bool pointIsLeft(xy_t p, xy_t l1, xy_t l2)
 	return (l2.x - l1.x) * (p.y - l1.y) > (l2.y - l1.y) * (p.x - l1.x);
 }
 
-int lineLineIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
+int segmentSegmentIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
 	double denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
 	double n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
@@ -806,7 +806,7 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 			}
 			// Find which segment the player wants to pass throught
 			xy_t isect;
-			if(!lineLineIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
+			if(!segmentSegmentIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 				continue;
 			}
 
