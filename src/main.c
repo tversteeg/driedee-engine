@@ -388,17 +388,17 @@ int segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p
 {
 	xy_t seg = {p2.x - p1.x, p2.y - p1.y};
 	xy_t cir = {circle.x - p1.x, circle.y - p1.y};
-	double proj = vectorProjectScalar(seg, cir);
+	double proj = vectorProjectScalar(cir, seg);
 
 	xy_t closest;
 	if(proj < 0){
 		closest = p1;
-		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 255, 255, 0, 1);
-	}else if(proj > 1){
+		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 0, 255, 0, 1);
+	}else if(proj > sqrt(seg.x * seg.x + seg.y * seg.y)){
 		closest = p2;
 		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 255, 255, 0, 1);
 	}else{
-		xy_t projv = vectorProject(seg, cir);
+		xy_t projv = vectorProject(cir, seg);
 		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
 		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 255, 0, 0, 1);
 	}
