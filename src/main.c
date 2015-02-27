@@ -393,14 +393,11 @@ int segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p
 	xy_t closest;
 	if(proj < 0){
 		closest = p1;
-		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 0, 255, 0, 1);
 	}else if(proj > sqrt(seg.x * seg.x + seg.y * seg.y)){
 		closest = p2;
-		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 255, 255, 0, 1);
 	}else{
 		xy_t projv = vectorProject(cir, seg);
 		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
-		drawCircle((xy_t){closest.x / 2, closest.y / 2}, player.radius, 255, 0, 0, 1);
 	}
 
 	double dx = circle.x - closest.x;
@@ -837,11 +834,6 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 			if(!segmentCircleIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, player.radius, &isect)){
 				continue;
 			}
-			drawCircle(isect, player.radius, 255, 255, 0, 1);
-			/*
-			if(!segmentSegmentIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
-				continue;
-			}*/
 
 			unsigned int j;
 			for(j = 0; j < sect.nneighbors; j++){
