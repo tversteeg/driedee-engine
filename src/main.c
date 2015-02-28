@@ -51,19 +51,19 @@ typedef struct {
 	double angle, slope;
 } plane_t;
 
-typedef enum {PORTAL, WALL} walltype_t;
+typedef enum {PORTAL, WALL} edgetype_t;
 
 typedef struct {
 	unsigned int vertex1, vertex2;
-	walltype_t type;
+	edgetype_t type;
 	union {
 		unsigned int neighbor;
 	};
-} wall_t;
+} edge_t;
 
 typedef struct {
 	xy_t *vertex;
-	wall_t *walls;
+	edge_t *walls;
 	plane_t floor, ceil;
 	unsigned int npoints, nneighbors, *neighbors, nvisited, *visited;
 } sector_t;

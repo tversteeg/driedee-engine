@@ -8,6 +8,10 @@ vert 400	120 200 					# 18 19
 vert 500	0 300 						# 20 21
 vert 600	120 200 					# 22 23
 
+# Vertex 1, vertex 2
+# Type: 0 - WALL, 1 - PORTAL
+edge 0 1 1
+
 # Floor height, slope, angle, first vert
 # Ceiling height, slope, angle, first vert
 # Vertices
