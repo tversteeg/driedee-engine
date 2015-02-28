@@ -1,0 +1,227 @@
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+#include <ccore/display.h>
+#include <ccore/window.h>
+#include <ccore/opengl.h>
+#include <ccore/time.h>
+
+#ifdef WINDOWS
+#include <gl/GL.h>
+#else
+#include <GL/glew.h>
+#endif
+
+#define WIDTH 800
+#define HEIGHT 600
+
+typedef struct {
+	unsigned char r, g, b;
+} pixelRGB_t;
+
+typedef struct {
+	double x, y;
+} xy_t;
+
+typedef struct {
+	double x, y, z;
+} xyz_t;
+
+typedef struct {
+	xyz_t start;
+	double angle, slope;
+} plane_t;
+
+typedef enum {PORTAL, WALL} walltype_t;
+
+typedef struct {
+	unsigned int vertex1, vertex2;
+	walltype_t type;
+	union {
+		unsigned int neighbor;
+	};
+} wall_t;
+
+typedef struct {
+	xy_t *vertex;
+	wall_t *walls;
+	plane_t floor, ceil;
+	unsigned int npoints, nneighbors, *neighbors, nvisited, *visited;
+} sector_t;
+
+sector_t *sectors = NULL;
+unsigned int nsectors = 0;
+pixelRGB_t pixels[WIDTH * HEIGHT];
+
+void drawPixel(int x, int y, int r, int g, int b, double a)
+{
+	if(x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT){
+		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
+		if(a == 1){
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}else{
+			double mina = 1 - a;
+			pixel->r = pixel->r * mina + r * a;
+			pixel->g = pixel->g * mina + g * a;
+			pixel->b = pixel->b * mina + b * a;
+		}
+	}
+}
+
+void drawLine(xy_t p1, xy_t p2, int r, int g, int b, double a)
+{
+	int x1 = p1.x, y1 = p1.y;
+	int x2 = p2.x, y2 = p2.y;
+	if(x1 == x2 && y1 == y2){
+		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
+			pixelRGB_t *pixel = &pixels[x1 + y1 * WIDTH];
+			if(a == 1){
+				pixel->r = r;
+				pixel->g = g;
+				pixel->b = b;
+			}else{
+				double mina = 1 - a;
+				pixel->r = pixel->r * mina + r * a;
+				pixel->g = pixel->g * mina + g * a;
+				pixel->b = pixel->b * mina + b * a;
+			}
+		}
+		return;
+	}
+	int dx = abs(x2 - x1);
+	int dy = abs(y2 - y1);
+	int sx = x1 < x2 ? 1 : -1;
+	int sy = y1 < y2 ? 1 : -1;
+	int err = (dx > dy ? dx : -dy) / 2;
+	while(true){
+		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
+			pixelRGB_t *pixel = &pixels[x1 + y1 * WIDTH];
+			if(a == 1){
+				pixel->r = r;
+				pixel->g = g;
+				pixel->b = b;
+			}else{
+				double mina = 1 - a;
+				pixel->r = pixel->r * mina + r * a;
+				pixel->g = pixel->g * mina + g * a;
+				pixel->b = pixel->b * mina + b * a;
+			}
+		}
+		if(x1 == x2 && y1 == y2){
+			break;
+		}
+		int err2 = err;
+		if(err2 > -dx) {
+			err -= dy;
+			x1 += sx;
+		}
+		if(err2 < dy) {
+			err += dx;
+			y1 += sy;
+		}
+	}
+}
+
+void drawCircle(xy_t p, int radius, int r, int g, int b, double a)
+{
+	int x = radius;
+	int y = 0;
+	int error = 1 - x;
+	while(x >= y){
+		drawPixel(x + p.x, y + p.y, r, g, b, a);
+		drawPixel(y + p.x, x + p.y, r, g, b, a);
+		drawPixel(-x + p.x, y + p.y, r, g, b, a);
+		drawPixel(-y + p.x, x + p.y, r, g, b, a);
+		drawPixel(-x + p.x, -y + p.y, r, g, b, a);
+		drawPixel(-y + p.x, -x + p.y, r, g, b, a);
+		drawPixel(x + p.x, -y + p.y, r, g, b, a);
+		drawPixel(y + p.x, -x + p.y, r, g, b, a);
+		y++;
+		if(error < 0){
+			error += 2 * y + 1;
+		}else{
+			x--;
+			error += 2 * (y - x) + 1;
+		}
+	}
+}
+
+void load(char *map)
+{
+	FILE *fp;
+	char *line, *ptr;
+	int index, index2, scanlen, nverts;
+	size_t len;
+	ssize_t read;
+	xy_t vert, *verts;
+	sector_t *sect;
+	line = NULL;
+	verts = NULL;
+	len = 0;
+	nverts = 0;
+	fp = fopen(map, "rt");
+	if(!fp) {
+		printf("Couldn't open: %s\n", map);
+		exit(1);
+	}
+	/* TODO: replace GNU readline with a cross platform solution */
+	while((read = getline(&line, &len, fp)) != -1) {
+		switch(line[0]){
+			case 'v':
+				ptr = line;
+				sscanf(ptr, "%*s %lf%n", &vert.y, &scanlen);
+				while(sscanf(ptr += scanlen, "%lf%n", &vert.x, &scanlen) == 1){
+					verts = (xy_t*)realloc(verts, ++nverts * sizeof(*verts));
+					verts[nverts - 1] = vert;
+				}
+				break;
+			case 's':
+				sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(*sectors));
+				sect = sectors + nsectors - 1;
+				ptr = line;
+				sect->npoints = 0;
+				sect->vertex = NULL;
+				sect->visited = NULL;
+				sect->nvisited = 0;
+				sect->nneighbors = 0;
+				sect->neighbors = NULL;
+				sscanf(ptr, "%*s %lf %lf %lf %u %lf %lf %lf %u%n", &sect->floor.start.z, &sect->floor.slope, &sect->floor.angle, &index,
+						&sect->ceil.start.z, &sect->ceil.slope, &sect->ceil.angle, &index2, &scanlen);
+				sect->floor.start.x = verts[index].x;
+				sect->floor.start.y = verts[index].y;
+				sect->ceil.start.x = verts[index2].x;
+				sect->ceil.start.y = verts[index2].y;
+				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
+					sect->vertex = (xy_t*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
+					sect->vertex[sect->npoints - 1] = verts[index];
+				}
+				sscanf(ptr += scanlen, "%*c%n", &scanlen);
+				while(sscanf(ptr += scanlen, "%u%n", &index, &scanlen) == 1){
+					sect->neighbors = (unsigned int*)realloc(sect->neighbors, ++sect->nneighbors * sizeof(*sect->neighbors));
+					sect->neighbors[sect->nneighbors - 1] = index;
+				}
+				break;
+		}
+	}
+	fclose(fp);
+	free(line);
+	free(verts);
+}
+
+int main(int argc, char **argv)
+{
+	load(argv[1]);
+
+	ccDisplayInitialize();
+
+	ccWindowCreate((ccRect){0, 0, WIDTH, HEIGHT}, "3D - editor", CC_WINDOW_FLAG_NORESIZE);
+
+	return 0;
+}
