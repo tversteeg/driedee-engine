@@ -51,8 +51,19 @@ typedef struct {
 	double angle, slope;
 } plane_t;
 
+typedef enum {PORTAL, WALL} walltype_t;
+
+typedef struct {
+	unsigned int vertex1, vertex2;
+	walltype_t type;
+	union {
+		unsigned int neighbor;
+	};
+} wall_t;
+
 typedef struct {
 	xy_t *vertex;
+	wall_t *walls;
 	plane_t floor, ceil;
 	unsigned int npoints, nneighbors, *neighbors, nvisited, *visited;
 } sector_t;
@@ -831,7 +842,7 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 			}
 			// Find which segment the player wants to pass throught
 			xy_t isect;
-			if(!segmentCircleIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, player.radius, &isect)){
+			if(!segmentSegmentIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
 				continue;
 			}
 
@@ -870,7 +881,7 @@ foundAll:
 		player.vel.x *= PLAYER_FRICTION;
 		player.vel.y *= PLAYER_FRICTION;
 	}
-	if(player.pos.z < 0){
+	if(player.pos.z < -FL_ERROR){
 		player.pos.z += player.vel.z;
 		player.vel.z += PLAYER_GRAVITY;
 	}else{
