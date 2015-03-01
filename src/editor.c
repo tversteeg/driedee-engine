@@ -20,6 +20,8 @@
 #define WIDTH 800
 #define HEIGHT 600
 
+#define GRID_SIZE 16
+
 typedef struct {
 	unsigned char r, g, b;
 } pixelRGB_t;
@@ -154,6 +156,76 @@ void drawCircle(xy_t p, int radius, int r, int g, int b, double a)
 	}
 }
 
+void vline(int x, int top, int bot, int r, int g, int b, double a)
+{
+	if(x < 0 || x >= WIDTH){
+		return;
+	}
+
+	if(top < bot){
+		int tmp = top;
+		top = bot;
+		bot = tmp;
+	}
+
+	if(top >= HEIGHT){
+		top = HEIGHT - 1;
+	}
+	if(bot < 0){
+		bot = 0;
+	}
+
+	int y;
+	for(y = bot; y <= top; y++){
+		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
+		if(a == 1){
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}else{
+			double mina = 1 - a;
+			pixel->r = pixel->r * mina + r * a;
+			pixel->g = pixel->g * mina + g * a;
+			pixel->b = pixel->b * mina + b * a;
+		}
+	}
+}
+
+void hline(int y, int left, int right, int r, int g, int b, double a)
+{
+	if(y < 0 || y >= HEIGHT){
+		return;
+	}
+
+	if(right < left){
+		int tmp = right;
+		right = left;
+		left = tmp;
+	}
+
+	if(right >= WIDTH){
+		right = WIDTH - 1;
+	}
+	if(left < 0){
+		left = 0;
+	}
+
+	int x;
+	for(x = left; x <= right; x++){
+		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
+		if(a == 1){
+			pixel->r = r;
+			pixel->g = g;
+			pixel->b = b;
+		}else{
+			double mina = 1 - a;
+			pixel->r = pixel->r * mina + r * a;
+			pixel->g = pixel->g * mina + g * a;
+			pixel->b = pixel->b * mina + b * a;
+		}
+	}
+}
+
 void load(char *map)
 {
 	FILE *fp;
@@ -216,8 +288,21 @@ void load(char *map)
 	free(verts);
 }
 
+void renderGrid(int r, int g, int b, double a)
+{
+	int i;
+	for(i = 0; i < WIDTH; i += GRID_SIZE){
+		vline(i, 0, HEIGHT, r, g, b, a);
+	}
+	for(i = 0; i < HEIGHT; i += GRID_SIZE){
+		hline(i, 0, WIDTH, r, g, b, a);
+	}
+}
+
 void render()
 {
+	renderGrid(64, 64, 64, 1);
+
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
