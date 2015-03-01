@@ -328,13 +328,35 @@ void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a
 	}
 }
 
-void render()
+void renderMenu()
 {
-	drawGrid(0, 0, WIDTH, HEIGHT - 200, 64, 64, 64, 1);
+	int menuheight = 64;
+	char buffer[64];
 
-	drawString("Oh my, pixel fonts!", 0, 0, 255, 255, 255, 1);
-	drawString("<3 ", 0, 8, 255, 0, 0, 1);
+	drawGrid(0, 0, WIDTH, HEIGHT - menuheight, 64, 64, 64, 1);
+	hline(HEIGHT - menuheight, 0, WIDTH, 255, 255, 0, 1);
 
+	int pos = sprintf(buffer, "Mouse: (%d,%d)", ccWindowGetMouse().x, ccWindowGetMouse().y);
+	buffer[pos] = '\0';
+	drawString(buffer, 8, HEIGHT - menuheight + 8, 255, 0, 0, 1);
+}
+
+void renderMouse(int snap)
+{
+	int xmouse = ccWindowGetMouse().x;
+	int ymouse = ccWindowGetMouse().y;
+
+	if(snap > 1){
+		xmouse = round(xmouse / snap) * snap;
+		ymouse = round(ymouse / snap) * snap;
+	}
+
+	vline(xmouse, ymouse - 5, ymouse + 5, 255, 255, 0, 1);
+	hline(ymouse, xmouse - 5, xmouse + 5, 255, 255, 0, 1);
+}
+
+void render()
+{	
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
@@ -381,6 +403,7 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	bool loop = true;
+	bool ctrlpressed = false;
 	while(loop){
 		while(ccWindowEventPoll()){
 			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
@@ -390,8 +413,24 @@ int main(int argc, char **argv)
 					case CC_KEY_ESCAPE:
 						loop = false;
 						break;
+					case CC_KEY_LCONTROL:
+						ctrlpressed = true;
+						break;
+				}
+			}else if(ccWindowEventGet().type == CC_EVENT_KEY_UP){
+				switch(ccWindowEventGet().keyCode){
+					case CC_KEY_LCONTROL:
+						ctrlpressed = false;
+						break;
 				}
 			}
+		}
+
+		renderMenu();
+		if(!ctrlpressed){
+			renderMouse(1);
+		}else{
+			renderMouse(GRID_SIZE);
 		}
 
 		render();
