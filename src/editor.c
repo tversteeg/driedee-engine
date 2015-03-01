@@ -17,6 +17,8 @@
 #include <GL/glew.h>
 #endif
 
+#include "PixelFont1.h"
+
 #define WIDTH 800
 #define HEIGHT 600
 
@@ -156,6 +158,33 @@ void drawCircle(xy_t p, int radius, int r, int g, int b, double a)
 	}
 }
 
+void drawLetter(char letter, int x, int y, int r, int g, int b, double a)
+{
+	char todraw = letter - '!';
+	if(todraw < 0){
+		return;
+	}
+	int drawpos = todraw * fontheight;
+
+	int i;
+	for(i = 0; i < 8; i++){
+		int j;
+		for(j = 0; j < 8; j++){
+			if(fontdata[i + drawpos + j * fontwidth] != 0){
+				drawPixel(x + i, y + j, r, g, b, a);
+			}
+		}
+	}
+}
+
+void drawString(const char *string, int x, int y, int r, int g, int b, double a)
+{
+	int i;
+	for(i = 0; string[i] != '\0'; i++){
+		drawLetter(string[i], x + i * fontheight, y, r, g, b, a);
+	}
+}
+
 void vline(int x, int top, int bot, int r, int g, int b, double a)
 {
 	if(x < 0 || x >= WIDTH){
@@ -288,20 +317,23 @@ void load(char *map)
 	free(verts);
 }
 
-void renderGrid(int r, int g, int b, double a)
+void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a)
 {
 	int i;
-	for(i = 0; i < WIDTH; i += GRID_SIZE){
-		vline(i, 0, HEIGHT, r, g, b, a);
+	for(i = x; i < width; i += GRID_SIZE){
+		vline(i, x, height, r, g, b, a);
 	}
-	for(i = 0; i < HEIGHT; i += GRID_SIZE){
-		hline(i, 0, WIDTH, r, g, b, a);
+	for(i = y; i < height; i += GRID_SIZE){
+		hline(i, y, width, r, g, b, a);
 	}
 }
 
 void render()
 {
-	renderGrid(64, 64, 64, 1);
+	drawGrid(0, 0, WIDTH, HEIGHT - 200, 64, 64, 64, 1);
+
+	drawString("Oh my, pixel fonts!", 0, 0, 255, 255, 255, 1);
+	drawString("<3 ", 0, 8, 255, 0, 0, 1);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, texture);
