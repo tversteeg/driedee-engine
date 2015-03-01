@@ -54,9 +54,10 @@ typedef struct {
 	unsigned int npoints, nneighbors, *neighbors, nvisited, *visited;
 } sector_t;
 
+GLuint texture;
+pixelRGB_t pixels[WIDTH * HEIGHT];
 sector_t *sectors = NULL;
 unsigned int nsectors = 0;
-pixelRGB_t pixels[WIDTH * HEIGHT];
 
 void drawPixel(int x, int y, int r, int g, int b, double a)
 {
@@ -169,7 +170,7 @@ void load(char *map)
 	fp = fopen(map, "rt");
 	if(!fp) {
 		printf("Couldn't open: %s\n", map);
-		exit(1);
+		return;
 	}
 	/* TODO: replace GNU readline with a cross platform solution */
 	while((read = getline(&line, &len, fp)) != -1) {
@@ -215,6 +216,30 @@ void load(char *map)
 	free(verts);
 }
 
+void render()
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+
+	glBegin(GL_QUADS);
+	glTexCoord2f(0.0f, 0.0f);
+	glVertex2f(-1.0f, 1.0f);
+	glTexCoord2f(0.0f, 1.0f);
+	glVertex2f(-1.0f, -1.0f);
+	glTexCoord2f(1.0f, 1.0f);
+	glVertex2f(1.0f, -1.0f);
+	glTexCoord2f(1.0f, 0.0f);
+	glVertex2f(1.0f, 1.0f);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	unsigned int i;
+	for(i = 0; i < WIDTH * HEIGHT; i++){
+		pixels[i].r = pixels[i].g = pixels[i].b = 0;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	load(argv[1]);
@@ -222,6 +247,43 @@ int main(int argc, char **argv)
 	ccDisplayInitialize();
 
 	ccWindowCreate((ccRect){0, 0, WIDTH, HEIGHT}, "3D - editor", CC_WINDOW_FLAG_NORESIZE);
+	ccWindowMouseSetCursor(CC_CURSOR_NONE);
+
+	ccGLContextBind();
+
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	bool loop = true;
+	while(loop){
+		while(ccWindowEventPoll()){
+			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
+				loop = false;
+			}else if(ccWindowEventGet().type == CC_EVENT_KEY_DOWN){
+				switch(ccWindowEventGet().keyCode){
+					case CC_KEY_ESCAPE:
+						loop = false;
+						break;
+				}
+			}
+		}
+
+		render();
+		ccGLBuffersSwap();
+
+		ccTimeDelay(6);
+	}
+
+	ccFree();
 
 	return 0;
 }
