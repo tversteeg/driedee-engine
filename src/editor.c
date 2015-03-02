@@ -42,19 +42,19 @@ typedef struct {
 	double angle, slope;
 } plane_t;
 
-typedef enum {PORTAL, WALL} walltype_t;
+typedef enum {PORTAL, WALL} edgetype_t;
 
 typedef struct {
 	unsigned int vertex1, vertex2;
-	walltype_t type;
+	edgetype_t type;
 	union {
 		unsigned int neighbor;
 	};
-} wall_t;
+} edge_t;
 
 typedef struct {
 	xy_t *vertex;
-	wall_t *walls;
+	edge_t *walls;
 	plane_t floor, ceil;
 	unsigned int npoints, nneighbors, *neighbors, nvisited, *visited;
 } sector_t;
@@ -65,9 +65,12 @@ sector_t *sectors = NULL;
 unsigned int nsectors = 0;
 xy_t *vertices = NULL;
 unsigned int nvertices = 0;
+edge_t *edges = NULL;
+unsigned int nedges = 0;
 
 bool snaptogrid = false;
 unsigned int toolselected = 3;
+int vertselected = -1;
 
 void drawPixel(int x, int y, int r, int g, int b, double a)
 {
@@ -382,14 +385,14 @@ void renderMenu()
 	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 32, 128, 0, 128, 1);
 }
 
-void renderMouse(int snap)
+void renderMouse()
 {
 	int xmouse = ccWindowGetMouse().x;
 	int ymouse = ccWindowGetMouse().y;
 
-	if(snap > 1){
-		xmouse = round(xmouse / snap) * snap;
-		ymouse = round(ymouse / snap) * snap;
+	if(snaptogrid){
+		xmouse = round(xmouse / GRID_SIZE) * GRID_SIZE;
+		ymouse = round(ymouse / GRID_SIZE) * GRID_SIZE;
 	}
 
 	char buffer[64];
@@ -399,6 +402,11 @@ void renderMouse(int snap)
 
 	vline(xmouse, ymouse - 5, ymouse + 5, 255, 255, 0, 1);
 	hline(ymouse, xmouse - 5, xmouse + 5, 255, 255, 0, 1);
+
+	if(vertselected != -1){
+		xy_t mouse = {(double)xmouse, (double)ymouse};
+		drawLine(mouse, vertices[vertselected], 0, 128, 0, 1);
+	}
 }
 
 void renderMap()
@@ -418,6 +426,12 @@ void renderMap()
 
 			drawLine(v1, v2, 0, 128, 128, 1);
 		}
+	}
+
+	for(i = 0; i < nedges; i++){
+		xy_t v1 = vertices[edges[i].vertex1];
+		xy_t v2 = vertices[edges[i].vertex2];
+		drawLine(v1, v2, 0, 128, 128, 1);
 	}
 
 	for(i = 0; i < nvertices; i++){
@@ -449,6 +463,54 @@ void render()
 	unsigned int i;
 	for(i = 0; i < WIDTH * HEIGHT; i++){
 		pixels[i].r = pixels[i].g = pixels[i].b = 0;
+	}
+}
+
+void handleMouseClick()
+{
+	int xmouse = ccWindowGetMouse().x;
+	int ymouse = ccWindowGetMouse().y;
+
+	if(snaptogrid){
+		xmouse = round(xmouse / GRID_SIZE) * GRID_SIZE;
+		ymouse = round(ymouse / GRID_SIZE) * GRID_SIZE;
+	}
+
+	switch(toolselected){
+		case 1: // Vertex
+			vertices = (xy_t*)realloc(vertices, ++nvertices * sizeof(*vertices));
+			vertices[nvertices - 1] = (xy_t){(double)xmouse, (double)ymouse};
+			break;
+		case 2: // Edge
+			{
+				int i;
+				bool gotedge = false;
+				for(i = 0; i < nvertices; i++){
+					xy_t v = vertices[i];
+					double dx = v.x - xmouse;
+					double dy = v.y - ymouse;
+					if(sqrt(dx * dx + dy * dy) < 5){
+						if(vertselected == -1){
+							vertselected = i;
+						}else{
+							if(vertselected == i){
+								break;
+							}
+							edges = (edge_t*)realloc(edges, ++nedges * sizeof(*edges));
+							edges[nedges - 1] = (edge_t){(unsigned int)i, (unsigned int)vertselected};
+							vertselected = -1;
+						}
+						gotedge = true;
+						break;
+					}
+				}
+				if(!gotedge){
+					vertselected = -1;
+				}
+			}
+			break;
+		case 3: // Movement
+			break;
 	}
 }
 
@@ -492,29 +554,35 @@ int main(int argc, char **argv)
 						snaptogrid = !snaptogrid;
 						break;
 					case CC_KEY_1:
-						toolselected = 1;
+						if(vertselected == -1){
+							toolselected = 1;
+						}
 						break;
 					case CC_KEY_2:
-						toolselected = 2;
+						if(vertselected == -1){
+							toolselected = 2;
+						}
 						break;
 					case CC_KEY_3:
-						toolselected = 3;
+						if(vertselected == -1){
+							toolselected = 3;
+						}
 						break;
 					case CC_KEY_4:
-						toolselected = 4;
+						if(vertselected == -1){
+							toolselected = 4;
+						}
 						break;
 				}
+			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
+				handleMouseClick();
 			}
 		}
 
 		renderBackground();
 		renderMap();
 		renderMenu();
-		if(!snaptogrid){
-			renderMouse(1);
-		}else{
-			renderMouse(GRID_SIZE);
-		}
+		renderMouse();
 
 		render();
 		ccGLBuffersSwap();
