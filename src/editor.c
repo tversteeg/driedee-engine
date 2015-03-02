@@ -25,6 +25,10 @@
 #define GRID_SIZE 10
 #define MENU_HEIGHT 64
 
+#define MOVEMENT_TOOL 1
+#define VERTEX_TOOL 2
+#define EDGE_TOOL 3
+
 typedef struct {
 	unsigned char r, g, b;
 } pixelRGB_t;
@@ -71,6 +75,8 @@ unsigned int nedges = 0;
 bool snaptogrid = false;
 unsigned int toolselected = 3;
 int vertselected = -1;
+
+int xmouse, ymouse;
 
 void drawPixel(int x, int y, int r, int g, int b, double a)
 {
@@ -366,13 +372,13 @@ void renderMenu()
 
 	char toolname[64];
 	switch(toolselected){
-		case 1:
+		case VERTEX_TOOL:
 			strcpy(toolname, "VERTEX");
 			break;
-		case 2:
+		case EDGE_TOOL:
 			strcpy(toolname, "EDGE");
 			break;
-		case 3:
+		case MOVEMENT_TOOL:
 			strcpy(toolname, "MOVEMENT");
 			break;
 		default:
@@ -387,14 +393,6 @@ void renderMenu()
 
 void renderMouse()
 {
-	int xmouse = ccWindowGetMouse().x;
-	int ymouse = ccWindowGetMouse().y;
-
-	if(snaptogrid){
-		xmouse = round(xmouse / GRID_SIZE) * GRID_SIZE;
-		ymouse = round(ymouse / GRID_SIZE) * GRID_SIZE;
-	}
-
 	char buffer[64];
 	int pos = sprintf(buffer, "MOUSE: (%d,%d)", xmouse, ymouse);
 	buffer[pos] = '\0';
@@ -403,7 +401,7 @@ void renderMouse()
 	vline(xmouse, ymouse - 5, ymouse + 5, 255, 255, 0, 1);
 	hline(ymouse, xmouse - 5, xmouse + 5, 255, 255, 0, 1);
 
-	if(vertselected != -1){
+	if(vertselected != -1 && toolselected == EDGE_TOOL){
 		xy_t mouse = {(double)xmouse, (double)ymouse};
 		drawLine(mouse, vertices[vertselected], 0, 128, 0, 1);
 	}
@@ -468,20 +466,12 @@ void render()
 
 void handleMouseClick()
 {
-	int xmouse = ccWindowGetMouse().x;
-	int ymouse = ccWindowGetMouse().y;
-
-	if(snaptogrid){
-		xmouse = round(xmouse / GRID_SIZE) * GRID_SIZE;
-		ymouse = round(ymouse / GRID_SIZE) * GRID_SIZE;
-	}
-
 	switch(toolselected){
-		case 1: // Vertex
+		case VERTEX_TOOL:
 			vertices = (xy_t*)realloc(vertices, ++nvertices * sizeof(*vertices));
 			vertices[nvertices - 1] = (xy_t){(double)xmouse, (double)ymouse};
 			break;
-		case 2: // Edge
+		case EDGE_TOOL:
 			{
 				int i;
 				bool gotedge = false;
@@ -509,7 +499,21 @@ void handleMouseClick()
 				}
 			}
 			break;
-		case 3: // Movement
+		case MOVEMENT_TOOL:
+			if(vertselected == -1){
+				int i;
+				for(i = 0; i < nvertices; i++){
+					xy_t v = vertices[i];
+					double dx = v.x - xmouse;
+					double dy = v.y - ymouse;
+					if(sqrt(dx * dx + dy * dy) < 5){
+						vertselected = i;
+						break;
+					}
+				}
+			}else{
+				vertselected = -1;
+			}
 			break;
 	}
 }
@@ -555,28 +559,36 @@ int main(int argc, char **argv)
 						break;
 					case CC_KEY_1:
 						if(vertselected == -1){
-							toolselected = 1;
+							toolselected = MOVEMENT_TOOL;
 						}
 						break;
 					case CC_KEY_2:
 						if(vertselected == -1){
-							toolselected = 2;
+							toolselected = VERTEX_TOOL;
 						}
 						break;
 					case CC_KEY_3:
 						if(vertselected == -1){
-							toolselected = 3;
-						}
-						break;
-					case CC_KEY_4:
-						if(vertselected == -1){
-							toolselected = 4;
+							toolselected = EDGE_TOOL;
 						}
 						break;
 				}
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
 				handleMouseClick();
 			}
+		}
+
+		xmouse = ccWindowGetMouse().x;
+		ymouse = ccWindowGetMouse().y;
+
+		if(snaptogrid){
+			xmouse = round(xmouse / GRID_SIZE) * GRID_SIZE;
+			ymouse = round(ymouse / GRID_SIZE) * GRID_SIZE;
+		}
+		
+		if(vertselected != -1 && toolselected == MOVEMENT_TOOL){
+			vertices[vertselected].x = xmouse;
+			vertices[vertselected].y = ymouse;
 		}
 
 		renderBackground();
