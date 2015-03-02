@@ -22,7 +22,8 @@
 #define WIDTH 800
 #define HEIGHT 600
 
-#define GRID_SIZE 16
+#define GRID_SIZE 10
+#define MENU_HEIGHT 64
 
 typedef struct {
 	unsigned char r, g, b;
@@ -62,6 +63,8 @@ GLuint texture;
 pixelRGB_t pixels[WIDTH * HEIGHT];
 sector_t *sectors = NULL;
 unsigned int nsectors = 0;
+
+bool snaptogrid = false;
 
 void drawPixel(int x, int y, int r, int g, int b, double a)
 {
@@ -181,7 +184,14 @@ void drawString(const char *string, int x, int y, int r, int g, int b, double a)
 {
 	int i;
 	for(i = 0; string[i] != '\0'; i++){
-		drawLetter(string[i], x + i * fontheight, y, r, g, b, a);
+		if(string[i] == '\n'){
+			y += 8;
+			x -= (i + 1) * fontheight;
+		}else if(string[i] == '\t'){
+			x += 16;
+		}else{
+			drawLetter(string[i], x + i * fontheight, y, r, g, b, a);
+		}
 	}
 }
 
@@ -328,17 +338,23 @@ void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a
 	}
 }
 
+void renderBackground()
+{
+	drawGrid(0, 0, WIDTH, HEIGHT - MENU_HEIGHT, 64, 64, 64, 1);
+}
+
 void renderMenu()
 {
-	int menuheight = 64;
+	hline(HEIGHT - MENU_HEIGHT, 0, WIDTH, 255, 255, 0, 1);
+
 	char buffer[64];
-
-	drawGrid(0, 0, WIDTH, HEIGHT - menuheight, 64, 64, 64, 1);
-	hline(HEIGHT - menuheight, 0, WIDTH, 255, 255, 0, 1);
-
-	int pos = sprintf(buffer, "Mouse: (%d,%d)", ccWindowGetMouse().x, ccWindowGetMouse().y);
+	int pos = sprintf(buffer, "GRID SIZE: (%dx%d)", GRID_SIZE, GRID_SIZE);
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - menuheight + 8, 255, 0, 0, 1);
+	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 16, 255, 0, 0, 1);
+
+	pos = sprintf(buffer, "(S) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
+	buffer[pos] = '\0';
+	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 24, 128, 0, 128, 1);
 }
 
 void renderMouse(int snap)
@@ -351,8 +367,36 @@ void renderMouse(int snap)
 		ymouse = round(ymouse / snap) * snap;
 	}
 
+	char buffer[64];
+	int pos = sprintf(buffer, "MOUSE: (%d,%d)", xmouse, ymouse);
+	buffer[pos] = '\0';
+	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 8, 255, 0, 0, 1);
+
 	vline(xmouse, ymouse - 5, ymouse + 5, 255, 255, 0, 1);
 	hline(ymouse, xmouse - 5, xmouse + 5, 255, 255, 0, 1);
+}
+
+void renderMap()
+{
+	unsigned int i;
+	for(i = 0; i < nsectors; i++){
+		sector_t sect = sectors[i];
+		unsigned int j;
+		for(j = 0; j < sect.npoints; j++){
+			xy_t v1 = sect.vertex[j];
+			xy_t v2;
+			if(j > 0){
+				v2 = sect.vertex[j - 1];
+			}else{
+				v2 = sect.vertex[sect.npoints - 1];
+			}
+			if(v1.x >= 0 && v1.x < WIDTH && v1.y >= 0 && v1.y < HEIGHT - MENU_HEIGHT){
+				drawCircle(v1, 2, 255, 255, 0, 1);
+			}
+
+			drawLine(v1, v2, 0, 128, 128, 1);
+		}
+	}
 }
 
 void render()
@@ -403,7 +447,6 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	bool loop = true;
-	bool ctrlpressed = false;
 	while(loop){
 		while(ccWindowEventPoll()){
 			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
@@ -413,21 +456,20 @@ int main(int argc, char **argv)
 					case CC_KEY_ESCAPE:
 						loop = false;
 						break;
-					case CC_KEY_LCONTROL:
-						ctrlpressed = true;
-						break;
 				}
 			}else if(ccWindowEventGet().type == CC_EVENT_KEY_UP){
 				switch(ccWindowEventGet().keyCode){
-					case CC_KEY_LCONTROL:
-						ctrlpressed = false;
+					case CC_KEY_S:
+						snaptogrid = !snaptogrid;
 						break;
 				}
 			}
 		}
 
+		renderBackground();
+		renderMap();
 		renderMenu();
-		if(!ctrlpressed){
+		if(!snaptogrid){
 			renderMouse(1);
 		}else{
 			renderMouse(GRID_SIZE);
