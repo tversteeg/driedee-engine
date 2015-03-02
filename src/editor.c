@@ -386,7 +386,7 @@ void renderMenu()
 			break;
 	}
 
-	pos = sprintf(buffer, "(1-4) %s TOOL SELECTED", toolname);
+	pos = sprintf(buffer, "(1-3) %s TOOL SELECTED", toolname);
 	buffer[pos] = '\0';
 	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 32, 128, 0, 128, 1);
 }
