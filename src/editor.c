@@ -63,8 +63,11 @@ GLuint texture;
 pixelRGB_t pixels[WIDTH * HEIGHT];
 sector_t *sectors = NULL;
 unsigned int nsectors = 0;
+xy_t *vertices = NULL;
+unsigned int nvertices = 0;
 
 bool snaptogrid = false;
+unsigned int toolselected = 3;
 
 void drawPixel(int x, int y, int r, int g, int b, double a)
 {
@@ -269,15 +272,13 @@ void load(char *map)
 {
 	FILE *fp;
 	char *line, *ptr;
-	int index, index2, scanlen, nverts;
+	int index, index2, scanlen;
 	size_t len;
 	ssize_t read;
-	xy_t vert, *verts;
+	xy_t vert;
 	sector_t *sect;
 	line = NULL;
-	verts = NULL;
 	len = 0;
-	nverts = 0;
 	fp = fopen(map, "rt");
 	if(!fp) {
 		printf("Couldn't open: %s\n", map);
@@ -290,8 +291,8 @@ void load(char *map)
 				ptr = line;
 				sscanf(ptr, "%*s %lf%n", &vert.y, &scanlen);
 				while(sscanf(ptr += scanlen, "%lf%n", &vert.x, &scanlen) == 1){
-					verts = (xy_t*)realloc(verts, ++nverts * sizeof(*verts));
-					verts[nverts - 1] = vert;
+					vertices = (xy_t*)realloc(vertices, ++nvertices * sizeof(*vertices));
+					vertices[nvertices - 1] = vert;
 				}
 				break;
 			case 's':
@@ -306,13 +307,13 @@ void load(char *map)
 				sect->neighbors = NULL;
 				sscanf(ptr, "%*s %lf %lf %lf %u %lf %lf %lf %u%n", &sect->floor.start.z, &sect->floor.slope, &sect->floor.angle, &index,
 						&sect->ceil.start.z, &sect->ceil.slope, &sect->ceil.angle, &index2, &scanlen);
-				sect->floor.start.x = verts[index].x;
-				sect->floor.start.y = verts[index].y;
-				sect->ceil.start.x = verts[index2].x;
-				sect->ceil.start.y = verts[index2].y;
+				sect->floor.start.x = vertices[index].x;
+				sect->floor.start.y = vertices[index].y;
+				sect->ceil.start.x = vertices[index2].x;
+				sect->ceil.start.y = vertices[index2].y;
 				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
 					sect->vertex = (xy_t*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
-					sect->vertex[sect->npoints - 1] = verts[index];
+					sect->vertex[sect->npoints - 1] = vertices[index];
 				}
 				sscanf(ptr += scanlen, "%*c%n", &scanlen);
 				while(sscanf(ptr += scanlen, "%u%n", &index, &scanlen) == 1){
@@ -324,7 +325,6 @@ void load(char *map)
 	}
 	fclose(fp);
 	free(line);
-	free(verts);
 }
 
 void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a)
@@ -340,12 +340,17 @@ void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a
 
 void renderBackground()
 {
-	drawGrid(0, 0, WIDTH, HEIGHT - MENU_HEIGHT, 64, 64, 64, 1);
+	drawGrid(0, 0, WIDTH, HEIGHT - MENU_HEIGHT, 32, 32, 32, 1);
 }
 
 void renderMenu()
 {
 	hline(HEIGHT - MENU_HEIGHT, 0, WIDTH, 255, 255, 0, 1);
+
+	int i;
+	for(i = HEIGHT - MENU_HEIGHT + 1; i < HEIGHT; i++){
+		hline(i, 0, WIDTH, 16, 16, 16, 1);
+	}
 
 	char buffer[64];
 	int pos = sprintf(buffer, "GRID SIZE: (%dx%d)", GRID_SIZE, GRID_SIZE);
@@ -355,6 +360,26 @@ void renderMenu()
 	pos = sprintf(buffer, "(S) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
 	buffer[pos] = '\0';
 	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 24, 128, 0, 128, 1);
+
+	char toolname[64];
+	switch(toolselected){
+		case 1:
+			strcpy(toolname, "VERTEX");
+			break;
+		case 2:
+			strcpy(toolname, "EDGE");
+			break;
+		case 3:
+			strcpy(toolname, "MOVEMENT");
+			break;
+		default:
+			strcpy(toolname, "NO");
+			break;
+	}
+
+	pos = sprintf(buffer, "(1-4) %s TOOL SELECTED", toolname);
+	buffer[pos] = '\0';
+	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 32, 128, 0, 128, 1);
 }
 
 void renderMouse(int snap)
@@ -390,11 +415,15 @@ void renderMap()
 			}else{
 				v2 = sect.vertex[sect.npoints - 1];
 			}
-			if(v1.x >= 0 && v1.x < WIDTH && v1.y >= 0 && v1.y < HEIGHT - MENU_HEIGHT){
-				drawCircle(v1, 2, 255, 255, 0, 1);
-			}
 
 			drawLine(v1, v2, 0, 128, 128, 1);
+		}
+	}
+
+	for(i = 0; i < nvertices; i++){
+		xy_t v = vertices[i];
+		if(v.x >= 0 && v.x < WIDTH && v.y >= 0 && v.y < HEIGHT - MENU_HEIGHT){
+			drawCircle(v, 2, 255, 255, 0, 1);
 		}
 	}
 }
@@ -461,6 +490,18 @@ int main(int argc, char **argv)
 				switch(ccWindowEventGet().keyCode){
 					case CC_KEY_S:
 						snaptogrid = !snaptogrid;
+						break;
+					case CC_KEY_1:
+						toolselected = 1;
+						break;
+					case CC_KEY_2:
+						toolselected = 2;
+						break;
+					case CC_KEY_3:
+						toolselected = 3;
+						break;
+					case CC_KEY_4:
+						toolselected = 4;
 						break;
 				}
 			}
