@@ -22,12 +22,12 @@
 #define WIDTH 800
 #define HEIGHT 600
 
-#define GRID_SIZE 10
 #define MENU_HEIGHT 64
 
 #define MOVEMENT_TOOL 1
 #define VERTEX_TOOL 2
 #define EDGE_TOOL 3
+#define REMOVAL_TOOL 4
 
 typedef struct {
 	unsigned char r, g, b;
@@ -46,7 +46,7 @@ typedef struct {
 	double angle, slope;
 } plane_t;
 
-typedef enum {PORTAL, WALL} edgetype_t;
+typedef enum {PORTAL, WALL, DELETED} edgetype_t;
 
 typedef struct {
 	unsigned int vertex1, vertex2;
@@ -74,9 +74,61 @@ unsigned int nedges = 0;
 
 bool snaptogrid = false;
 unsigned int toolselected = 3;
+edgetype_t edgetypeselected = WALL;
 int vertselected = -1;
+int gridsize = 10;
 
 int xmouse, ymouse;
+
+xy_t vectorUnit(xy_t p)
+{
+	double len = sqrt(p.x * p.x + p.y * p.y);
+	p.x /= len;
+	p.y /= len;
+	return p;
+}
+
+double vectorDotProduct(xy_t p1, xy_t p2)
+{
+	return p1.x * p2.x + p1.y * p2.y;
+}
+
+xy_t vectorProject(xy_t p1, xy_t p2)
+{
+	xy_t normal = vectorUnit(p2);
+	double scalar = vectorDotProduct(p1, normal);
+	normal.x *= scalar;
+	normal.y *= scalar;
+
+	return normal;
+}
+
+double vectorProjectScalar(xy_t p1, xy_t p2)
+{
+	return vectorDotProduct(p1, vectorUnit(p2));
+}
+
+double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
+{
+	xy_t seg = {p2.x - p1.x, p2.y - p1.y};
+	xy_t cir = {p.x - p1.x, p.y - p1.y};
+	double proj = vectorProjectScalar(cir, seg);
+
+	xy_t closest;
+	if(proj < 0){
+		closest = p1;
+	}else if(proj > sqrt(seg.x * seg.x + seg.y * seg.y)){
+		closest = p2;
+	}else{
+		xy_t projv = vectorProject(cir, seg);
+		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
+	}
+
+	double dx = p.x - closest.x;
+	double dy = p.y - closest.y;
+
+	return sqrt(dx * dx + dy * dy);
+}
 
 void drawPixel(int x, int y, int r, int g, int b, double a)
 {
@@ -338,11 +390,14 @@ void load(char *map)
 
 void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a)
 {
+	if(gridsize <= 1){
+		return;
+	}
 	int i;
-	for(i = x; i < width; i += GRID_SIZE){
+	for(i = x; i < width; i += gridsize){
 		vline(i, x, height, r, g, b, a);
 	}
-	for(i = y; i < height; i += GRID_SIZE){
+	for(i = y; i < height; i += gridsize){
 		hline(i, y, width, r, g, b, a);
 	}
 }
@@ -362,13 +417,13 @@ void renderMenu()
 	}
 
 	char buffer[64];
-	int pos = sprintf(buffer, "GRID SIZE: (%dx%d)", GRID_SIZE, GRID_SIZE);
+	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 16, 255, 0, 0, 1);
+	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 18, 0, 128, 128, 1);
 
 	pos = sprintf(buffer, "(S) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 24, 128, 0, 128, 1);
+	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 28, 0, 128, 128, 1);
 
 	char toolname[64];
 	switch(toolselected){
@@ -376,19 +431,32 @@ void renderMenu()
 			strcpy(toolname, "VERTEX");
 			break;
 		case EDGE_TOOL:
-			strcpy(toolname, "EDGE");
+			switch(edgetypeselected){
+				case WALL:
+					strcpy(toolname, "EDGE - (W&P) WALL");
+					break;
+				case PORTAL:
+					strcpy(toolname, "EDGE - (W&P) PORTAL");
+					break;
+				default:
+					strcpy(toolname, "EDGE - UNDEFINED");
+					break;
+			}
 			break;
 		case MOVEMENT_TOOL:
 			strcpy(toolname, "MOVEMENT");
+			break;
+		case REMOVAL_TOOL:
+			strcpy(toolname, "REMOVAL");
 			break;
 		default:
 			strcpy(toolname, "NO");
 			break;
 	}
 
-	pos = sprintf(buffer, "(1-3) %s TOOL SELECTED", toolname);
+	pos = sprintf(buffer, "(1-4) %s TOOL SELECTED", toolname);
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 32, 128, 0, 128, 1);
+	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 38, 255, 0, 0, 1);
 }
 
 void renderMouse()
@@ -396,7 +464,7 @@ void renderMouse()
 	char buffer[64];
 	int pos = sprintf(buffer, "MOUSE: (%d,%d)", xmouse, ymouse);
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 8, 255, 0, 0, 1);
+	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 8, 0, 64, 64, 1);
 
 	vline(xmouse, ymouse - 5, ymouse + 5, 255, 255, 0, 1);
 	hline(ymouse, xmouse - 5, xmouse + 5, 255, 255, 0, 1);
@@ -427,9 +495,14 @@ void renderMap()
 	}
 
 	for(i = 0; i < nedges; i++){
-		xy_t v1 = vertices[edges[i].vertex1];
-		xy_t v2 = vertices[edges[i].vertex2];
-		drawLine(v1, v2, 0, 128, 128, 1);
+		edge_t edge = edges[i];
+		xy_t v1 = vertices[edge.vertex1];
+		xy_t v2 = vertices[edge.vertex2];
+		if(edge.type == WALL){
+			drawLine(v1, v2, 128, 0, 128, 1);
+		}else if(edge.type == PORTAL){
+			drawLine(v1, v2, 64, 64, 255, 1);
+		}
 	}
 
 	for(i = 0; i < nvertices; i++){
@@ -479,7 +552,7 @@ void handleMouseClick()
 					xy_t v = vertices[i];
 					double dx = v.x - xmouse;
 					double dy = v.y - ymouse;
-					if(sqrt(dx * dx + dy * dy) < 5){
+					if(sqrt(dx * dx + dy * dy) < 8){
 						if(vertselected == -1){
 							vertselected = i;
 						}else{
@@ -487,7 +560,7 @@ void handleMouseClick()
 								break;
 							}
 							edges = (edge_t*)realloc(edges, ++nedges * sizeof(*edges));
-							edges[nedges - 1] = (edge_t){(unsigned int)i, (unsigned int)vertselected};
+							edges[nedges - 1] = (edge_t){(unsigned int)i, (unsigned int)vertselected, edgetypeselected};
 							vertselected = -1;
 						}
 						gotedge = true;
@@ -513,6 +586,27 @@ void handleMouseClick()
 				}
 			}else{
 				vertselected = -1;
+			}
+			break;
+		case REMOVAL_TOOL:
+			{
+				int i;
+				for(i = 0; i < nedges; i++){
+					if(distanceToSegment((xy_t){(double)xmouse, (double)ymouse}, vertices[edges[i].vertex1], vertices[edges[i].vertex2]) < 5){
+						edges[i].type = DELETED;
+						return;
+					}
+				}
+				for(i = 0; i < nvertices; i++){
+					xy_t v = vertices[i];
+					double dx = v.x - xmouse;
+					double dy = v.y - ymouse;
+					if(sqrt(dx * dx + dy * dy) < 5){
+						vertices[i].x = -1;
+						vertices[i].y = -1;
+						return;
+					}
+				}
 			}
 			break;
 	}
@@ -564,13 +658,32 @@ int main(int argc, char **argv)
 						break;
 					case CC_KEY_2:
 						if(vertselected == -1){
-							toolselected = VERTEX_TOOL;
+							toolselected = REMOVAL_TOOL;
 						}
 						break;
 					case CC_KEY_3:
 						if(vertselected == -1){
+							toolselected = VERTEX_TOOL;
+						}
+						break;
+					case CC_KEY_4:
+						if(vertselected == -1){
 							toolselected = EDGE_TOOL;
 						}
+						break;
+					case CC_KEY_W:
+						edgetypeselected = WALL;
+						break;
+					case CC_KEY_P:
+						edgetypeselected = PORTAL;
+						break;
+					case CC_KEY_9:
+						if(gridsize > 0){
+							gridsize--;
+						}
+						break;
+					case CC_KEY_0:
+						gridsize++;
 						break;
 				}
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
@@ -582,8 +695,8 @@ int main(int argc, char **argv)
 		ymouse = ccWindowGetMouse().y;
 
 		if(snaptogrid){
-			xmouse = round(xmouse / GRID_SIZE) * GRID_SIZE;
-			ymouse = round(ymouse / GRID_SIZE) * GRID_SIZE;
+			xmouse = round(xmouse / gridsize) * gridsize;
+			ymouse = round(ymouse / gridsize) * gridsize;
 		}
 		
 		if(vertselected != -1 && toolselected == MOVEMENT_TOOL){
