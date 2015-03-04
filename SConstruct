@@ -2,7 +2,7 @@ import os
 
 env=Environment(CC='gcc')
 
-sources=[Glob('src/main.c')]
+sources=[Glob('src/l_*.c')]
 libs=['ccore', 'X11', 'Xrandr', 'Xinerama', 'Xi', 'GL', 'GLU', 'GLEW', 'pthread', 'm']
 libpaths=['/usr/lib', '/usr/local/lib', '.']
 
@@ -12,8 +12,8 @@ env.Append(CCFLAGS=['-g'])
 env.Append(CCFLAGS=['-Wall'])
 env.Append(CCFLAGS=['-O3'])
 env.Append(CCFLAGS=['-ffast-math'])
+env.Append(CCFLAGS=['-Iinclude/'])
 
-env.Program(target='bin/game', source=sources, LIBS=[libs], LIBPATH=libpaths)
-
-sources=[Glob('src/editor.c')]
-env.Program(target='bin/editor', source=sources, LIBS=[libs], LIBPATH=libpaths)
+staticLibrary=env.Library(target='lib/roguelib', source=sources, LIBS=libs, LIBPATH=libpaths)
+env.Program(target='bin/editor', source=['src/e_main.c'], LIBS=[staticLibrary, libs], LIBPATH=libpaths)
+env.Program(target='bin/game', source=['src/g_main.c'], LIBS=[staticLibrary, libs], LIBPATH=libpaths)
