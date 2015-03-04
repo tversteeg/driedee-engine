@@ -3,7 +3,7 @@
 #include "l_vector.h"
 
 typedef struct {
-	char r, g, b, a;
+	unsigned char r, g, b, a;
 } pixel_t;
 
 typedef struct {
