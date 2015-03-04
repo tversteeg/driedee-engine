@@ -78,7 +78,7 @@ void loadFont(font_t *font, char start, char letters, char width, const bool *pi
 	memcpy(font->pixels, pixels, (font->totalwidth * font->height) * sizeof(bool));
 }
 
-inline bool getPixel(pixel_t *pixel, texture_t *tex, unsigned int x, unsigned int y)
+inline bool getPixel(texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y)
 {
 	if(x < tex->width && y < tex->height){
 		pixel = &tex->pixels[x + y * tex->width];
@@ -159,7 +159,7 @@ void drawCircle(texture_t *tex, xy_t p, unsigned int radius, pixel_t pixel)
 	}
 }
 
-void drawLetter(texture_t *tex, font_t *font, char letter, int x, int y, pixel_t pixel)
+void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, pixel_t pixel)
 {
 	char todraw = letter - font->start;
 	if(todraw < 0 || todraw > font->letters){
@@ -178,7 +178,7 @@ void drawLetter(texture_t *tex, font_t *font, char letter, int x, int y, pixel_t
 	}
 }
 
-void drawString(texture_t *tex, font_t *font, const char *string, int x, int y, pixel_t pixel)
+void drawString(texture_t *tex, const font_t *font, const char *string, int x, int y, pixel_t pixel)
 {
 	int i;
 	for(i = 0; string[i] != '\0'; i++){
@@ -193,7 +193,7 @@ void drawString(texture_t *tex, font_t *font, const char *string, int x, int y, 
 	}
 }
 
-void drawGrid(texture_t *tex, int x, int y, int width, int height, int gridwidth, int gridheight, pixel_t pixel)
+void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int gridwidth, unsigned int gridheight, pixel_t pixel)
 {
 	if(gridwidth <= 1 || gridheight <= 1){
 		return;
