@@ -46,7 +46,7 @@ typedef struct {
 	double angle, slope;
 } plane_t;
 
-typedef enum {PORTAL, WALL, DELETED} edgetype_t;
+typedef enum {PORTAL, WALL} edgetype_t;
 
 typedef struct {
 	unsigned int vertex1, vertex2;
@@ -77,6 +77,7 @@ unsigned int toolselected = 3;
 edgetype_t edgetypeselected = WALL;
 int vertselected = -1;
 int gridsize = 10;
+int snapsize = 10;
 
 int xmouse, ymouse;
 
@@ -329,6 +330,20 @@ void hline(int y, int left, int right, int r, int g, int b, double a)
 	}
 }
 
+void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a)
+{
+	if(gridsize <= 1){
+		return;
+	}
+	int i;
+	for(i = x; i < width; i += gridsize){
+		vline(i, x, height, r, g, b, a);
+	}
+	for(i = y; i < height; i += gridsize){
+		hline(i, y, width, r, g, b, a);
+	}
+}
+
 void load(char *map)
 {
 	FILE *fp;
@@ -387,18 +402,39 @@ void load(char *map)
 	fclose(fp);
 	free(line);
 }
-
-void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a)
+ 
+void deleteEdge(unsigned int index)
 {
-	if(gridsize <= 1){
+	if(index >= nedges){
 		return;
 	}
-	int i;
-	for(i = x; i < width; i += gridsize){
-		vline(i, x, height, r, g, b, a);
+
+	memmove(edges + index, edges + index + 1, (nedges - index - 1) * sizeof(*edges));
+	edges = (edge_t*)realloc(edges, --nedges * sizeof(*edges));
+}
+
+void deleteVertex(unsigned int index)
+{
+	if(index >= nvertices){
+		return;
 	}
-	for(i = y; i < height; i += gridsize){
-		hline(i, y, width, r, g, b, a);
+
+	memmove(vertices + index, vertices + index + 1, (nvertices - index - 1) * sizeof(vertices[index]));
+	vertices = (xy_t*)realloc(vertices, --nvertices * sizeof(*vertices));
+
+	int i;
+	for(i = 0; i < nedges; i++){
+		if(edges[i].vertex1 == index || edges[i].vertex2 == index){
+			deleteEdge(i);
+			i--;
+			continue;
+		}
+		if(edges[i].vertex1 > index){
+			edges[i].vertex1--;
+		}
+		if(edges[i].vertex2 > index){
+			edges[i].vertex2--;
+		}
 	}
 }
 
@@ -552,7 +588,7 @@ void handleMouseClick()
 					xy_t v = vertices[i];
 					double dx = v.x - xmouse;
 					double dy = v.y - ymouse;
-					if(sqrt(dx * dx + dy * dy) < 8){
+					if(sqrt(dx * dx + dy * dy) < snapsize){
 						if(vertselected == -1){
 							vertselected = i;
 						}else{
@@ -579,7 +615,7 @@ void handleMouseClick()
 					xy_t v = vertices[i];
 					double dx = v.x - xmouse;
 					double dy = v.y - ymouse;
-					if(sqrt(dx * dx + dy * dy) < 5){
+					if(sqrt(dx * dx + dy * dy) < snapsize){
 						vertselected = i;
 						break;
 					}
@@ -591,19 +627,18 @@ void handleMouseClick()
 		case REMOVAL_TOOL:
 			{
 				int i;
-				for(i = 0; i < nedges; i++){
-					if(distanceToSegment((xy_t){(double)xmouse, (double)ymouse}, vertices[edges[i].vertex1], vertices[edges[i].vertex2]) < 5){
-						edges[i].type = DELETED;
-						return;
-					}
-				}
 				for(i = 0; i < nvertices; i++){
 					xy_t v = vertices[i];
 					double dx = v.x - xmouse;
 					double dy = v.y - ymouse;
-					if(sqrt(dx * dx + dy * dy) < 5){
-						vertices[i].x = -1;
-						vertices[i].y = -1;
+					if(sqrt(dx * dx + dy * dy) < snapsize){
+						deleteVertex(i);
+						return;
+					}
+				}
+				for(i = 0; i < nedges; i++){
+					if(distanceToSegment((xy_t){(double)xmouse, (double)ymouse}, vertices[edges[i].vertex1], vertices[edges[i].vertex2]) < snapsize){
+						deleteEdge(i);
 						return;
 					}
 				}
