@@ -307,7 +307,7 @@ void render()
 {	
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGBA, GL_BYTE, tex.pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -406,6 +406,8 @@ int main(int argc, char **argv)
 	load(argv[1]);
 	
 	initTexture(&tex, WIDTH, HEIGHT);
+	initFont(&font, fontwidth, fontheight);
+	loadFont(&font, '!', '~' - '!', 8, (bool*)&fontdata[0]);
 
 	ccDisplayInitialize();
 
@@ -421,6 +423,7 @@ int main(int argc, char **argv)
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
