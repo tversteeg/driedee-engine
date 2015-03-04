@@ -18,6 +18,8 @@
 #endif
 
 #include "PixelFont1.h"
+#include "l_draw.h"
+#include "l_vector.h"
 
 #define WIDTH 800
 #define HEIGHT 600
@@ -28,18 +30,6 @@
 #define VERTEX_TOOL 2
 #define EDGE_TOOL 3
 #define REMOVAL_TOOL 4
-
-typedef struct {
-	unsigned char r, g, b;
-} pixelRGB_t;
-
-typedef struct {
-	double x, y;
-} xy_t;
-
-typedef struct {
-	double x, y, z;
-} xyz_t;
 
 typedef struct {
 	xyz_t start;
@@ -64,7 +54,9 @@ typedef struct {
 } sector_t;
 
 GLuint texture;
-pixelRGB_t pixels[WIDTH * HEIGHT];
+texture_t tex;
+font_t font;
+
 sector_t *sectors = NULL;
 unsigned int nsectors = 0;
 xy_t *vertices = NULL;
@@ -80,34 +72,6 @@ int gridsize = 10;
 int snapsize = 10;
 
 int xmouse, ymouse;
-
-xy_t vectorUnit(xy_t p)
-{
-	double len = sqrt(p.x * p.x + p.y * p.y);
-	p.x /= len;
-	p.y /= len;
-	return p;
-}
-
-double vectorDotProduct(xy_t p1, xy_t p2)
-{
-	return p1.x * p2.x + p1.y * p2.y;
-}
-
-xy_t vectorProject(xy_t p1, xy_t p2)
-{
-	xy_t normal = vectorUnit(p2);
-	double scalar = vectorDotProduct(p1, normal);
-	normal.x *= scalar;
-	normal.y *= scalar;
-
-	return normal;
-}
-
-double vectorProjectScalar(xy_t p1, xy_t p2)
-{
-	return vectorDotProduct(p1, vectorUnit(p2));
-}
 
 double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 {
@@ -129,219 +93,6 @@ double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 	double dy = p.y - closest.y;
 
 	return sqrt(dx * dx + dy * dy);
-}
-
-void drawPixel(int x, int y, int r, int g, int b, double a)
-{
-	if(x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT){
-		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
-		if(a == 1){
-			pixel->r = r;
-			pixel->g = g;
-			pixel->b = b;
-		}else{
-			double mina = 1 - a;
-			pixel->r = pixel->r * mina + r * a;
-			pixel->g = pixel->g * mina + g * a;
-			pixel->b = pixel->b * mina + b * a;
-		}
-	}
-}
-
-void drawLine(xy_t p1, xy_t p2, int r, int g, int b, double a)
-{
-	int x1 = p1.x, y1 = p1.y;
-	int x2 = p2.x, y2 = p2.y;
-	if(x1 == x2 && y1 == y2){
-		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
-			pixelRGB_t *pixel = &pixels[x1 + y1 * WIDTH];
-			if(a == 1){
-				pixel->r = r;
-				pixel->g = g;
-				pixel->b = b;
-			}else{
-				double mina = 1 - a;
-				pixel->r = pixel->r * mina + r * a;
-				pixel->g = pixel->g * mina + g * a;
-				pixel->b = pixel->b * mina + b * a;
-			}
-		}
-		return;
-	}
-	int dx = abs(x2 - x1);
-	int dy = abs(y2 - y1);
-	int sx = x1 < x2 ? 1 : -1;
-	int sy = y1 < y2 ? 1 : -1;
-	int err = (dx > dy ? dx : -dy) / 2;
-	while(true){
-		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
-			pixelRGB_t *pixel = &pixels[x1 + y1 * WIDTH];
-			if(a == 1){
-				pixel->r = r;
-				pixel->g = g;
-				pixel->b = b;
-			}else{
-				double mina = 1 - a;
-				pixel->r = pixel->r * mina + r * a;
-				pixel->g = pixel->g * mina + g * a;
-				pixel->b = pixel->b * mina + b * a;
-			}
-		}
-		if(x1 == x2 && y1 == y2){
-			break;
-		}
-		int err2 = err;
-		if(err2 > -dx) {
-			err -= dy;
-			x1 += sx;
-		}
-		if(err2 < dy) {
-			err += dx;
-			y1 += sy;
-		}
-	}
-}
-
-void drawCircle(xy_t p, int radius, int r, int g, int b, double a)
-{
-	int x = radius;
-	int y = 0;
-	int error = 1 - x;
-	while(x >= y){
-		drawPixel(x + p.x, y + p.y, r, g, b, a);
-		drawPixel(y + p.x, x + p.y, r, g, b, a);
-		drawPixel(-x + p.x, y + p.y, r, g, b, a);
-		drawPixel(-y + p.x, x + p.y, r, g, b, a);
-		drawPixel(-x + p.x, -y + p.y, r, g, b, a);
-		drawPixel(-y + p.x, -x + p.y, r, g, b, a);
-		drawPixel(x + p.x, -y + p.y, r, g, b, a);
-		drawPixel(y + p.x, -x + p.y, r, g, b, a);
-		y++;
-		if(error < 0){
-			error += 2 * y + 1;
-		}else{
-			x--;
-			error += 2 * (y - x) + 1;
-		}
-	}
-}
-
-void drawLetter(char letter, int x, int y, int r, int g, int b, double a)
-{
-	char todraw = letter - '!';
-	if(todraw < 0){
-		return;
-	}
-	int drawpos = todraw * fontheight;
-
-	int i;
-	for(i = 0; i < 8; i++){
-		int j;
-		for(j = 0; j < 8; j++){
-			if(fontdata[i + drawpos + j * fontwidth] != 0){
-				drawPixel(x + i, y + j, r, g, b, a);
-			}
-		}
-	}
-}
-
-void drawString(const char *string, int x, int y, int r, int g, int b, double a)
-{
-	int i;
-	for(i = 0; string[i] != '\0'; i++){
-		if(string[i] == '\n'){
-			y += 8;
-			x -= (i + 1) * fontheight;
-		}else if(string[i] == '\t'){
-			x += 16;
-		}else{
-			drawLetter(string[i], x + i * fontheight, y, r, g, b, a);
-		}
-	}
-}
-
-void vline(int x, int top, int bot, int r, int g, int b, double a)
-{
-	if(x < 0 || x >= WIDTH){
-		return;
-	}
-
-	if(top < bot){
-		int tmp = top;
-		top = bot;
-		bot = tmp;
-	}
-
-	if(top >= HEIGHT){
-		top = HEIGHT - 1;
-	}
-	if(bot < 0){
-		bot = 0;
-	}
-
-	int y;
-	for(y = bot; y <= top; y++){
-		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
-		if(a == 1){
-			pixel->r = r;
-			pixel->g = g;
-			pixel->b = b;
-		}else{
-			double mina = 1 - a;
-			pixel->r = pixel->r * mina + r * a;
-			pixel->g = pixel->g * mina + g * a;
-			pixel->b = pixel->b * mina + b * a;
-		}
-	}
-}
-
-void hline(int y, int left, int right, int r, int g, int b, double a)
-{
-	if(y < 0 || y >= HEIGHT){
-		return;
-	}
-
-	if(right < left){
-		int tmp = right;
-		right = left;
-		left = tmp;
-	}
-
-	if(right >= WIDTH){
-		right = WIDTH - 1;
-	}
-	if(left < 0){
-		left = 0;
-	}
-
-	int x;
-	for(x = left; x <= right; x++){
-		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
-		if(a == 1){
-			pixel->r = r;
-			pixel->g = g;
-			pixel->b = b;
-		}else{
-			double mina = 1 - a;
-			pixel->r = pixel->r * mina + r * a;
-			pixel->g = pixel->g * mina + g * a;
-			pixel->b = pixel->b * mina + b * a;
-		}
-	}
-}
-
-void drawGrid(int x, int y, int width, int height, int r, int g, int b, double a)
-{
-	if(gridsize <= 1){
-		return;
-	}
-	int i;
-	for(i = x; i < width; i += gridsize){
-		vline(i, x, height, r, g, b, a);
-	}
-	for(i = y; i < height; i += gridsize){
-		hline(i, y, width, r, g, b, a);
-	}
 }
 
 void load(char *map)
@@ -440,26 +191,28 @@ void deleteVertex(unsigned int index)
 
 void renderBackground()
 {
-	drawGrid(0, 0, WIDTH, HEIGHT - MENU_HEIGHT, 32, 32, 32, 1);
+	drawGrid(&tex, 0, 0, WIDTH, HEIGHT - MENU_HEIGHT, gridsize, gridsize, (pixel_t){32, 32, 32, 1});
 }
 
 void renderMenu()
 {
-	hline(HEIGHT - MENU_HEIGHT, 0, WIDTH, 255, 255, 0, 1);
+	//hline(HEIGHT - MENU_HEIGHT, 0, WIDTH, 255, 255, 0, 1);
 
+	/*
 	int i;
 	for(i = HEIGHT - MENU_HEIGHT + 1; i < HEIGHT; i++){
 		hline(i, 0, WIDTH, 16, 16, 16, 1);
 	}
+	*/
 
 	char buffer[64];
 	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 18, 0, 128, 128, 1);
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, (pixel_t){0, 128, 128, 1});
 
 	pos = sprintf(buffer, "(S) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 28, 0, 128, 128, 1);
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, (pixel_t){0, 128, 128, 1});
 
 	char toolname[64];
 	switch(toolselected){
@@ -492,7 +245,7 @@ void renderMenu()
 
 	pos = sprintf(buffer, "(1-4) %s TOOL SELECTED", toolname);
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 38, 255, 0, 0, 1);
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, (pixel_t){255, 0, 0, 1});
 }
 
 void renderMouse()
@@ -500,14 +253,15 @@ void renderMouse()
 	char buffer[64];
 	int pos = sprintf(buffer, "MOUSE: (%d,%d)", xmouse, ymouse);
 	buffer[pos] = '\0';
-	drawString(buffer, 8, HEIGHT - MENU_HEIGHT + 8, 0, 64, 64, 1);
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, (pixel_t){0, 64, 64, 1});
 
-	vline(xmouse, ymouse - 5, ymouse + 5, 255, 255, 0, 1);
-	hline(ymouse, xmouse - 5, xmouse + 5, 255, 255, 0, 1);
+
+	//vline(xmouse, ymouse - 5, ymouse + 5, 255, 255, 0, 1);
+	//hline(ymouse, xmouse - 5, xmouse + 5, 255, 255, 0, 1);
 
 	if(vertselected != -1 && toolselected == EDGE_TOOL){
 		xy_t mouse = {(double)xmouse, (double)ymouse};
-		drawLine(mouse, vertices[vertselected], 0, 128, 0, 1);
+		drawLine(&tex, mouse, vertices[vertselected], (pixel_t){0, 128, 0, 1});
 	}
 }
 
@@ -526,7 +280,7 @@ void renderMap()
 				v2 = sect.vertex[sect.npoints - 1];
 			}
 
-			drawLine(v1, v2, 0, 128, 128, 1);
+			drawLine(&tex, v1, v2, (pixel_t){0, 128, 128, 1});
 		}
 	}
 
@@ -535,16 +289,16 @@ void renderMap()
 		xy_t v1 = vertices[edge.vertex1];
 		xy_t v2 = vertices[edge.vertex2];
 		if(edge.type == WALL){
-			drawLine(v1, v2, 128, 0, 128, 1);
+			drawLine(&tex, v1, v2, (pixel_t){128, 0, 128, 1});
 		}else if(edge.type == PORTAL){
-			drawLine(v1, v2, 64, 64, 255, 1);
+			drawLine(&tex, v1, v2, (pixel_t){64, 64, 255, 1});
 		}
 	}
 
 	for(i = 0; i < nvertices; i++){
 		xy_t v = vertices[i];
 		if(v.x >= 0 && v.x < WIDTH && v.y >= 0 && v.y < HEIGHT - MENU_HEIGHT){
-			drawCircle(v, 2, 255, 255, 0, 1);
+			drawCircle(&tex, v, 2, (pixel_t){255, 255, 0, 1});
 		}
 	}
 }
@@ -553,7 +307,7 @@ void render()
 {	
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGBA, GL_BYTE, tex.pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -568,8 +322,8 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	unsigned int i;
-	for(i = 0; i < WIDTH * HEIGHT; i++){
-		pixels[i].r = pixels[i].g = pixels[i].b = 0;
+	for(i = 0; i < tex.width * tex.height; i++){
+		tex.pixels[i].r = tex.pixels[i].g = tex.pixels[i].b = tex.pixels[i].a = 0;
 	}
 }
 
@@ -650,6 +404,8 @@ void handleMouseClick()
 int main(int argc, char **argv)
 {
 	load(argv[1]);
+	
+	initTexture(&tex, WIDTH, HEIGHT);
 
 	ccDisplayInitialize();
 

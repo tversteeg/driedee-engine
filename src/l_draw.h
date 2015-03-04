@@ -27,8 +27,10 @@ inline void setPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pix
 // Set the pixel with a boundary check
 inline void drawPixel(texture_t *tex, int x, int y, pixel_t pixel);
 
-void drawLine(texture_t *tex, xy_t p1, xy_t p2, char r, char g, char b, char a);
-void drawCircle(xy_t p, unsigned int radius, char r, char g, char b, char a);
+void drawLine(texture_t *tex, xy_t p1, xy_t p2, pixel_t pixel);
+void drawCircle(texture_t *tex, xy_t p, unsigned int radius, pixel_t pixel);
 
-void drawLetter(texture_t *tex, const font_t *font, char letter, unsigned int x, unsigned int y, char r, char g, char b, char a);
-void drawString(texture_t *tex, const font_t *font, const char *text, unsigned int x, unsigned int y, char r, char g, char b, char a);
+void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, pixel_t pixel);
+void drawString(texture_t *tex, const font_t *font, const char *text, int x, int y, pixel_t pixel);
+
+void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int gridwidth, unsigned int gridheight, pixel_t pixel);
