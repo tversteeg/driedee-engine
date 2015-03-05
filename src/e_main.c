@@ -191,28 +191,26 @@ void deleteVertex(unsigned int index)
 
 void renderBackground()
 {
-	drawGrid(&tex, 0, 0, WIDTH, HEIGHT - MENU_HEIGHT, gridsize, gridsize, (pixel_t){32, 32, 32, 1});
+	drawGrid(&tex, 0, 0, WIDTH, HEIGHT - MENU_HEIGHT, gridsize, gridsize, (pixel_t){32, 32, 32, 255});
 }
 
 void renderMenu()
 {
-	//hline(HEIGHT - MENU_HEIGHT, 0, WIDTH, 255, 255, 0, 1);
+	drawLine(&tex, (xy_t){0, HEIGHT - MENU_HEIGHT}, (xy_t){WIDTH, HEIGHT - MENU_HEIGHT}, (pixel_t){255, 255, 0, 255});
 
-	/*
 	int i;
 	for(i = HEIGHT - MENU_HEIGHT + 1; i < HEIGHT; i++){
-		hline(i, 0, WIDTH, 16, 16, 16, 1);
+		drawLine(&tex, (xy_t){0, i}, (xy_t){WIDTH, i}, (pixel_t){16, 16, 16, 255});
 	}
-	*/
 
 	char buffer[64];
 	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, (pixel_t){0, 128, 128, 1});
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, (pixel_t){0, 128, 128, 255});
 
 	pos = sprintf(buffer, "(S) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, (pixel_t){0, 128, 128, 1});
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, (pixel_t){0, 128, 128, 255});
 
 	char toolname[64];
 	switch(toolselected){
@@ -245,7 +243,7 @@ void renderMenu()
 
 	pos = sprintf(buffer, "(1-4) %s TOOL SELECTED", toolname);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, (pixel_t){255, 0, 0, 1});
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, (pixel_t){255, 0, 0, 255});
 }
 
 void renderMouse()
@@ -253,15 +251,14 @@ void renderMouse()
 	char buffer[64];
 	int pos = sprintf(buffer, "MOUSE: (%d,%d)", xmouse, ymouse);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, (pixel_t){0, 64, 64, 1});
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, (pixel_t){0, 64, 64, 255});
 
-
-	//vline(xmouse, ymouse - 5, ymouse + 5, 255, 255, 0, 1);
-	//hline(ymouse, xmouse - 5, xmouse + 5, 255, 255, 0, 1);
+	drawLine(&tex, (xy_t){xmouse - 5, ymouse}, (xy_t){xmouse + 5, ymouse}, (pixel_t){255, 255, 0, 255});
+	drawLine(&tex, (xy_t){xmouse, ymouse - 5}, (xy_t){xmouse, ymouse + 5}, (pixel_t){255, 255, 0, 255});
 
 	if(vertselected != -1 && toolselected == EDGE_TOOL){
-		xy_t mouse = {(double)xmouse, (double)ymouse};
-		drawLine(&tex, mouse, vertices[vertselected], (pixel_t){0, 128, 0, 1});
+		xy_t mouse = {(v_t)xmouse, (v_t)ymouse};
+		drawLine(&tex, mouse, vertices[vertselected], (pixel_t){0, 128, 0, 255});
 	}
 }
 
@@ -280,7 +277,7 @@ void renderMap()
 				v2 = sect.vertex[sect.npoints - 1];
 			}
 
-			drawLine(&tex, v1, v2, (pixel_t){0, 128, 128, 1});
+			drawLine(&tex, v1, v2, (pixel_t){0, 128, 128, 255});
 		}
 	}
 
@@ -289,16 +286,16 @@ void renderMap()
 		xy_t v1 = vertices[edge.vertex1];
 		xy_t v2 = vertices[edge.vertex2];
 		if(edge.type == WALL){
-			drawLine(&tex, v1, v2, (pixel_t){128, 0, 128, 1});
+			drawLine(&tex, v1, v2, (pixel_t){128, 0, 128, 255});
 		}else if(edge.type == PORTAL){
-			drawLine(&tex, v1, v2, (pixel_t){64, 64, 255, 1});
+			drawLine(&tex, v1, v2, (pixel_t){64, 64, 255, 255});
 		}
 	}
 
 	for(i = 0; i < nvertices; i++){
 		xy_t v = vertices[i];
 		if(v.x >= 0 && v.x < WIDTH && v.y >= 0 && v.y < HEIGHT - MENU_HEIGHT){
-			drawCircle(&tex, v, 2, (pixel_t){255, 255, 0, 1});
+			drawCircle(&tex, v, 2, (pixel_t){255, 255, 0, 255});
 		}
 	}
 }
@@ -307,7 +304,7 @@ void render()
 {	
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WIDTH, HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width, tex.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -407,7 +404,7 @@ int main(int argc, char **argv)
 	
 	initTexture(&tex, WIDTH, HEIGHT);
 	initFont(&font, fontwidth, fontheight);
-	loadFont(&font, '!', '~' - '!', 8, (bool*)&fontdata[0]);
+	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
 
 	ccDisplayInitialize();
 
@@ -423,7 +420,6 @@ int main(int argc, char **argv)
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

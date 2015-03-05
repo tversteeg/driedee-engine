@@ -56,7 +56,6 @@ static inline void hline(texture_t *tex, int y, int left, int right, pixel_t pix
 
 void initTexture(texture_t *tex, unsigned int width, unsigned int height)
 {
-	tex = (texture_t*)malloc(sizeof(*tex));
 	tex->width = width;
 	tex->height = height;
 	tex->pixels = (pixel_t*)calloc(width * height, sizeof(pixel_t));
@@ -64,7 +63,6 @@ void initTexture(texture_t *tex, unsigned int width, unsigned int height)
 
 void initFont(font_t *font, unsigned int width, unsigned int height)
 {
-	font = (font_t*)malloc(sizeof(*font));
 	font->totalwidth = width;
 	font->height = height;
 	font->pixels = (bool*)calloc(width * height, sizeof(bool));
@@ -118,7 +116,7 @@ void drawLine(texture_t *tex, xy_t p1, xy_t p2, pixel_t pixel)
 		int sy = y1 < y2 ? 1 : -1;
 		int err = (dx > dy ? dx : -dy) / 2;
 		while(true){
-			drawPixel(tex, x1, x2, pixel);
+			drawPixel(tex, x1, y1, pixel);
 			if(x1 == x2 && y1 == y2){
 				return;
 			}
@@ -171,7 +169,7 @@ void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, p
 	for(i = 0; i < font->width; i++){
 		int j;
 		for(j = 0; j < font->height; j++){
-			if(font->pixels[i + drawpos + j * font->totalwidth]){
+			if(font->pixels[i + drawpos + j * font->totalwidth] == true){
 				drawPixel(tex, x + i, y + j, pixel);
 			}
 		}
