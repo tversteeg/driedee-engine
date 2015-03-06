@@ -28,8 +28,9 @@
 
 #define MOVEMENT_TOOL 1
 #define VERTEX_TOOL 2
-#define EDGE_TOOL 3
-#define REMOVAL_TOOL 4
+#define EDGE_ADD_TOOL 3
+#define EDGE_CHANGE_TOOL 4
+#define REMOVAL_TOOL 5
 
 typedef struct {
 	xyz_t start;
@@ -215,33 +216,40 @@ void renderMenu()
 	char toolname[64];
 	switch(toolselected){
 		case VERTEX_TOOL:
-			strcpy(toolname, "VERTEX");
+			strcpy(toolname, "ADD VERTEX");
 			break;
-		case EDGE_TOOL:
+		case EDGE_ADD_TOOL:
 			switch(edgetypeselected){
 				case WALL:
-					strcpy(toolname, "EDGE - (W&P) WALL");
+					strcpy(toolname, "ADD EDGE - (W&P) WALL");
 					break;
 				case PORTAL:
-					strcpy(toolname, "EDGE - (W&P) PORTAL");
+					strcpy(toolname, "ADD EDGE - (W&P) PORTAL");
 					break;
-				default:
-					strcpy(toolname, "EDGE - UNDEFINED");
+			}
+			break;
+		case EDGE_CHANGE_TOOL:
+			switch(edgetypeselected){
+				case WALL:
+					strcpy(toolname, "CHANGE EDGE TYPE - (W&P) WALL");
+					break;
+				case PORTAL:
+					strcpy(toolname, "CHANGE EDGE TYPE - (W&P) PORTAL");
 					break;
 			}
 			break;
 		case MOVEMENT_TOOL:
-			strcpy(toolname, "MOVEMENT");
+			strcpy(toolname, "MOVE VERTEX");
 			break;
 		case REMOVAL_TOOL:
-			strcpy(toolname, "REMOVAL");
+			strcpy(toolname, "REMOVE EDGE/VERTEX");
 			break;
 		default:
-			strcpy(toolname, "NO");
+			strcpy(toolname, "ERROR");
 			break;
 	}
 
-	pos = sprintf(buffer, "(1-4) %s TOOL SELECTED", toolname);
+	pos = sprintf(buffer, "(1-5) %s", toolname);
 	buffer[pos] = '\0';
 	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, (pixel_t){255, 0, 0, 255});
 }
@@ -256,7 +264,7 @@ void renderMouse()
 	drawLine(&tex, (xy_t){xmouse - 5, ymouse}, (xy_t){xmouse + 5, ymouse}, (pixel_t){255, 255, 0, 255});
 	drawLine(&tex, (xy_t){xmouse, ymouse - 5}, (xy_t){xmouse, ymouse + 5}, (pixel_t){255, 255, 0, 255});
 
-	if(vertselected != -1 && toolselected == EDGE_TOOL){
+	if(vertselected != -1 && toolselected == EDGE_ADD_TOOL){
 		xy_t mouse = {(v_t)xmouse, (v_t)ymouse};
 		drawLine(&tex, mouse, vertices[vertselected], (pixel_t){0, 128, 0, 255});
 	}
@@ -331,7 +339,7 @@ void handleMouseClick()
 			vertices = (xy_t*)realloc(vertices, ++nvertices * sizeof(*vertices));
 			vertices[nvertices - 1] = (xy_t){(double)xmouse, (double)ymouse};
 			break;
-		case EDGE_TOOL:
+		case EDGE_ADD_TOOL:
 			{
 				int i;
 				bool gotedge = false;
@@ -356,6 +364,17 @@ void handleMouseClick()
 				}
 				if(!gotedge){
 					vertselected = -1;
+				}
+			}
+			break;
+		case EDGE_CHANGE_TOOL:
+			{
+				int i;
+				for(i = 0; i < nedges; i++){
+					if(distanceToSegment((xy_t){(double)xmouse, (double)ymouse}, vertices[edges[i].vertex1], vertices[edges[i].vertex2]) < snapsize){
+						edges[i].type = edgetypeselected;
+						return;
+					}
 				}
 			}
 			break;
@@ -458,7 +477,12 @@ int main(int argc, char **argv)
 						break;
 					case CC_KEY_4:
 						if(vertselected == -1){
-							toolselected = EDGE_TOOL;
+							toolselected = EDGE_ADD_TOOL;
+						}
+						break;
+					case CC_KEY_5:
+						if(vertselected == -1){
+							toolselected = EDGE_CHANGE_TOOL;
 						}
 						break;
 					case CC_KEY_W:
