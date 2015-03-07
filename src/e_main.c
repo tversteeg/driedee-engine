@@ -20,35 +20,14 @@
 #include "PixelFont1.h"
 #include "l_draw.h"
 #include "l_vector.h"
+#include "l_sector.h"
 
 #define WIDTH 800
 #define HEIGHT 600
 
 #define MENU_HEIGHT 64
 
-typedef enum {MOVEMENT_TOOL, REMOVAL_TOOL, VERTEX_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL} tool_t;
-
-typedef struct {
-	xyz_t start;
-	double angle, slope;
-} plane_t;
-
-typedef enum {PORTAL, WALL} edgetype_t;
-
-typedef struct {
-	unsigned int vertex1, vertex2;
-	edgetype_t type;
-	union {
-		unsigned int neighbor;
-	};
-} edge_t;
-
-typedef struct {
-	xy_t *vertex;
-	edge_t *walls;
-	plane_t floor, ceil;
-	unsigned int npoints, nneighbors, *neighbors, nvisited, *visited;
-} sector_t;
+typedef enum {MOVEMENT_TOOL, REMOVAL_TOOL, VERTEX_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, SECTOR_TOOL} tool_t;
 
 GLuint texture;
 texture_t tex;
@@ -62,9 +41,10 @@ edge_t *edges = NULL;
 unsigned int nedges = 0;
 
 bool snaptogrid = false;
-unsigned int toolselected = 3;
+tool_t toolselected = VERTEX_TOOL;
 edgetype_t edgetypeselected = WALL;
 int vertselected = -1;
+int sectorselected = -1;
 int gridsize = 10;
 int snapsize = 10;
 
@@ -90,65 +70,6 @@ double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 	double dy = p.y - closest.y;
 
 	return sqrt(dx * dx + dy * dy);
-}
-
-void load(char *map)
-{
-	FILE *fp;
-	char *line, *ptr;
-	int index, index2, scanlen;
-	size_t len;
-	ssize_t read;
-	xy_t vert;
-	sector_t *sect;
-	line = NULL;
-	len = 0;
-	fp = fopen(map, "rt");
-	if(!fp) {
-		printf("Couldn't open: %s\n", map);
-		return;
-	}
-	/* TODO: replace GNU readline with a cross platform solution */
-	while((read = getline(&line, &len, fp)) != -1) {
-		switch(line[0]){
-			case 'v':
-				ptr = line;
-				sscanf(ptr, "%*s %lf%n", &vert.y, &scanlen);
-				while(sscanf(ptr += scanlen, "%lf%n", &vert.x, &scanlen) == 1){
-					vertices = (xy_t*)realloc(vertices, ++nvertices * sizeof(*vertices));
-					vertices[nvertices - 1] = vert;
-				}
-				break;
-			case 's':
-				sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(*sectors));
-				sect = sectors + nsectors - 1;
-				ptr = line;
-				sect->npoints = 0;
-				sect->vertex = NULL;
-				sect->visited = NULL;
-				sect->nvisited = 0;
-				sect->nneighbors = 0;
-				sect->neighbors = NULL;
-				sscanf(ptr, "%*s %lf %lf %lf %u %lf %lf %lf %u%n", &sect->floor.start.z, &sect->floor.slope, &sect->floor.angle, &index,
-						&sect->ceil.start.z, &sect->ceil.slope, &sect->ceil.angle, &index2, &scanlen);
-				sect->floor.start.x = vertices[index].x;
-				sect->floor.start.y = vertices[index].y;
-				sect->ceil.start.x = vertices[index2].x;
-				sect->ceil.start.y = vertices[index2].y;
-				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
-					sect->vertex = (xy_t*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
-					sect->vertex[sect->npoints - 1] = vertices[index];
-				}
-				sscanf(ptr += scanlen, "%*c%n", &scanlen);
-				while(sscanf(ptr += scanlen, "%u%n", &index, &scanlen) == 1){
-					sect->neighbors = (unsigned int*)realloc(sect->neighbors, ++sect->nneighbors * sizeof(*sect->neighbors));
-					sect->neighbors[sect->nneighbors - 1] = index;
-				}
-				break;
-		}
-	}
-	fclose(fp);
-	free(line);
 }
  
 void deleteEdge(unsigned int index)
@@ -197,7 +118,7 @@ void renderMenu()
 
 	int i;
 	for(i = HEIGHT - MENU_HEIGHT + 1; i < HEIGHT; i++){
-		drawLine(&tex, (xy_t){0, i}, (xy_t){WIDTH, i}, (pixel_t){16, 16, 16, 255});
+		drawLine(&tex, (xy_t){0, (double)i}, (xy_t){WIDTH, (double)i}, (pixel_t){16, 16, 16, 255});
 	}
 
 	char buffer[64];
@@ -234,6 +155,9 @@ void renderMenu()
 					break;
 			}
 			break;
+		case SECTOR_TOOL:
+			strcpy(toolname, "ADD SECTOR");
+			break;
 		case MOVEMENT_TOOL:
 			strcpy(toolname, "MOVE VERTEX");
 			break;
@@ -245,7 +169,7 @@ void renderMenu()
 			break;
 	}
 
-	pos = sprintf(buffer, "(1-5) %s", toolname);
+	pos = sprintf(buffer, "(1-6) %s", toolname);
 	buffer[pos] = '\0';
 	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, (pixel_t){255, 0, 0, 255});
 }
@@ -272,13 +196,13 @@ void renderMap()
 	for(i = 0; i < nsectors; i++){
 		sector_t sect = sectors[i];
 		unsigned int j;
-		for(j = 0; j < sect.npoints; j++){
-			xy_t v1 = sect.vertex[j];
+		for(j = 0; j < sect.nvertices; j++){
+			xy_t v1 = sect.vertices[j];
 			xy_t v2;
 			if(j > 0){
-				v2 = sect.vertex[j - 1];
+				v2 = sect.vertices[j - 1];
 			}else{
-				v2 = sect.vertex[sect.npoints - 1];
+				v2 = sect.vertices[sect.nvertices - 1];
 			}
 
 			drawLine(&tex, v1, v2, (pixel_t){0, 128, 128, 255});
@@ -374,6 +298,10 @@ void handleMouseClick()
 				}
 			}
 			break;
+		case SECTOR_TOOL:
+			if(sectorselected == -1){
+			}
+			break;
 		case MOVEMENT_TOOL:
 			if(vertselected == -1){
 				int i;
@@ -415,8 +343,6 @@ void handleMouseClick()
 
 int main(int argc, char **argv)
 {
-	load(argv[1]);
-	
 	initTexture(&tex, WIDTH, HEIGHT);
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
@@ -481,6 +407,10 @@ int main(int argc, char **argv)
 							toolselected = EDGE_CHANGE_TOOL;
 						}
 						break;
+					case CC_KEY_6:
+						if(vertselected == -1){
+							toolselected = SECTOR_TOOL;
+						}
 					case CC_KEY_W:
 						edgetypeselected = WALL;
 						break;
