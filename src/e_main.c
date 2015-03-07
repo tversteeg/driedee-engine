@@ -26,11 +26,7 @@
 
 #define MENU_HEIGHT 64
 
-#define MOVEMENT_TOOL 1
-#define VERTEX_TOOL 2
-#define EDGE_ADD_TOOL 3
-#define EDGE_CHANGE_TOOL 4
-#define REMOVAL_TOOL 5
+typedef enum {MOVEMENT_TOOL, REMOVAL_TOOL, VERTEX_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL} tool_t;
 
 typedef struct {
 	xyz_t start;
