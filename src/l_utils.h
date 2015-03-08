@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <ccore/types.h>
+
 #define POOL_BLOCKS  1024
 
 typedef struct poolfree_t{
@@ -9,9 +11,7 @@ typedef struct poolfree_t{
 } poolfree_t;
 
 typedef struct {
-	unsigned int elementSize;
-	unsigned int blockSize;
-	unsigned int used;
+	unsigned int elementSize, blockSize, used;
 	int block;
 	poolfree_t *freed;
 	char *blocks[POOL_BLOCKS];
@@ -21,5 +21,8 @@ void poolInitialize(pool_t *p, unsigned int elementSize, unsigned int blockSize)
 void poolFreePool(pool_t *p);
 
 void *poolMalloc(pool_t *p);
+bool poolIsFree(pool_t *p, void *ptr);
 void poolFree(pool_t *p, void *ptr);
 void poolFreeAll(pool_t *p);
+
+void *poolGetNext(pool_t *p, void *ptr);
