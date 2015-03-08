@@ -18,4 +18,6 @@ typedef struct {
 	edge_t *walls;
 } sector_t;
 
+void sectorInitialize();
+
 sector_t* createSector();

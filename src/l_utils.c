@@ -1,17 +1,17 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "l_pool.h"
+#include "l_utils.h"
 
 #ifndef max
 #define max(a,b) (a<b?b:a)
 #endif
 
-void poolInitialize(pool *p, unsigned int elementSize, unsigned int blockSize)
+void poolInitialize(pool_t *p, unsigned int elementSize, unsigned int blockSize)
 {
 	unsigned int i;
 
-	p->elementSize = max(elementSize, sizeof(poolFreed));
+	p->elementSize = max(elementSize, sizeof(poolfree_t));
 	p->blockSize = blockSize;
 	p->used = blockSize - 1;
 	p->block = -1;
@@ -22,7 +22,7 @@ void poolInitialize(pool *p, unsigned int elementSize, unsigned int blockSize)
 	p->freed = NULL;
 }
 
-void poolFreePool(pool *p)
+void poolFreePool(pool_t *p)
 {
 	unsigned int i;
 	for(i = 0; i < POOL_BLOCKS; i++) {
@@ -35,7 +35,7 @@ void poolFreePool(pool *p)
 	}
 }
 
-void *poolMalloc(pool *p)
+void *poolMalloc(pool_t *p)
 {
 	if(p->freed != NULL) {
 		void *recycle = p->freed;
@@ -48,21 +48,21 @@ void *poolMalloc(pool *p)
 		p->used = 0;
 		p->block++;
 		if(p->blocks[p->block] == NULL) {
-			p->blocks[p->block] = malloc(p->elementSize * p->blockSize);
+			p->blocks[p->block] = (char*)malloc(p->elementSize * p->blockSize);
 		}
 	}
 	
 	return p->blocks[p->block] + p->used * p->elementSize;
 }
 
-void poolFree(pool *p, void *ptr)
+void poolFree(pool_t *p, void *ptr)
 {
-	poolFreed *pFreed = p->freed;
-	p->freed = ptr;
+	poolfree_t *pFreed = p->freed;
+	p->freed = (poolfree_t*)ptr;
 	p->freed->nextFree = pFreed;
 }
 
-void poolFreeAll(pool *p)
+void poolFreeAll(pool_t *p)
 {
 	p->used = p->blockSize - 1;
 	p->block = -1;
