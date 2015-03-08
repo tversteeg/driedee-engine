@@ -7,6 +7,9 @@ typedef enum {PORTAL, WALL} edgetype_t;
 typedef struct {
 	unsigned int vertex1, vertex2;
 	edgetype_t type;
+	union {
+		unsigned int neighbor;
+	};
 } edge_t;
 
 typedef struct {
@@ -14,3 +17,5 @@ typedef struct {
 	unsigned int nvertices;
 	edge_t *walls;
 } sector_t;
+
+unsigned int createSector();

@@ -172,6 +172,14 @@ void renderMenu()
 	pos = sprintf(buffer, "(1-6) %s", toolname);
 	buffer[pos] = '\0';
 	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, (pixel_t){255, 0, 0, 255});
+
+	pos = sprintf(buffer, "VERTICES: %d", nvertices);
+	buffer[pos] = '\0';
+	drawString(&tex, &font, buffer, WIDTH / 2 + 8, HEIGHT - MENU_HEIGHT + 8, (pixel_t){0, 128, 128, 255});
+
+	pos = sprintf(buffer, "EDGES: %d", nedges);
+	buffer[pos] = '\0';
+	drawString(&tex, &font, buffer, WIDTH / 2 + 8, HEIGHT - MENU_HEIGHT + 18, (pixel_t){0, 128, 128, 255});
 }
 
 void renderMouse()
@@ -181,8 +189,8 @@ void renderMouse()
 	buffer[pos] = '\0';
 	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, (pixel_t){0, 64, 64, 255});
 
-	drawLine(&tex, (xy_t){xmouse - 5, ymouse}, (xy_t){xmouse + 5, ymouse}, (pixel_t){255, 255, 0, 255});
-	drawLine(&tex, (xy_t){xmouse, ymouse - 5}, (xy_t){xmouse, ymouse + 5}, (pixel_t){255, 255, 0, 255});
+	drawLine(&tex, (xy_t){(double)xmouse - 5, (double)ymouse}, (xy_t){(double)xmouse + 5, (double)ymouse}, (pixel_t){255, 255, 0, 255});
+	drawLine(&tex, (xy_t){(double)xmouse, (double)ymouse - 5}, (xy_t){(double)xmouse, (double)ymouse + 5}, (pixel_t){255, 255, 0, 255});
 
 	if(vertselected != -1 && toolselected == EDGE_ADD_TOOL){
 		xy_t mouse = {(v_t)xmouse, (v_t)ymouse};
