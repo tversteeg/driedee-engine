@@ -27,28 +27,20 @@
 
 #define MENU_HEIGHT 64
 
-typedef enum {MOVEMENT_TOOL, REMOVAL_TOOL, VERTEX_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, SECTOR_TOOL} tool_t;
+typedef enum {VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL} tool_t;
 
 GLuint texture;
 texture_t tex;
 font_t font;
 
-sector_t *sectors = NULL;
-unsigned int nsectors = 0;
-xy_t *vertices = NULL;
-unsigned int nvertices = 0;
-edge_t *edges = NULL;
-unsigned int nedges = 0;
-
 bool snaptogrid = false;
-tool_t toolselected = VERTEX_TOOL;
+sector_t *sectorselected = NULL;
+tool_t toolselected = SECTOR_ADD_TOOL;
 edgetype_t edgetypeselected = WALL;
-int vertselected = -1;
-int sectorselected = -1;
 int gridsize = 10;
 int snapsize = 10;
 
-int xmouse, ymouse;
+xy_t mouse;
 
 double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 {
@@ -71,7 +63,8 @@ double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 
 	return sqrt(dx * dx + dy * dy);
 }
- 
+
+#if 0
 void deleteEdge(unsigned int index)
 {
 	if(index >= nedges){
@@ -84,12 +77,12 @@ void deleteEdge(unsigned int index)
 
 void deleteVertex(unsigned int index)
 {
-	if(index >= nvertices){
+	if(index >= nedges){
 		return;
 	}
 
-	memmove(vertices + index, vertices + index + 1, (nvertices - index - 1) * sizeof(vertices[index]));
-	vertices = (xy_t*)realloc(vertices, --nvertices * sizeof(*vertices));
+	memmove(vertices + index, vertices + index + 1, (nedges - index - 1) * sizeof(vertices[index]));
+	vertices = (xy_t*)realloc(vertices, --nedges * sizeof(*vertices));
 
 	int i;
 	for(i = 0; i < nedges; i++){
@@ -106,6 +99,7 @@ void deleteVertex(unsigned int index)
 		}
 	}
 }
+#endif
 
 void renderBackground()
 {
@@ -132,10 +126,11 @@ void renderMenu()
 
 	char toolname[64];
 	switch(toolselected){
-		case VERTEX_TOOL:
-			strcpy(toolname, "ADD VERTEX");
+		case SECTOR_ADD_TOOL:
+			strcpy(toolname, "ADD SECTOR");
 			break;
 		case EDGE_ADD_TOOL:
+			strcpy(toolname, "CHANGE SECTOR");
 			switch(edgetypeselected){
 				case WALL:
 					strcpy(toolname, "ADD EDGE - (W&P) WALL");
@@ -155,14 +150,8 @@ void renderMenu()
 					break;
 			}
 			break;
-		case SECTOR_TOOL:
-			strcpy(toolname, "ADD SECTOR");
-			break;
-		case MOVEMENT_TOOL:
+		case VERTEX_MOVE_TOOL:
 			strcpy(toolname, "MOVE VERTEX");
-			break;
-		case REMOVAL_TOOL:
-			strcpy(toolname, "REMOVE EDGE/VERTEX");
 			break;
 		default:
 			strcpy(toolname, "ERROR");
@@ -172,66 +161,44 @@ void renderMenu()
 	pos = sprintf(buffer, "(1-6) %s", toolname);
 	buffer[pos] = '\0';
 	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, (pixel_t){255, 0, 0, 255});
-
-	pos = sprintf(buffer, "VERTICES: %d", nvertices);
-	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, WIDTH / 2 + 8, HEIGHT - MENU_HEIGHT + 8, (pixel_t){0, 128, 128, 255});
-
-	pos = sprintf(buffer, "EDGES: %d", nedges);
-	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, WIDTH / 2 + 8, HEIGHT - MENU_HEIGHT + 18, (pixel_t){0, 128, 128, 255});
 }
 
 void renderMouse()
 {
 	char buffer[64];
-	int pos = sprintf(buffer, "MOUSE: (%d,%d)", xmouse, ymouse);
+	int pos = sprintf(buffer, "MOUSE: (%f,%f)", mouse.x, mouse.y);
 	buffer[pos] = '\0';
 	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, (pixel_t){0, 64, 64, 255});
 
-	drawLine(&tex, (xy_t){(double)xmouse - 5, (double)ymouse}, (xy_t){(double)xmouse + 5, (double)ymouse}, (pixel_t){255, 255, 0, 255});
-	drawLine(&tex, (xy_t){(double)xmouse, (double)ymouse - 5}, (xy_t){(double)xmouse, (double)ymouse + 5}, (pixel_t){255, 255, 0, 255});
-
-	if(vertselected != -1 && toolselected == EDGE_ADD_TOOL){
-		xy_t mouse = {(v_t)xmouse, (v_t)ymouse};
-		drawLine(&tex, mouse, vertices[vertselected], (pixel_t){0, 128, 0, 255});
-	}
+	drawLine(&tex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, (pixel_t){255, 255, 0, 255});
+	drawLine(&tex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, (pixel_t){255, 255, 0, 255});
 }
 
 void renderMap()
 {
-	unsigned int i;
-	for(i = 0; i < nsectors; i++){
-		sector_t sect = sectors[i];
-		unsigned int j;
-		for(j = 0; j < sect.nvertices; j++){
-			xy_t v1 = sect.vertices[j];
-			xy_t v2;
-			if(j > 0){
-				v2 = sect.vertices[j - 1];
+	if(sectorselected != NULL){
+		pixel_t color;
+		if(toolselected == EDGE_ADD_TOOL){
+			if(edgetypeselected == WALL){
+				color = (pixel_t){255, 255, 0, 255};
 			}else{
-				v2 = sect.vertices[sect.nvertices - 1];
+				color = (pixel_t){64, 64, 255, 255};
 			}
-
-			drawLine(&tex, v1, v2, (pixel_t){0, 128, 128, 255});
+			drawLine(&tex, sectorselected->vertices[0], mouse, color);
+			drawLine(&tex, sectorselected->vertices[sectorselected->nedges - 1], mouse, color);
 		}
-	}
-
-	for(i = 0; i < nedges; i++){
-		edge_t edge = edges[i];
-		xy_t v1 = vertices[edge.vertex1];
-		xy_t v2 = vertices[edge.vertex2];
-		if(edge.type == WALL){
-			drawLine(&tex, v1, v2, (pixel_t){128, 0, 128, 255});
-		}else if(edge.type == PORTAL){
-			drawLine(&tex, v1, v2, (pixel_t){64, 64, 255, 255});
+		unsigned int i;
+		for(i = toolselected == EDGE_ADD_TOOL ? 1: 0; i < sectorselected->nedges; i++){
+			edge_t edge = sectorselected->edges[i];
+			if(edge.type == WALL){
+				color = (pixel_t){255, 255, 0, 255};
+			}else{
+				color = (pixel_t){64, 64, 255, 255};
+			}
+			drawLine(&tex, sectorselected->vertices[edge.vertex1], sectorselected->vertices[edge.vertex2], color);
 		}
-	}
-
-	for(i = 0; i < nvertices; i++){
-		xy_t v = vertices[i];
-		if(v.x >= 0 && v.x < WIDTH && v.y >= 0 && v.y < HEIGHT - MENU_HEIGHT){
-			drawCircle(&tex, v, 2, (pixel_t){255, 255, 0, 255});
+		for(i = 0; i < sectorselected->nedges; i++){
+			drawCircle(&tex, sectorselected->vertices[i], 2, (pixel_t){255, 0, 0, 255});
 		}
 	}
 }
@@ -263,94 +230,24 @@ void render()
 void handleMouseClick()
 {
 	switch(toolselected){
-		case VERTEX_TOOL:
-			vertices = (xy_t*)realloc(vertices, ++nvertices * sizeof(*vertices));
-			vertices[nvertices - 1] = (xy_t){(double)xmouse, (double)ymouse};
+		case SECTOR_ADD_TOOL:
+			sectorselected = createSector(mouse);
+			toolselected = EDGE_ADD_TOOL;
 			break;
 		case EDGE_ADD_TOOL:
-			{
-				int i;
-				bool gotedge = false;
-				for(i = 0; i < nvertices; i++){
-					xy_t v = vertices[i];
-					double dx = v.x - xmouse;
-					double dy = v.y - ymouse;
-					if(sqrt(dx * dx + dy * dy) < snapsize){
-						if(vertselected == -1){
-							vertselected = i;
-						}else{
-							if(vertselected == i){
-								break;
-							}
-							edges = (edge_t*)realloc(edges, ++nedges * sizeof(*edges));
-							edges[nedges - 1] = (edge_t){(unsigned int)i, (unsigned int)vertselected, edgetypeselected};
-							vertselected = -1;
-						}
-						gotedge = true;
-						break;
-					}
-				}
-				if(!gotedge){
-					vertselected = -1;
-				}
-			}
+			createEdge(sectorselected, mouse, edgetypeselected);
 			break;
 		case EDGE_CHANGE_TOOL:
-			{
-				int i;
-				for(i = 0; i < nedges; i++){
-					if(distanceToSegment((xy_t){(double)xmouse, (double)ymouse}, vertices[edges[i].vertex1], vertices[edges[i].vertex2]) < snapsize){
-						edges[i].type = edgetypeselected;
-						return;
-					}
-				}
-			}
 			break;
-		case SECTOR_TOOL:
-			if(sectorselected == -1){
-			}
-			break;
-		case MOVEMENT_TOOL:
-			if(vertselected == -1){
-				int i;
-				for(i = 0; i < nvertices; i++){
-					xy_t v = vertices[i];
-					double dx = v.x - xmouse;
-					double dy = v.y - ymouse;
-					if(sqrt(dx * dx + dy * dy) < snapsize){
-						vertselected = i;
-						break;
-					}
-				}
-			}else{
-				vertselected = -1;
-			}
-			break;
-		case REMOVAL_TOOL:
-			{
-				int i;
-				for(i = 0; i < nvertices; i++){
-					xy_t v = vertices[i];
-					double dx = v.x - xmouse;
-					double dy = v.y - ymouse;
-					if(sqrt(dx * dx + dy * dy) < snapsize){
-						deleteVertex(i);
-						return;
-					}
-				}
-				for(i = 0; i < nedges; i++){
-					if(distanceToSegment((xy_t){(double)xmouse, (double)ymouse}, vertices[edges[i].vertex1], vertices[edges[i].vertex2]) < snapsize){
-						deleteEdge(i);
-						return;
-					}
-				}
-			}
+		case VERTEX_MOVE_TOOL:
 			break;
 	}
 }
 
 int main(int argc, char **argv)
 {
+	sectorInitialize();
+
 	initTexture(&tex, WIDTH, HEIGHT);
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
@@ -391,34 +288,17 @@ int main(int argc, char **argv)
 						snaptogrid = !snaptogrid;
 						break;
 					case CC_KEY_1:
-						if(vertselected == -1){
-							toolselected = MOVEMENT_TOOL;
-						}
+						toolselected = SECTOR_ADD_TOOL;
 						break;
 					case CC_KEY_2:
-						if(vertselected == -1){
-							toolselected = REMOVAL_TOOL;
-						}
+						toolselected = EDGE_ADD_TOOL;
 						break;
 					case CC_KEY_3:
-						if(vertselected == -1){
-							toolselected = VERTEX_TOOL;
-						}
+						toolselected = EDGE_CHANGE_TOOL;
 						break;
 					case CC_KEY_4:
-						if(vertselected == -1){
-							toolselected = EDGE_ADD_TOOL;
-						}
+						toolselected = VERTEX_MOVE_TOOL;
 						break;
-					case CC_KEY_5:
-						if(vertselected == -1){
-							toolselected = EDGE_CHANGE_TOOL;
-						}
-						break;
-					case CC_KEY_6:
-						if(vertselected == -1){
-							toolselected = SECTOR_TOOL;
-						}
 					case CC_KEY_W:
 						edgetypeselected = WALL;
 						break;
@@ -439,17 +319,12 @@ int main(int argc, char **argv)
 			}
 		}
 
-		xmouse = ccWindowGetMouse().x;
-		ymouse = ccWindowGetMouse().y;
+		mouse.x = ccWindowGetMouse().x;
+		mouse.y = ccWindowGetMouse().y;
 
 		if(snaptogrid){
-			xmouse = round(xmouse / gridsize) * gridsize;
-			ymouse = round(ymouse / gridsize) * gridsize;
-		}
-		
-		if(vertselected != -1 && toolselected == MOVEMENT_TOOL){
-			vertices[vertselected].x = xmouse;
-			vertices[vertselected].y = ymouse;
+			mouse.x = round(mouse.x / gridsize) * gridsize;
+			mouse.y = round(mouse.y / gridsize) * gridsize;
 		}
 
 		renderBackground();

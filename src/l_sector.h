@@ -4,20 +4,27 @@
 
 typedef enum {PORTAL, WALL} edgetype_t;
 
-typedef struct {
+typedef struct _edge_t edge_t;
+typedef struct _sector_t sector_t;
+
+struct _edge_t {
 	unsigned int vertex1, vertex2;
 	edgetype_t type;
+	sector_t *sector;
 	union {
-		unsigned int neighbor;
+		edge_t *neighbor;
 	};
-} edge_t;
+};
 
-typedef struct {
+struct _sector_t {
 	xy_t *vertices;
-	unsigned int nvertices;
-	edge_t *walls;
-} sector_t;
+	unsigned int nedges;
+	edge_t *edges;
+};
 
 void sectorInitialize();
 
-sector_t* createSector();
+sector_t* createSector(xy_t start);
+void deleteSector(sector_t *sector);
+
+unsigned int createEdge(sector_t *sector, xy_t next, edgetype_t type);
