@@ -18,4 +18,4 @@ typedef struct {
 	edge_t *walls;
 } sector_t;
 
-unsigned int createSector();
+sector_t* createSector();
