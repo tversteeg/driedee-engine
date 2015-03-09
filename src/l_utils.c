@@ -47,21 +47,26 @@ void *poolMalloc(pool_t *p)
 	if(p->used == p->blockSize) {
 		p->used = 0;
 		if(p->blocks[++p->block] == NULL) {
-			p->blocks[p->block] = (char*)malloc(p->elementSize * p->blockSize);
+			p->blocks[p->block] = (char*)calloc(p->blockSize, p->elementSize);
 		}
 	}
 	
 	return p->blocks[p->block] + p->used * p->elementSize;
 }
 
+#include <stdio.h>
+
 bool poolIsFree(pool_t *p, void *ptr)
 {
 	if(ptr == NULL){
+		return true;
+	}else if(p->freed == NULL){
 		return false;
 	}
 
 	poolfree_t *freed = p->freed;
-	while((freed = freed->nextFree) != NULL){
+	while(freed->nextFree != NULL){
+		freed = freed->nextFree;
 		if(freed == ptr){
 			return true;
 		}
@@ -87,9 +92,9 @@ void poolFreeAll(pool_t *p)
 void *poolGetNext(pool_t *p, void *ptr)
 {
 	unsigned int i, j;
-	for(i = 0; i < p->block; i++){
+	for(i = 0; i <= p->block; i++){
 		for(j = 0; j < p->blockSize; j++){
-			if(&p->blocks[i][j * p->elementSize] == ptr){
+			if(p->blocks[i] + j * p->elementSize == ptr){
 				goto found;
 			}
 		}
@@ -109,7 +114,9 @@ found: ;
 				return NULL;
 			}
 		}
-	}	while((next = &p->blocks[i][j]) != NULL);
+		next = p->blocks[i] + j;
+	}	while(next != NULL && i * p->blockSize + j < p->block * p->blockSize + p->used * p->elementSize);
+	printf("%d, %d\n", (i * p->blockSize + j) / p->elementSize, p->used);
 
 	return NULL;
 }

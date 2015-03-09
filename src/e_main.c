@@ -183,8 +183,8 @@ void renderMouse()
 
 void renderMap()
 {
+	pixel_t color;
 	if(sectorselected != NULL){
-		pixel_t color;
 		// Draw edge add lines
 		if(toolselected == EDGE_ADD_TOOL){
 			if(edgetypeselected == WALL){
@@ -192,29 +192,36 @@ void renderMap()
 			}else{
 				color = COLOR_BLUE;
 			}
-			drawLine(&tex, sectorselected->vertices[0], mouse, color);
+			drawLine(&tex, sectorselected->vertices[0], mouse, sectorselected->edges[0].type == WALL ? COLOR_YELLOW : COLOR_BLUE);
 			drawLine(&tex, sectorselected->vertices[sectorselected->nedges - 1], mouse, color);
 		}
+
+		// Draw dragged vertex
+		if(vertselected != -1){
+			drawLine(&tex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_GREEN);
+			drawLine(&tex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_GREEN);
+			drawCircle(&tex, mouse, 2, COLOR_YELLOW);
+		}
+	}
+
+	sector_t *sect = getFirstSector();
+	while(sect != NULL){
 		// Draw edges
 		unsigned int i;
-		for(i = toolselected == EDGE_ADD_TOOL ? 1: 0; i < sectorselected->nedges; i++){
-			edge_t edge = sectorselected->edges[i];
+		for(i = (sectorselected == NULL ? 0 : 1); i < sect->nedges; i++){
+			edge_t edge = sect->edges[i];
 			if(edge.type == WALL){
 				color = COLOR_YELLOW;
 			}else{
 				color = COLOR_BLUE;
 			}
-			drawLine(&tex, sectorselected->vertices[edge.vertex1], sectorselected->vertices[edge.vertex2], color);
+			drawLine(&tex, sect->vertices[edge.vertex1], sect->vertices[edge.vertex2], color);
 		}
 		// Draw vertices
-		for(i = 0; i < sectorselected->nedges; i++){
-				drawCircle(&tex, sectorselected->vertices[i], 2, COLOR_RED);
+		for(i = 0; i < sect->nedges; i++){
+			drawCircle(&tex, sect->vertices[i], 2, COLOR_RED);
 		}
-		if(vertselected != -1){
-			drawLine(&tex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_BLUE);
-			drawLine(&tex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_BLUE);
-			drawCircle(&tex, mouse, 2, COLOR_YELLOW);
-		}
+		sect = getNextSector(sect);
 	}
 }
 
