@@ -2,6 +2,7 @@
 #include "l_utils.h"
 
 static pool_t sectors;
+static sector_t *first = NULL;
 
 void sectorInitialize()
 {
@@ -17,12 +18,26 @@ sector_t* createSector(xy_t start)
 	sector->vertices[0] = start;
 	sector->nedges = 1;
 
+	if(first == NULL){
+		first = sector;
+	}
+
 	return sector;
 }
 
 void deleteSector(sector_t *sector)
 {
 	poolFree(&sectors, sector);
+}
+
+sector_t* getFirstSector()
+{
+	return first;
+}
+
+sector_t* getNextSector(sector_t *sector)
+{
+	return (sector_t*)poolGetNext(&sectors, sector);
 }
 
 unsigned int createEdge(sector_t *sector, xy_t next, edgetype_t type)
