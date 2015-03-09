@@ -27,6 +27,11 @@
 
 #define MENU_HEIGHT 64
 
+#define COLOR_RED (pixel_t){255, 0, 0, 255}
+#define COLOR_GREEN (pixel_t){0, 255, 0, 255}
+#define COLOR_BLUE (pixel_t){0, 0, 255, 255}
+#define COLOR_YELLOW (pixel_t){255, 255, 0, 255}
+
 typedef enum {VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL} tool_t;
 
 GLuint texture;
@@ -180,35 +185,35 @@ void renderMap()
 {
 	if(sectorselected != NULL){
 		pixel_t color;
+		// Draw edge add lines
 		if(toolselected == EDGE_ADD_TOOL){
 			if(edgetypeselected == WALL){
-				color = (pixel_t){255, 255, 0, 255};
+				color = COLOR_YELLOW;
 			}else{
-				color = (pixel_t){64, 64, 255, 255};
+				color = COLOR_BLUE;
 			}
 			drawLine(&tex, sectorselected->vertices[0], mouse, color);
 			drawLine(&tex, sectorselected->vertices[sectorselected->nedges - 1], mouse, color);
 		}
+		// Draw edges
 		unsigned int i;
 		for(i = toolselected == EDGE_ADD_TOOL ? 1: 0; i < sectorselected->nedges; i++){
 			edge_t edge = sectorselected->edges[i];
 			if(edge.type == WALL){
-				color = (pixel_t){255, 255, 0, 255};
+				color = COLOR_YELLOW;
 			}else{
-				color = (pixel_t){64, 64, 255, 255};
+				color = COLOR_BLUE;
 			}
-			if(i == vertselected){
-				drawLine(&tex, sectorselected->vertices[edge.vertex2], mouse, color);
-			}else{
-				drawLine(&tex, sectorselected->vertices[edge.vertex1], sectorselected->vertices[edge.vertex2], color);
-			}
+			drawLine(&tex, sectorselected->vertices[edge.vertex1], sectorselected->vertices[edge.vertex2], color);
 		}
+		// Draw vertices
 		for(i = 0; i < sectorselected->nedges; i++){
-			if(i == vertselected){
-				drawCircle(&tex, mouse, 2, (pixel_t){255, 0, 0, 255});
-			}else{
-				drawCircle(&tex, sectorselected->vertices[i], 2, (pixel_t){255, 0, 0, 255});
-			}
+				drawCircle(&tex, sectorselected->vertices[i], 2, COLOR_RED);
+		}
+		if(vertselected != -1){
+			drawLine(&tex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_BLUE);
+			drawLine(&tex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_BLUE);
+			drawCircle(&tex, mouse, 2, COLOR_YELLOW);
 		}
 	}
 }
