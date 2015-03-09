@@ -37,6 +37,8 @@ bool snaptogrid = false;
 sector_t *sectorselected = NULL;
 tool_t toolselected = SECTOR_ADD_TOOL;
 edgetype_t edgetypeselected = WALL;
+int vertselected = -1;
+
 int gridsize = 10;
 int snapsize = 10;
 
@@ -195,10 +197,18 @@ void renderMap()
 			}else{
 				color = (pixel_t){64, 64, 255, 255};
 			}
-			drawLine(&tex, sectorselected->vertices[edge.vertex1], sectorselected->vertices[edge.vertex2], color);
+			if(i == vertselected){
+				drawLine(&tex, sectorselected->vertices[edge.vertex2], mouse, color);
+			}else{
+				drawLine(&tex, sectorselected->vertices[edge.vertex1], sectorselected->vertices[edge.vertex2], color);
+			}
 		}
 		for(i = 0; i < sectorselected->nedges; i++){
-			drawCircle(&tex, sectorselected->vertices[i], 2, (pixel_t){255, 0, 0, 255});
+			if(i == vertselected){
+				drawCircle(&tex, mouse, 2, (pixel_t){255, 0, 0, 255});
+			}else{
+				drawCircle(&tex, sectorselected->vertices[i], 2, (pixel_t){255, 0, 0, 255});
+			}
 		}
 	}
 }
@@ -240,6 +250,21 @@ void handleMouseClick()
 		case EDGE_CHANGE_TOOL:
 			break;
 		case VERTEX_MOVE_TOOL:
+			if(vertselected == -1){
+				unsigned int i;
+				for(i = 0; i < sectorselected->nedges; i++){
+					xy_t v = sectorselected->vertices[i];
+					int dx = mouse.x - v.x;
+					int dy = mouse.y - v.y;
+					if(sqrt(dx * dx + dy * dy) < 10){
+						vertselected = i;
+						break;
+					}
+				}
+			}else{
+				sectorselected->vertices[vertselected] = mouse;
+				vertselected = -1;
+			}
 			break;
 	}
 }
