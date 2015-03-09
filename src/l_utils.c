@@ -7,6 +7,8 @@
 #define max(a,b) (a<b?b:a)
 #endif
 
+#include <stdio.h>
+
 void poolInitialize(pool_t *p, unsigned int elementSize, unsigned int blockSize)
 {
 	unsigned int i;
@@ -47,14 +49,12 @@ void *poolMalloc(pool_t *p)
 	if(p->used == p->blockSize) {
 		p->used = 0;
 		if(p->blocks[++p->block] == NULL) {
-			p->blocks[p->block] = (char*)calloc(p->blockSize, p->elementSize);
+			p->blocks[p->block] = (char*)malloc(p->blockSize * p->elementSize);
 		}
 	}
 	
 	return p->blocks[p->block] + p->used * p->elementSize;
 }
-
-#include <stdio.h>
 
 bool poolIsFree(pool_t *p, void *ptr)
 {
@@ -93,8 +93,8 @@ void *poolGetNext(pool_t *p, void *ptr)
 {
 	unsigned int i, j;
 	for(i = 0; i <= p->block; i++){
-		for(j = 0; j < p->blockSize; j++){
-			if(p->blocks[i] + j * p->elementSize == ptr){
+		for(j = 0; j < p->blockSize; j += p->elementSize){
+			if(p->blocks[i] + j == ptr){
 				goto found;
 			}
 		}
@@ -115,8 +115,7 @@ found: ;
 			}
 		}
 		next = p->blocks[i] + j;
-	}	while(next != NULL && i * p->blockSize + j < p->block * p->blockSize + p->used * p->elementSize);
-	printf("%d, %d\n", (i * p->blockSize + j) / p->elementSize, p->used);
+	}	while(next != NULL && i * p->blockSize + j < p->block * p->blockSize + (p->used + 1) * p->elementSize);
 
 	return NULL;
 }
