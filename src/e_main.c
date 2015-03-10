@@ -32,7 +32,7 @@
 #define COLOR_BLUE (pixel_t){0, 0, 255, 255}
 #define COLOR_YELLOW (pixel_t){255, 255, 0, 255}
 
-typedef enum {VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL} tool_t;
+typedef enum {VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
 
 GLuint texture;
 texture_t tex;
@@ -157,6 +157,9 @@ void renderMenu()
 					break;
 			}
 			break;
+		case EDGE_CONNECT_TOOL:
+			strcpy(toolname, "CONNECT EDGES");
+			break;
 		case VERTEX_MOVE_TOOL:
 			strcpy(toolname, "MOVE VERTEX");
 			break;
@@ -207,8 +210,11 @@ void renderMap()
 	sector_t *sect = getFirstSector();
 	while(sect != NULL){
 		// Draw edges
-		unsigned int i;
-		for(i = (sectorselected == NULL ? 0 : 1); i < sect->nedges; i++){
+		unsigned int i, start = 0;
+		if(sectorselected == sect && toolselected == EDGE_ADD_TOOL){
+			start = 1;
+		}
+		for(i = start; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
 			if(edge.type == WALL){
 				color = COLOR_YELLOW;
@@ -260,6 +266,8 @@ void handleMouseClick()
 			createEdge(sectorselected, mouse, edgetypeselected);
 			break;
 		case EDGE_CHANGE_TOOL:
+			break;
+		case EDGE_CONNECT_TOOL:
 			break;
 		case VERTEX_MOVE_TOOL:
 			if(vertselected == -1){
@@ -334,6 +342,9 @@ int main(int argc, char **argv)
 						toolselected = EDGE_CHANGE_TOOL;
 						break;
 					case CC_KEY_4:
+						toolselected = EDGE_CONNECT_TOOL;
+						break;
+					case CC_KEY_5:
 						toolselected = VERTEX_MOVE_TOOL;
 						break;
 					case CC_KEY_W:
