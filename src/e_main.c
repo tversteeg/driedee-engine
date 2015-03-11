@@ -21,6 +21,7 @@
 #include "l_draw.h"
 #include "l_vector.h"
 #include "l_sector.h"
+#include "l_level.h"
 
 #define WIDTH 800
 #define HEIGHT 600
@@ -49,7 +50,7 @@ int vertselected = -1;
 char *saveto = NULL;
 
 int gridsize = 25;
-int snapsize = 25;
+int snapsize = 10;
 
 xy_t mouse;
 
@@ -359,28 +360,29 @@ void save()
 	unsigned int totalsectors = 0;
 	sector_t *sect = getFirstSector();
 	while(sect != NULL){
-		fprintf(fp, "s %d\n", totalsectors);
+		fprintf(fp, "s %u\n", totalsectors);
 		unsigned int i;
 		for(i = 0; i < sect->nedges; i++){
-			fprintf(fp, "v %.f %.f\n", sect->vertices[i].x, sect->vertices[i].y);
-		}
-		for(i = 0; i < sect->nedges; i++){
-			if(sect->edges[i].neighbor == NULL){
-				fprintf(fp, "e %d\n", sect->edges[i].type);
-			}else{
+			edge_t edge = sect->edges[i];
+			xy_t v = sect->vertices[edge.vertex1];
+			fprintf(fp, "e %d (%.lf,%.lf)", edge.type, v.x, v.y);
+
+			if(edge.neighbor != NULL){
 				unsigned int totalsectors2 = 0;
 				sector_t *sect2 = getFirstSector();
 				while(sect2 != NULL){
-					if(sect->edges[i].neighbor->sector == sect2){
+					if(edge.neighbor->sector == sect2){
 						unsigned int j;
-						for(j = 0; j < sect2->nedges && sect2->edges + j != sect->edges[i].neighbor; j++);
-						fprintf(fp, "e %d %d %d\n", sect->edges[i].type, totalsectors2, j);
+						for(j = 0; j < sect2->nedges && sect2->edges + j != edge.neighbor; j++);
+
+						fprintf(fp, " %u %u", totalsectors2, j);
 						break;
 					}
 					totalsectors2++;
 					sect2 = getNextSector(sect2);
 				}
 			}
+			fprintf(fp, "\n");
 		}
 		fprintf(fp, "\n");
 		sect = getNextSector(sect);
@@ -403,6 +405,10 @@ int main(int argc, char **argv)
 	if(argc > 0){
 		saveto = (char*)malloc(strlen(argv[1]) + 1);
 		strcpy(saveto, argv[1]);
+	}
+
+	if(argc > 1){
+		loadLevel(argv[2]);
 	}
 
 	ccDisplayInitialize();
