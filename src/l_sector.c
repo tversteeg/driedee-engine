@@ -13,7 +13,7 @@ sector_t* createSector(xy_t start)
 {
 	sector_t *sector = (sector_t*)poolMalloc(&sectors);
 	sector->edges = (edge_t*)malloc(sizeof(edge_t));
-	sector->edges[0] = (edge_t){0, 0, WALL};
+	sector->edges[0] = (edge_t){0, 0, WALL, sector, .neighbor = NULL};
 	sector->vertices = (xy_t*)malloc(sizeof(xy_t));
 	sector->vertices[0] = start;
 	sector->nedges = 1;
@@ -51,7 +51,7 @@ unsigned int createEdge(sector_t *sector, xy_t next, edgetype_t type)
 	sector->vertices[sector->nedges - 1] = next;
 
 	sector->edges = (edge_t*)realloc(sector->edges, sector->nedges * sizeof(edge_t));
-	sector->edges[sector->nedges - 1] = (edge_t){sector->nedges - 1, sector->nedges - 2, type, sector};
+	sector->edges[sector->nedges - 1] = (edge_t){sector->nedges - 1, sector->nedges - 2, type, sector, .neighbor = NULL};
 
 	sector->edges[0].vertex2 = sector->nedges - 1;
 
