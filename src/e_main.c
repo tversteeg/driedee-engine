@@ -30,6 +30,7 @@
 #define COLOR_RED (pixel_t){255, 0, 0, 255}
 #define COLOR_GREEN (pixel_t){0, 255, 0, 255}
 #define COLOR_BLUE (pixel_t){0, 0, 255, 255}
+#define COLOR_BLUEGRAY (pixel_t){0, 128, 128, 255}
 #define COLOR_YELLOW (pixel_t){255, 255, 0, 255}
 
 typedef enum {VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
@@ -40,12 +41,15 @@ font_t font;
 
 bool snaptogrid = false;
 sector_t *sectorselected = NULL;
+edge_t *edgeselected = NULL;
 tool_t toolselected = SECTOR_ADD_TOOL;
 edgetype_t edgetypeselected = WALL;
 int vertselected = -1;
 
-int gridsize = 10;
-int snapsize = 10;
+char *saveto = NULL;
+
+int gridsize = 25;
+int snapsize = 25;
 
 xy_t mouse;
 
@@ -125,11 +129,17 @@ void renderMenu()
 	char buffer[64];
 	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, (pixel_t){0, 128, 128, 255});
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, COLOR_BLUEGRAY);
 
-	pos = sprintf(buffer, "(S) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
+	pos = sprintf(buffer, "(G) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, (pixel_t){0, 128, 128, 255});
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, COLOR_BLUEGRAY);
+
+	if(saveto != NULL){
+		pos = sprintf(buffer, "(S) SAVE TO FILE: \"%s\"", saveto);
+		buffer[pos] = '\0';
+		drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, COLOR_BLUEGRAY);
+	}
 
 	char toolname[64];
 	switch(toolselected){
@@ -158,7 +168,11 @@ void renderMenu()
 			}
 			break;
 		case EDGE_CONNECT_TOOL:
-			strcpy(toolname, "CONNECT EDGES");
+			if(edgeselected != NULL){
+				sprintf(toolname, "CONNECT EDGES - SECTOR SELECTED %p", edgeselected->sector);
+			}else{
+				strcpy(toolname, "CONNECT EDGES - SELECT EDGE");
+			}
 			break;
 		case VERTEX_MOVE_TOOL:
 			strcpy(toolname, "MOVE VERTEX");
@@ -168,20 +182,20 @@ void renderMenu()
 			break;
 	}
 
-	pos = sprintf(buffer, "(1-6) %s", toolname);
+	pos = sprintf(buffer, "(1-5) %s", toolname);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, (pixel_t){255, 0, 0, 255});
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, COLOR_RED);
 }
 
 void renderMouse()
 {
 	char buffer[64];
-	int pos = sprintf(buffer, "MOUSE: (%f,%f)", mouse.x, mouse.y);
+	int pos = sprintf(buffer, "(%.f,%.f)", mouse.x, mouse.y);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, (pixel_t){0, 64, 64, 255});
+	drawString(&tex, &font, buffer, 8, 8, COLOR_YELLOW);
 
-	drawLine(&tex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, (pixel_t){255, 255, 0, 255});
-	drawLine(&tex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, (pixel_t){255, 255, 0, 255});
+	drawLine(&tex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
+	drawLine(&tex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
 }
 
 void renderMap()
@@ -266,8 +280,48 @@ void handleMouseClick()
 			createEdge(sectorselected, mouse, edgetypeselected);
 			break;
 		case EDGE_CHANGE_TOOL:
+			{
+				sector_t *sect = getFirstSector();
+				while(sect != NULL){
+					unsigned int i;
+					for(i = 0; i < sect->nedges; i++){
+						edge_t *edge = sect->edges + i;
+						if(distanceToSegment(mouse, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
+							edge->type = edgetypeselected;
+							if(edge->type == WALL){
+								edge->sector = NULL;
+							}
+							break;
+						}
+					}
+					sect = getNextSector(sect);
+				}
+			}
 			break;
 		case EDGE_CONNECT_TOOL:
+			{
+				sector_t *sect = getFirstSector();
+				while(sect != NULL){
+					unsigned int i;
+					for(i = 0; i < sect->nedges; i++){
+						edge_t *edge = sect->edges + i;
+						if(distanceToSegment(mouse, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
+							if(edgeselected == NULL){
+								edgeselected = edge;
+								return;
+							}else	if(edgeselected != edge && edgeselected->sector != edge->sector){
+								edge->neighbor = edgeselected;
+								edgeselected->neighbor = edge;
+								edge->type = PORTAL;
+								edgeselected->type = PORTAL;
+								edgeselected = NULL;
+								return;
+							}
+						}
+					}
+					sect = getNextSector(sect);
+				}
+			}
 			break;
 		case VERTEX_MOVE_TOOL:
 			if(vertselected == -1){
@@ -276,7 +330,7 @@ void handleMouseClick()
 					xy_t v = sectorselected->vertices[i];
 					int dx = mouse.x - v.x;
 					int dy = mouse.y - v.y;
-					if(sqrt(dx * dx + dy * dy) < 10){
+					if(sqrt(dx * dx + dy * dy) < snapsize){
 						vertselected = i;
 						break;
 					}
@@ -289,6 +343,55 @@ void handleMouseClick()
 	}
 }
 
+void save()
+{
+	if(saveto == NULL){
+		printf("No save file supplied.\n");
+		exit(1);
+	}
+
+	FILE *fp = fopen(saveto, "wt");
+	if(!fp){
+		printf("Couldn't open file for writing: %s\n", saveto);
+		exit(1);
+	}
+
+	unsigned int totalsectors = 0;
+	sector_t *sect = getFirstSector();
+	while(sect != NULL){
+		fprintf(fp, "s %d\n", totalsectors);
+		unsigned int i;
+		for(i = 0; i < sect->nedges; i++){
+			fprintf(fp, "v %.f %.f\n", sect->vertices[i].x, sect->vertices[i].y);
+		}
+		for(i = 0; i < sect->nedges; i++){
+			if(sect->edges[i].neighbor == NULL){
+				fprintf(fp, "e %d\n", sect->edges[i].type);
+			}else{
+				unsigned int totalsectors2 = 0;
+				sector_t *sect2 = getFirstSector();
+				while(sect2 != NULL){
+					if(sect->edges[i].neighbor->sector == sect2){
+						unsigned int j;
+						for(j = 0; j < sect2->nedges && sect2->edges + j != sect->edges[i].neighbor; j++);
+						fprintf(fp, "e %d %d %d\n", sect->edges[i].type, totalsectors2, j);
+						break;
+					}
+					totalsectors2++;
+					sect2 = getNextSector(sect2);
+				}
+			}
+		}
+		fprintf(fp, "\n");
+		sect = getNextSector(sect);
+		totalsectors++;
+	}
+
+	fclose(fp);
+
+	printf("Succesfully written level to file \"%s\"!\n", saveto);
+}
+
 int main(int argc, char **argv)
 {
 	sectorInitialize();
@@ -296,6 +399,11 @@ int main(int argc, char **argv)
 	initTexture(&tex, WIDTH, HEIGHT);
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
+
+	if(argc > 0){
+		saveto = (char*)malloc(strlen(argv[1]) + 1);
+		strcpy(saveto, argv[1]);
+	}
 
 	ccDisplayInitialize();
 
@@ -329,7 +437,7 @@ int main(int argc, char **argv)
 				}
 			}else if(ccWindowEventGet().type == CC_EVENT_KEY_UP){
 				switch(ccWindowEventGet().keyCode){
-					case CC_KEY_S:
+					case CC_KEY_G:
 						snaptogrid = !snaptogrid;
 						break;
 					case CC_KEY_1:
@@ -346,6 +454,9 @@ int main(int argc, char **argv)
 						break;
 					case CC_KEY_5:
 						toolselected = VERTEX_MOVE_TOOL;
+						break;
+					case CC_KEY_S:
+						save();
 						break;
 					case CC_KEY_W:
 						edgetypeselected = WALL;
