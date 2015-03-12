@@ -138,9 +138,12 @@ void renderMenu()
 
 	if(saveto != NULL){
 		pos = sprintf(buffer, "(S) SAVE TO FILE: \"%s\"", saveto);
-		buffer[pos] = '\0';
-		drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, COLOR_BLUEGRAY);
+	}else{
+		pos = sprintf(buffer, "NO SAVE FILE SUPPLIED");
 	}
+
+	buffer[pos] = '\0';
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, COLOR_BLUEGRAY);
 
 	char toolname[64];
 	switch(toolselected){
@@ -402,12 +405,12 @@ int main(int argc, char **argv)
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
 
-	if(argc > 0){
+	if(argc >= 2){
 		saveto = (char*)malloc(strlen(argv[1]) + 1);
 		strcpy(saveto, argv[1]);
 	}
 
-	if(argc > 1){
+	if(argc >= 3){
 		loadLevel(argv[2]);
 	}
 
