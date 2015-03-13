@@ -35,7 +35,6 @@ void loadLevel(const char *filename)
 							(int*)&type, &vert.x, &vert.y, &neighborsector, &neighboredge);
 					unsigned int edgenum = createEdge(sect, vert, type);
 					if(nscanned == 5){
-						printf("%d\n", edgenum);
 						// Store neighbors
 					}
 				}
