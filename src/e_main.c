@@ -33,6 +33,7 @@
 #define COLOR_BLUE (pixel_t){0, 0, 255, 255}
 #define COLOR_BLUEGRAY (pixel_t){0, 128, 128, 255}
 #define COLOR_YELLOW (pixel_t){255, 255, 0, 255}
+#define COLOR_PINK (pixel_t){255, 0, 255, 255}
 
 typedef enum {VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
 
@@ -234,10 +235,18 @@ void renderMap()
 		}
 		for(i = start; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
-			if(edge.type == WALL){
-				color = COLOR_YELLOW;
+			if(sectorselected != sect){
+				if(edge.type == WALL){
+					color = COLOR_YELLOW;
+				}else{
+					color = COLOR_BLUE;
+				}
 			}else{
-				color = COLOR_BLUE;
+				if(edge.type == WALL){
+					color = COLOR_PINK;
+				}else{
+					color = COLOR_BLUEGRAY;
+				}
 			}
 			drawLine(&tex, sect->vertices[edge.vertex1], sect->vertices[edge.vertex2], color);
 		}
