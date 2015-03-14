@@ -17,6 +17,9 @@
 #include <GL/glew.h>
 #endif
 
+#include "l_draw.h"
+#include "l_level.h"
+
 #define FL_ERROR 0.001
 
 #define WIDTH 800
@@ -34,40 +37,6 @@
 #define RENDER_MAP
 //#define USE_MOUSE
 
-typedef struct {
-	unsigned char r, g, b;
-} pixelRGB_t;
-
-typedef struct {
-	double x, y;
-} xy_t;
-
-typedef struct {
-	double x, y, z;
-} xyz_t;
-
-typedef struct {
-	xyz_t start;
-	double angle, slope;
-} plane_t;
-
-typedef enum {PORTAL, WALL} edgetype_t;
-
-typedef struct {
-	unsigned int vertex1, vertex2;
-	edgetype_t type;
-	union {
-		unsigned int neighbor;
-	};
-} edge_t;
-
-typedef struct {
-	xy_t *vertex;
-	edge_t *walls;
-	plane_t floor, ceil;
-	unsigned int npoints, nneighbors, *neighbors, nvisited, *visited;
-} sector_t;
-
 struct player {
 	xyz_t pos, vel;
 	double angle, fov, yaw, height, radius;
@@ -75,9 +44,6 @@ struct player {
 } player;
 
 GLuint texture;
-pixelRGB_t pixels[WIDTH * HEIGHT];
-sector_t *sectors = NULL;
-unsigned int nsectors = 0;
 
 double yLookup[HHEIGHT];
 
