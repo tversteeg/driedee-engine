@@ -37,7 +37,7 @@
 
 #define NONE_SELECTED -1
 
-typedef enum {VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
+typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
 
 GLuint texture;
 texture_t tex;
@@ -46,7 +46,7 @@ font_t font;
 bool snaptogrid = false;
 sector_t *sectorselected = NULL;
 edge_t *edgeselected = NULL;
-tool_t toolselected = SECTOR_ADD_TOOL;
+tool_t toolselected = NO_TOOL;
 edgetype_t edgetypeselected = WALL;
 int vertselected = NONE_SELECTED;
 
@@ -145,7 +145,7 @@ void renderMenu()
             strcpy(toolname, "MOVE VERTEX");
             break;
         default:
-            strcpy(toolname, "ERROR");
+            strcpy(toolname, "NO TOOL SELECTED");
             break;
     }
 
@@ -315,6 +315,8 @@ void handleMouseClick()
                 vertselected = NONE_SELECTED;
             }
             break;
+				default:
+						break;
     }
 }
 
