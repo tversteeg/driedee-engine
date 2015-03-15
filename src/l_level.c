@@ -18,16 +18,15 @@ void loadLevel(const char *filename)
 	unsigned int cursector = 0;
 	char *line = NULL;
 	size_t len = 0;
+	bool firstedge = true;
 	sector_t *sect = NULL;
 	xy_t vert;
 	while(getline(&line, &len, fp) != -1){
 		switch(line[0]){
 			case 's':
-				if(sect != NULL){
-					sect->vertices[0] = vert;
-				}
 				sect = createSector((xy_t){0, 0});
 				sscanf(line,"%*s %u", &cursector);
+				firstedge = true;
 				break;
 			case 'e':
 				{
@@ -36,7 +35,14 @@ void loadLevel(const char *filename)
 					int nscanned = sscanf(line, "%*s %d (%lf,%lf) %u %u", 
 							(int*)&type, &vert.x, &vert.y, &neighborsector, &neighboredge);
 
-					unsigned int edgenum = createEdge(sect, vert, type);
+					unsigned int edgenum;
+					if(firstedge){
+						sect->vertices[0] = vert;
+						edgenum = 0;
+						firstedge = false;
+					}else{
+						edgenum = createEdge(sect, vert, type);
+					}
 					if(nscanned == 5 && neighborsector < cursector){
 						// Store neighbors
 						sector_t *neighbor = getFirstSector();
