@@ -22,8 +22,6 @@
 #include "l_level.h"
 #include "l_colors.h"
 
-#define FL_ERROR 0.001
-
 #define WIDTH 800
 #define HEIGHT 600
 #define HWIDTH (WIDTH / 2)
@@ -36,7 +34,6 @@
 #define PLAYER_FRICTION 0.8f
 #define PLAYER_GRAVITY 0.1f
 
-#define RENDER_MAP
 //#define USE_MOUSE
 
 struct player {
@@ -87,121 +84,6 @@ void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop
 }
 #endif
 
-int segmentSegmentIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
-{
-	double denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-	double n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
-	double n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
-
-	if(fabs(n1) < FL_ERROR && fabs(n2) < FL_ERROR && fabs(denom) < FL_ERROR){
-		p->x = (p1.x + p2.x) / 2;
-		p->y = (p1.y + p2.y) / 2;
-		return 1;
-	}
-
-	if(fabs(denom) < FL_ERROR){
-		return 0;
-	}
-
-	n1 /= denom;
-	n2 /= denom;
-	if(n1 < -FL_ERROR || n1 > 1.001f || n2 < -FL_ERROR || n2 > 1.001f){
-		return 0;
-	}
-
-	p->x = p1.x + n1 * (p2.x - p1.x);
-	p->y = p1.y + n1 * (p2.y - p1.y);
-	return 1;
-}
-
-// http://stackoverflow.com/questions/563198/how-do-you-detect-where-two-line-segments-intersect/565282#565282
-int lineSegmentIntersect(xy_t p, xy_t r, xy_t q, xy_t q1, xy_t *result)
-{
-	xy_t s;
-	s.x = q1.x - q.x;
-	s.y = q1.y - q.y;
-
-	xy_t diff;
-	diff.x = q.x - p.x;
-	diff.y = q.y - p.y;
-
-	double denom = vectorCrossProduct(r, s);
-	double u = vectorCrossProduct(diff, r);
-	if(fabs(denom) < FL_ERROR){
-		if(fabs(u) < FL_ERROR){
-			result->x = (p.x + q.x) / 2;
-			result->y = (p.y + q.y) / 2;
-			return 1;
-		}else{
-			return 0;
-		}
-	}
-
-	u /= denom;
-	if(u < -FL_ERROR || u > 1.0 + FL_ERROR){
-		return 0;
-	}
-
-	result->x = q.x + u * s.x;
-	result->y = q.y + u * s.y;
-	return 1;
-}
-
-int segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p)
-{
-	xy_t seg = {p2.x - p1.x, p2.y - p1.y};
-	xy_t cir = {circle.x - p1.x, circle.y - p1.y};
-	double proj = vectorProjectScalar(cir, seg);
-
-	xy_t closest;
-	if(proj < 0){
-		closest = p1;
-	}else if(proj > sqrt(seg.x * seg.x + seg.y * seg.y)){
-		closest = p2;
-	}else{
-		xy_t projv = vectorProject(cir, seg);
-		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
-	}
-
-	double dx = circle.x - closest.x;
-	double dy = circle.y - closest.y;
-	double dist = sqrt(dx * dx + dy * dy);
-	if(dist < radius){
-		p->x = closest.x;
-		p->y = closest.y;
-		return 1;
-	}else{
-		return 0;
-	}
-}
-
-#if 0
-int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
-{
-	sector_t s1 = sectors[current];
-	unsigned int i;
-	for(i = 0; i < s1.nneighbors; i++){
-		sector_t s2 = sectors[s1.neighbors[i]];
-		unsigned int j, found = 0;
-		for(j = 0; j < s2.npoints; j++){
-			if(s2.vertex[j].x == v1.x && s2.vertex[j].y == v1.y){
-				found++;
-				if(found >= 2){
-					return s1.neighbors[i];
-				}
-			}else if(s2.vertex[j].x == v2.x && s2.vertex[j].y == v2.y){
-				found++;
-				if(found >= 2){
-					return s1.neighbors[i];
-				}
-			}
-		}
-	}
-
-	return -1;
-}
-#endif
-
 void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
 	if(p1->y < 0){
@@ -215,7 +97,7 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	}else{
 		cam = camright;
 	}
-	
+
 	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
 }
 
@@ -331,9 +213,10 @@ void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom,
 	drawLine(&tex, (xy_t){(double)screenrightx, (double)screentoprighty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, COLOR_WHITE);
 }
 
-void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, double camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
+void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, double camlen)
 {
 	unsigned int i;
+#if 0
 	for(i = 0; i < sector->nvisited; i++){
 		if(sector->visited[i] == oldId || sector->visited[i] == id){
 			return;
@@ -347,6 +230,7 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 		sector->visited = (unsigned int*)malloc(++sector->nvisited * sizeof(unsigned int));
 		sector->visited[sector->nvisited - 1] = oldId;
 	}
+#endif
 
 	double sina = sin(player.angle);
 	double cosa = cos(player.angle);
@@ -361,11 +245,6 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 		}else{
 			p1 = sector->vertices[0];
 			p2 = sector->vertices[sector->nedges - 1];
-		}
-
-		if((p1.x == leftWall.x && p1.y == leftWall.y && p2.x == rightWall.x && p2.y == rightWall.y) ||
-				(p2.x == leftWall.x && p2.y == leftWall.y && p1.x == rightWall.x && p1.y == rightWall.y)){
-			continue;
 		}
 
 		xy_t v1 = {campos.x - p1.x, campos.y - p1.y};
@@ -418,60 +297,18 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 			tv2 = temp;
 		}
 
-		sector_t neighbor;
-		if((neighbor = findNeighborSector(sector, p1, p2)) != -1){
-			renderSector(neighbor, campos, tv1, tv2, camlen, sector, p1, p2);
-			
-			// Check if we need to render the bottom or upper edge
-			if(neighbor->ceil.start.z < sector->ceil.start.z){
-				renderWall(tv1, tv2, camlen, sector->ceil.start.z, neighbor->ceil.start.z, HEIGHT, neighbor->floor.start.z);
-			}
-			if(neighbor.floor.start.z > sector->floor.start.z){
-				renderWall(tv1, tv2, camlen, neighbor.ceil.start.z, sector->ceil.start.z, HEIGHT, neighbor.floor.start.z);
-			}
-		}else{
-			renderWall(tv1, tv2, camlen, sector->ceil.start.z, sector->floor.start.z, HEIGHT, 0);
-		}
-	}
-}
-
-void renderMap()
-{
-	xy_t pos;
-	pos.x = player.pos.x / 2;
-	pos.y = player.pos.y / 2;
-
-	xy_t lookat;
-	lookat.x = pos.x - sin(player.angle) * 10;
-	lookat.y = pos.y - cos(player.angle) * 10;
-
-	drawLine(pos, lookat, 255, 0, 0, 1);
-
-	unsigned int i;
-	for(i = 0; i < nsectors; i++){
-		sector_t sect = sectors[i];
-		unsigned int j;
-		for(j = 0; j < sector->npoints; j++){
-			xy_t v1, v2;
-			if(j > 0){
-				v1 = sector->vertices[j];
-				v2 = sector->vertices[j - 1];
-			}else{
-				v1 = sector->vertices[0];
-				v2 = sector->vertices[sector->npoints - 1];
-			}
-
-			v1.x /= 2;
-			v1.y /= 2;
-			v2.x /= 2;
-			v2.y /= 2;
-			drawLine(v1, v2, 0, 255, 0, 0.5f);
+		edge_t edge = sector->edges[i];
+		if(edge.type == PORTAL){
+			renderSector(edge.neighbor->sector, campos, tv1, tv2, camlen);
+		}else if(edge.type == WALL){
+			renderWall(tv1, tv2, camlen, 10, 0, HEIGHT, 0);
 		}
 	}
 }
 
 void renderScene()
 {
+#if 0
 	unsigned int i;
 	for(i = 0; i < nsectors; i++){
 		if(sectors[i].nvisited > 0){
@@ -479,6 +316,7 @@ void renderScene()
 			sectors[i].nvisited = 0;
 		}
 	}
+#endif
 
 	xy_t camleft = {-200, 200};
 	xy_t camright = {200, 200};
@@ -486,11 +324,7 @@ void renderScene()
 	xy_t camunit = vectorUnit(camright);
 	player.fov = (camunit.x * camunit.y) * 2;
 
-	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, player.sector, (xy_t){-1, -1}, (xy_t){-1, -1});
-
-#ifdef RENDER_MAP
-	renderMap();
-#endif
+	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000);
 }
 
 void render()
@@ -500,7 +334,7 @@ void render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, tex.pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -517,7 +351,7 @@ void render()
 
 	unsigned int i;
 	for(i = 0; i < WIDTH * HEIGHT; i++){
-		pixels[i].r = pixels[i].g = pixels[i].b = 0;
+		tex.pixels[i].r = tex.pixels[i].g = tex.pixels[i].b = 0;
 	}
 }
 
@@ -533,18 +367,18 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 	}
 	if(leftPressed){
 #ifdef USE_MOUSE
-			player.vel.x += cos(player.angle) * PLAYER_SPEED;
-			player.vel.y -= sin(player.angle) * PLAYER_SPEED;
+		player.vel.x += cos(player.angle) * PLAYER_SPEED;
+		player.vel.y -= sin(player.angle) * PLAYER_SPEED;
 #else
-			player.angle -= 0.035f;
+		player.angle -= 0.035f;
 #endif
 	}
 	if(rightPressed){
 #ifdef USE_MOUSE
-			player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED / 2;
-			player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED / 2;
+		player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED / 2;
+		player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED / 2;
 #else
-			player.angle += 0.035f;
+		player.angle += 0.035f;
 #endif
 	}
 	if(spacePressed){
@@ -554,69 +388,19 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		}
 	}
 
-	unsigned int found = 0;
-	if(player.vel.x > FL_ERROR || player.vel.x < -FL_ERROR || player.vel.y > FL_ERROR || player.vel.y < -FL_ERROR){
-		sector_t sect = sectors[player.sector];
-		unsigned int i;
-		for(i = 0; i < sector->npoints; i++){
-			xy_t v1, v2;
-			if(i > 0){
-				if(sector->npoints == 2){
-					break;
-				}
-				v1 = sector->vertices[i];
-				v2 = sector->vertices[i - 1];
-			}else{
-				v1 = sector->vertices[0];
-				v2 = sector->vertices[sector->npoints - 1];
-			}
-			// Find which segment the player wants to pass throught
-			xy_t isect;
-			if(!segmentSegmentIntersect(v1, v2, (xy_t){player.pos.x, player.pos.y}, (xy_t){player.pos.x + player.vel.x, player.pos.y + player.vel.y}, &isect)){
-				continue;
-			}
-
-			unsigned int j;
-			for(j = 0; j < sector->nneighbors; j++){
-				sector_t neighbor = sectors[sector->neighbors[j]];
-				found = 0;
-				unsigned int k;
-				for(k = 0; k < neighbor.npoints; k++){
-					if(v1.x == neighbor.vertex[k].x && v1.y == neighbor.vertex[k].y){
-						found++;
-					}else	if(v2.x == neighbor.vertex[k].x && v2.y == neighbor.vertex[k].y){
-						found++;
-					}else{
-						continue;
-					}
-					if(found == 2){
-						player.sector = sector->neighbors[j];
-						goto foundAll;
-					}
-				}
-			}
-foundAll:
-			if(found < 2){				
-				xy_t proj = vectorProject((xy_t){player.pos.x + player.vel.x - v2.x, player.pos.y + player.vel.y - v2.y}, (xy_t){v1.x - v2.x, v1.y - v2.y});
-
-				player.pos.x = proj.x + v2.x - player.vel.x;
-				player.pos.y = proj.y + v2.y - player.vel.y;
-				player.vel.x = 0;
-				player.vel.y = 0;
-			}
-		}
-
+	if(player.vel.x > V_ERROR || player.vel.x < -V_ERROR || player.vel.y > V_ERROR || player.vel.y < -V_ERROR){
 		player.pos.x += player.vel.x;
 		player.pos.y += player.vel.y;
 		player.vel.x *= PLAYER_FRICTION;
 		player.vel.y *= PLAYER_FRICTION;
 	}
-	if(player.pos.z < -FL_ERROR){
+	if(player.pos.z < -V_ERROR){
 		player.pos.z += player.vel.z;
 		player.vel.z += PLAYER_GRAVITY;
 	}else{
 		player.pos.z = 0;
 	}
+
 #ifdef USE_MOUSE
 	player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
 	player.yaw += (ccWindowGetMouse().y - HHEIGHT) / 1000.0f;
@@ -624,89 +408,18 @@ foundAll:
 #endif
 }
 
-void load(char *map)
-{
-	FILE *fp;
-	char *line, *ptr;
-	int index, index2, scanlen, nverts;
-	size_t len;
-	ssize_t read;
-	xy_t vert, *verts;
-	sector_t *sect;
-
-	line = NULL;
-	verts = NULL;
-	len = 0;
-	nverts = 0;
-
-	fp = fopen(map, "rt");
-	if(!fp) {
-		printf("Couldn't open: %s\n", map);
-		exit(1);
-	}
-
-	/* TODO: replace GNU readline with a cross platform solution */
-	while((read = getline(&line, &len, fp)) != -1) {
-		switch(line[0]){
-			case 'v':
-				ptr = line;
-				sscanf(ptr, "%*s %lf%n", &vert.y, &scanlen);
-				while(sscanf(ptr += scanlen, "%lf%n", &vert.x, &scanlen) == 1){
-					verts = (xy_t*)realloc(verts, ++nverts * sizeof(*verts));
-					verts[nverts - 1] = vert;
-				}
-				break;
-			case 's':
-				sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(*sectors));
-				sect = sectors + nsectors - 1;
-
-				ptr = line;
-				sect->npoints = 0;
-				sect->vertex = NULL;
-				sect->visited = NULL;
-				sect->nvisited = 0;
-				sect->nneighbors = 0;
-				sect->neighbors = NULL;
-
-				sscanf(ptr, "%*s %lf %lf %lf %u %lf %lf %lf %u%n", &sect->floor.start.z, &sect->floor.slope, &sect->floor.angle, &index,
-						&sect->ceil.start.z, &sect->ceil.slope, &sect->ceil.angle, &index2, &scanlen);
-				sect->floor.start.x = verts[index].x;
-				sect->floor.start.y = verts[index].y;
-				sect->ceil.start.x = verts[index2].x;
-				sect->ceil.start.y = verts[index2].y;
-				while(sscanf(ptr += scanlen, "%d%n", &index, &scanlen) == 1){
-					sect->vertex = (xy_t*)realloc(sect->vertex, ++sect->npoints * sizeof(*sect->vertex));
-					sect->vertex[sect->npoints - 1] = verts[index];
-				}
-
-				sscanf(ptr += scanlen, "%*c%n", &scanlen);
-				while(sscanf(ptr += scanlen, "%u%n", &index, &scanlen) == 1){
-					sect->neighbors = (unsigned int*)realloc(sect->neighbors, ++sect->nneighbors * sizeof(*sect->neighbors));
-					sect->neighbors[sect->nneighbors - 1] = index;
-				}
-
-				printSectorInfo(nsectors - 1);
-				break;
-			case 'p':
-				sscanf(line, "%*s %lf %lf %lf %lf", &player.height, &player.pos.x, &player.pos.y, &player.pos.z);
-				player.angle = M_PI / 2;
-				player.sector = 0;
-				player.yaw = 0;
-				player.radius = 5;
-				break;
-		}
-	}
-
-	fclose(fp);
-	free(line);
-	free(verts);
-}
-
 int main(int argc, char **argv)
 {
 	bool loop, upPressed, downPressed, leftPressed, rightPressed, spacePressed;
 
-	load(argv[1]);
+	sectorInitialize();
+
+	initTexture(&tex, WIDTH, HEIGHT);
+
+	loadLevel(argv[1]);
+	player.sector = getFirstSector();
+	player.pos.x = player.sector->vertices[0].x;
+	player.pos.y = player.sector->vertices[0].y;
 
 	populateLookupTables();
 

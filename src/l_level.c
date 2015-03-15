@@ -15,6 +15,7 @@ void loadLevel(const char *filename)
 		return;
 	}
 
+	unsigned int cursector = 0;
 	char *line = NULL;
 	size_t len = 0;
 	sector_t *sect = NULL;
@@ -26,6 +27,7 @@ void loadLevel(const char *filename)
 					sect->vertices[0] = vert;
 				}
 				sect = createSector((xy_t){0, 0});
+				sscanf(line,"%*s %u", &cursector);
 				break;
 			case 'e':
 				{
@@ -33,9 +35,18 @@ void loadLevel(const char *filename)
 					edgetype_t type;
 					int nscanned = sscanf(line, "%*s %d (%lf,%lf) %u %u", 
 							(int*)&type, &vert.x, &vert.y, &neighborsector, &neighboredge);
+
 					unsigned int edgenum = createEdge(sect, vert, type);
-					if(nscanned == 5){
+					if(nscanned == 5 && neighborsector < cursector){
 						// Store neighbors
+						sector_t *neighbor = getFirstSector();
+						if(neighborsector != 0){
+							while(--neighborsector > 0){
+								neighbor = getNextSector(neighbor);
+							}
+						}
+						neighbor->edges[neighboredge].neighbor = sect->edges + edgenum;
+						sect->edges[edgenum].neighbor = neighbor->edges + neighboredge;
 					}
 				}
 				break;
