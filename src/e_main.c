@@ -35,6 +35,8 @@
 #define COLOR_YELLOW (pixel_t){255, 255, 0, 255}
 #define COLOR_PINK (pixel_t){255, 0, 255, 255}
 
+#define NONE_SELECTED -1
+
 typedef enum {VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
 
 GLuint texture;
@@ -46,7 +48,7 @@ sector_t *sectorselected = NULL;
 edge_t *edgeselected = NULL;
 tool_t toolselected = SECTOR_ADD_TOOL;
 edgetype_t edgetypeselected = WALL;
-int vertselected = -1;
+int vertselected = NONE_SELECTED;
 
 char *saveto = NULL;
 
@@ -77,43 +79,6 @@ double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 	return sqrt(dx * dx + dy * dy);
 }
 
-#if 0
-void deleteEdge(unsigned int index)
-{
-	if(index >= nedges){
-		return;
-	}
-
-	memmove(edges + index, edges + index + 1, (nedges - index - 1) * sizeof(*edges));
-	edges = (edge_t*)realloc(edges, --nedges * sizeof(*edges));
-}
-
-void deleteVertex(unsigned int index)
-{
-	if(index >= nedges){
-		return;
-	}
-
-	memmove(vertices + index, vertices + index + 1, (nedges - index - 1) * sizeof(vertices[index]));
-	vertices = (xy_t*)realloc(vertices, --nedges * sizeof(*vertices));
-
-	int i;
-	for(i = 0; i < nedges; i++){
-		if(edges[i].vertex1 == index || edges[i].vertex2 == index){
-			deleteEdge(i);
-			i--;
-			continue;
-		}
-		if(edges[i].vertex1 > index){
-			edges[i].vertex1--;
-		}
-		if(edges[i].vertex2 > index){
-			edges[i].vertex2--;
-		}
-	}
-}
-#endif
-
 void renderBackground()
 {
 	drawGrid(&tex, 0, 0, WIDTH, HEIGHT - MENU_HEIGHT, gridsize, gridsize, (pixel_t){32, 32, 32, 255});
@@ -123,10 +88,7 @@ void renderMenu()
 {
 	drawLine(&tex, (xy_t){0, HEIGHT - MENU_HEIGHT}, (xy_t){WIDTH, HEIGHT - MENU_HEIGHT}, (pixel_t){255, 255, 0, 255});
 
-	int i;
-	for(i = HEIGHT - MENU_HEIGHT + 1; i < HEIGHT; i++){
-		drawLine(&tex, (xy_t){0, (double)i}, (xy_t){WIDTH, (double)i}, (pixel_t){16, 16, 16, 255});
-	}
+    drawRect(&tex, (xy_t){0, HEIGHT - MENU_HEIGHT + 1}, WIDTH, MENU_HEIGHT, (pixel_t){16, 16, 16, 255});
 
 	char buffer[64];
 	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
@@ -219,7 +181,7 @@ void renderMap()
 		}
 
 		// Draw dragged vertex
-		if(vertselected != -1){
+		if(vertselected != NONE_SELECTED){
 			drawLine(&tex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_GREEN);
 			drawLine(&tex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_GREEN);
 			drawCircle(&tex, mouse, 2, COLOR_YELLOW);
@@ -266,11 +228,11 @@ void render()
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
-	glVertex2f(-1.0f, 1.0f);
+	glVertex2f(NONE_SELECTED.0f, 1.0f);
 	glTexCoord2f(0.0f, 1.0f);
-	glVertex2f(-1.0f, -1.0f);
+	glVertex2f(NONE_SELECTED.0f, NONE_SELECTED.0f);
 	glTexCoord2f(1.0f, 1.0f);
-	glVertex2f(1.0f, -1.0f);
+	glVertex2f(1.0f, NONE_SELECTED.0f);
 	glTexCoord2f(1.0f, 0.0f);
 	glVertex2f(1.0f, 1.0f);
 	glEnd();
@@ -337,7 +299,7 @@ void handleMouseClick()
 			}
 			break;
 		case VERTEX_MOVE_TOOL:
-			if(vertselected == -1){
+			if(vertselected == NONE_SELECTED){
 				unsigned int i;
 				for(i = 0; i < sectorselected->nedges; i++){
 					xy_t v = sectorselected->vertices[i];
@@ -350,7 +312,7 @@ void handleMouseClick()
 				}
 			}else{
 				sectorselected->vertices[vertselected] = mouse;
-				vertselected = -1;
+				vertselected = NONE_SELECTED;
 			}
 			break;
 	}
