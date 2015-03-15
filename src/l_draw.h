@@ -29,6 +29,7 @@ inline void drawPixel(texture_t *tex, int x, int y, pixel_t pixel);
 
 void drawLine(texture_t *tex, xy_t p1, xy_t p2, pixel_t pixel);
 void drawCircle(texture_t *tex, xy_t p, unsigned int radius, pixel_t pixel);
+void drawRect(texture_t *tex, xy_t p, unsigned int width, unsigned int height, pixel_t pixel);
 
 void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, pixel_t pixel);
 void drawString(texture_t *tex, const font_t *font, const char *text, int x, int y, pixel_t pixel);

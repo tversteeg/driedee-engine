@@ -157,6 +157,14 @@ void drawCircle(texture_t *tex, xy_t p, unsigned int radius, pixel_t pixel)
 	}
 }
 
+void drawRect(texture_t *tex, xy_t p, unsigned int width, unsigned int height, pixel_t pixel)
+{
+    unsigned int i;
+    for(i = p.y; i < p.y + height; i++){
+        hline(tex, i, p.x, p.x + width, pixel);
+    }
+}
+
 void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, pixel_t pixel)
 {
 	char todraw = letter - font->start;
