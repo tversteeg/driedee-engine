@@ -18,7 +18,9 @@
 #endif
 
 #include "l_draw.h"
+#include "l_sector.h"
 #include "l_level.h"
+#include "l_colors.h"
 
 #define FL_ERROR 0.001
 
@@ -40,181 +42,15 @@
 struct player {
 	xyz_t pos, vel;
 	double angle, fov, yaw, height, radius;
-	unsigned int sector;
+	sector_t *sector;
 } player;
 
 GLuint texture;
+texture_t tex;
 
 double yLookup[HHEIGHT];
 
-void vline(int x, int top, int bot, int r, int g, int b, double a)
-{
-	if(x < 0 || x >= WIDTH){
-		return;
-	}
-
-	if(top < bot){
-		int tmp = top;
-		top = bot;
-		bot = tmp;
-	}
-
-	if(top >= HEIGHT){
-		top = HEIGHT - 1;
-	}
-	if(bot < 0){
-		bot = 0;
-	}
-
-	int y;
-	for(y = bot; y <= top; y++){
-		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
-		if(a == 1){
-			pixel->r = r;
-			pixel->g = g;
-			pixel->b = b;
-		}else{
-			double mina = 1 - a;
-			pixel->r = pixel->r * mina + r * a;
-			pixel->g = pixel->g * mina + g * a;
-			pixel->b = pixel->b * mina + b * a;
-		}
-	}
-}
-
-void hline(int y, int left, int right, int r, int g, int b, double a)
-{
-	if(y < 0 || y >= HEIGHT){
-		return;
-	}
-
-	if(right < left){
-		int tmp = right;
-		right = left;
-		left = tmp;
-	}
-
-	if(right >= WIDTH){
-		right = WIDTH - 1;
-	}
-	if(left < 0){
-		left = 0;
-	}
-
-	int x;
-	for(x = left; x <= right; x++){
-		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
-		if(a == 1){
-			pixel->r = r;
-			pixel->g = g;
-			pixel->b = b;
-		}else{
-			double mina = 1 - a;
-			pixel->r = pixel->r * mina + r * a;
-			pixel->g = pixel->g * mina + g * a;
-			pixel->b = pixel->b * mina + b * a;
-		}
-	}
-}
-
-void drawPixel(int x, int y, int r, int g, int b, double a)
-{
-	if(x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT){
-		pixelRGB_t *pixel = &pixels[x + y * WIDTH];
-			if(a == 1){
-				pixel->r = r;
-				pixel->g = g;
-				pixel->b = b;
-			}else{
-				double mina = 1 - a;
-				pixel->r = pixel->r * mina + r * a;
-				pixel->g = pixel->g * mina + g * a;
-				pixel->b = pixel->b * mina + b * a;
-			}
-	}
-}
-
-void drawLine(xy_t p1, xy_t p2, int r, int g, int b, double a)
-{
-	int x1 = p1.x, y1 = p1.y;
-	int x2 = p2.x, y2 = p2.y;
-	if(x1 == x2 && y1 == y2){
-		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
-			pixelRGB_t *pixel = &pixels[x1 + y1 * WIDTH];
-			if(a == 1){
-				pixel->r = r;
-				pixel->g = g;
-				pixel->b = b;
-			}else{
-				double mina = 1 - a;
-				pixel->r = pixel->r * mina + r * a;
-				pixel->g = pixel->g * mina + g * a;
-				pixel->b = pixel->b * mina + b * a;
-			}
-		}
-		return;
-	}
-	int dx = abs(x2 - x1);
-	int dy = abs(y2 - y1);
-	int sx = x1 < x2 ? 1 : -1;
-	int sy = y1 < y2 ? 1 : -1;
-	int err = (dx > dy ? dx : -dy) / 2;
-
-	while(true){
-		if(x1 >= 0 && x1 < WIDTH && y1 >= 0 && y1 < HEIGHT){
-			pixelRGB_t *pixel = &pixels[x1 + y1 * WIDTH];
-			if(a == 1){
-				pixel->r = r;
-				pixel->g = g;
-				pixel->b = b;
-			}else{
-				double mina = 1 - a;
-				pixel->r = pixel->r * mina + r * a;
-				pixel->g = pixel->g * mina + g * a;
-				pixel->b = pixel->b * mina + b * a;
-			}
-		}
-
-		if(x1 == x2 && y1 == y2){
-			break;
-		}
-		int err2 = err;
-		if(err2 > -dx) {
-			err -= dy;
-			x1 += sx;
-		}
-		if(err2 < dy) {
-			err += dx;
-			y1 += sy;
-		}
-	}
-}
-
-void drawCircle(xy_t p, int radius, int r, int g, int b, double a)
-{
-	int x = radius;
-	int y = 0;
-	int error = 1 - x;
-
-	while(x >= y){
-		drawPixel(x + p.x, y + p.y, r, g, b, a);
-		drawPixel(y + p.x, x + p.y, r, g, b, a);
-		drawPixel(-x + p.x, y + p.y, r, g, b, a);
-		drawPixel(-y + p.x, x + p.y, r, g, b, a);
-		drawPixel(-x + p.x, -y + p.y, r, g, b, a);
-		drawPixel(-y + p.x, -x + p.y, r, g, b, a);
-		drawPixel(x + p.x, -y + p.y, r, g, b, a);
-		drawPixel(y + p.x, -x + p.y, r, g, b, a);
-		y++;
-		if(error < 0){
-			error += 2 * y + 1;
-		}else{
-			x--;
-			error += 2 * (y - x) + 1;
-		}
-	}
-}
-
+#if 0
 void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop, bool flippedleft, int r, int g, int b)
 {
 	if(top == bottom){
@@ -249,57 +85,7 @@ void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop
 		}
 	}
 }
-
-xy_t vectorUnit(xy_t p)
-{
-	double len = sqrt(p.x * p.x + p.y * p.y);
-	p.x /= len;
-	p.y /= len;
-
-	return p;
-}
-
-bool vectorIsEqual(xy_t p1, xy_t p2)
-{
-	return p1.x - FL_ERROR < p2.x && p1.x + FL_ERROR > p2.x && p1.y - FL_ERROR < p2.y && p1.y + FL_ERROR > p2.y;
-}
-
-double vectorDotProduct(xy_t p1, xy_t p2)
-{
-	return p1.x * p2.x + p1.y * p2.y;
-}
-
-double vectorCrossProduct(xy_t p1, xy_t p2)
-{
-	return p1.x * p2.y - p1.y * p2.x;
-}
-
-bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
-{
-	double leftRight = vectorDotProduct(left, right);
-
-	return leftRight < vectorDotProduct(left, p) && leftRight < vectorDotProduct(right, p);
-}
-
-xy_t vectorProject(xy_t p1, xy_t p2)
-{
-	xy_t normal = vectorUnit(p2);
-	double scalar = vectorDotProduct(p1, normal);
-	normal.x *= scalar;
-	normal.y *= scalar;
-
-	return normal;
-}
-
-double vectorProjectScalar(xy_t p1, xy_t p2)
-{
-	return vectorDotProduct(p1, vectorUnit(p2));
-}
-
-bool pointIsLeft(xy_t p, xy_t l1, xy_t l2)
-{
-	return (l2.x - l1.x) * (p.y - l1.y) > (l2.y - l1.y) * (p.x - l1.x);
-}
+#endif
 
 int segmentSegmentIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
@@ -389,28 +175,7 @@ int segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p
 	}
 }
 
-void printSectorInfo(unsigned int id)
-{
-	sector_t sect = sectors[id];
-
-	printf("Sector \"%d\", floor: %g, ceil: %g\n", id, sect.floor.start.z, sect.ceil.start.z);
-	if(sect.npoints > 0){
-		printf("Vertices: ");
-	}
-	unsigned int i;
-	for(i = 0; i < sect.npoints; i++){
-		printf("(%g,%g) ", sect.vertex[i].x, sect.vertex[i].y);
-	}
-
-	if(sect.nneighbors > 0){
-		printf("\nNeighbors: ");
-	}
-	for(i = 0; i < sect.nneighbors; i++){
-		printf("%d ", sect.neighbors[i]);
-	}
-	printf("\n\n");
-}
-
+#if 0
 int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 {
 	sector_t s1 = sectors[current];
@@ -435,6 +200,7 @@ int findNeighborSector(unsigned int current, xy_t v1, xy_t v2)
 
 	return -1;
 }
+#endif
 
 void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
@@ -444,7 +210,7 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	}
 
 	xy_t cam;
-	if(pointIsLeft(*p1, (xy_t){0, 0}, camleft)){
+	if(vectorIsLeft(*p1, (xy_t){0, 0}, camleft)){
 		cam = camleft;
 	}else{
 		cam = camright;
@@ -558,28 +324,28 @@ void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom,
 	}
 #endif
 
-	drawLine((xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenrightx, (double)screentoprighty}, 255, 255, 255, 1);
-	drawLine((xy_t){(double)screenleftx, (double)screenbotlefty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, 255, 255, 255, 1);
+	drawLine(&tex, (xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenrightx, (double)screentoprighty}, COLOR_WHITE);
+	drawLine(&tex, (xy_t){(double)screenleftx, (double)screenbotlefty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, COLOR_WHITE);
 
-	drawLine((xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenleftx, (double)screenbotlefty}, 255, 255, 255, 1);
-	drawLine((xy_t){(double)screenrightx, (double)screentoprighty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, 255, 255, 255, 1);
+	drawLine(&tex, (xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenleftx, (double)screenbotlefty}, COLOR_WHITE);
+	drawLine(&tex, (xy_t){(double)screenrightx, (double)screentoprighty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, COLOR_WHITE);
 }
 
-void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, double camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
+void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, double camlen, unsigned int oldId, xy_t leftWall, xy_t rightWall)
 {
 	unsigned int i;
-	for(i = 0; i < sectors[id].nvisited; i++){
-		if(sectors[id].visited[i] == oldId || sectors[id].visited[i] == id){
+	for(i = 0; i < sector->nvisited; i++){
+		if(sector->visited[i] == oldId || sector->visited[i] == id){
 			return;
 		}
 	}
-	if(sectors[id].nvisited == 0){
-		sectors[id].visited = (unsigned int*)malloc(sizeof(unsigned int));
-		sectors[id].visited[0] = oldId;
-		sectors[id].nvisited = 1;
+	if(sector->nvisited == 0){
+		sector->visited = (unsigned int*)malloc(sizeof(unsigned int));
+		sector->visited[0] = oldId;
+		sector->nvisited = 1;
 	}else{
-		sectors[id].visited = (unsigned int*)malloc(++sectors[id].nvisited * sizeof(unsigned int));
-		sectors[id].visited[sectors[id].nvisited - 1] = oldId;
+		sector->visited = (unsigned int*)malloc(++sector->nvisited * sizeof(unsigned int));
+		sector->visited[sector->nvisited - 1] = oldId;
 	}
 
 	double sina = sin(player.angle);
@@ -587,15 +353,14 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, dou
 	xy_t camleftnorm = vectorUnit(camleft);
 	xy_t camrightnorm = vectorUnit(camright);
 
-	sector_t sect = sectors[id];
-	for(i = 0; i < sect.npoints; i++){
+	for(i = 0; i < sector->nedges; i++){
 		xy_t p1, p2;
 		if(i > 0){
-			p1 = sect.vertex[i];
-			p2 = sect.vertex[i - 1];
+			p1 = sector->vertices[i];
+			p2 = sector->vertices[i - 1];
 		}else{
-			p1 = sect.vertex[0];
-			p2 = sect.vertex[sect.npoints - 1];
+			p1 = sector->vertices[0];
+			p2 = sector->vertices[sector->nedges - 1];
 		}
 
 		if((p1.x == leftWall.x && p1.y == leftWall.y && p2.x == rightWall.x && p2.y == rightWall.y) ||
@@ -625,9 +390,9 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, dou
 		bool notbetween2 = !vectorIsBetween(uv2, camleftnorm, camrightnorm);
 		if(notbetween1 && notbetween2){
 			// Remove them if they both lie on the same side
-			if(pointIsLeft(tv1, (xy_t){0, 0}, camleftnorm) && pointIsLeft(tv2, (xy_t){0, 0}, camleftnorm)){
+			if(vectorIsLeft(tv1, (xy_t){0, 0}, camleftnorm) && vectorIsLeft(tv2, (xy_t){0, 0}, camleftnorm)){
 				continue;
-			}else if(!pointIsLeft(tv1, (xy_t){0, 0}, camrightnorm) && !pointIsLeft(tv2, (xy_t){0, 0}, camrightnorm)){
+			}else if(!vectorIsLeft(tv1, (xy_t){0, 0}, camrightnorm) && !vectorIsLeft(tv2, (xy_t){0, 0}, camrightnorm)){
 				continue;
 			}else if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x <= 0){
 				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
@@ -653,20 +418,19 @@ void renderSector(unsigned int id, xy_t campos, xy_t camleft, xy_t camright, dou
 			tv2 = temp;
 		}
 
-		int near;
-		if((near = findNeighborSector(id, p1, p2)) != -1){
-			renderSector(near, campos, tv1, tv2, camlen, id, p1, p2);
+		sector_t neighbor;
+		if((neighbor = findNeighborSector(sector, p1, p2)) != -1){
+			renderSector(neighbor, campos, tv1, tv2, camlen, sector, p1, p2);
 			
 			// Check if we need to render the bottom or upper edge
-			sector_t neighbor = sectors[near];
-			if(neighbor.ceil.start.z < sect.ceil.start.z){
-				renderWall(tv1, tv2, camlen, sect.ceil.start.z, neighbor.ceil.start.z, HEIGHT, neighbor.floor.start.z);
+			if(neighbor->ceil.start.z < sector->ceil.start.z){
+				renderWall(tv1, tv2, camlen, sector->ceil.start.z, neighbor->ceil.start.z, HEIGHT, neighbor->floor.start.z);
 			}
-			if(neighbor.floor.start.z > sect.floor.start.z){
-				renderWall(tv1, tv2, camlen, neighbor.ceil.start.z, sect.ceil.start.z, HEIGHT, neighbor.floor.start.z);
+			if(neighbor.floor.start.z > sector->floor.start.z){
+				renderWall(tv1, tv2, camlen, neighbor.ceil.start.z, sector->ceil.start.z, HEIGHT, neighbor.floor.start.z);
 			}
 		}else{
-			renderWall(tv1, tv2, camlen, sect.ceil.start.z, sect.floor.start.z, HEIGHT, 0);
+			renderWall(tv1, tv2, camlen, sector->ceil.start.z, sector->floor.start.z, HEIGHT, 0);
 		}
 	}
 }
@@ -687,14 +451,14 @@ void renderMap()
 	for(i = 0; i < nsectors; i++){
 		sector_t sect = sectors[i];
 		unsigned int j;
-		for(j = 0; j < sect.npoints; j++){
+		for(j = 0; j < sector->npoints; j++){
 			xy_t v1, v2;
 			if(j > 0){
-				v1 = sect.vertex[j];
-				v2 = sect.vertex[j - 1];
+				v1 = sector->vertices[j];
+				v2 = sector->vertices[j - 1];
 			}else{
-				v1 = sect.vertex[0];
-				v2 = sect.vertex[sect.npoints - 1];
+				v1 = sector->vertices[0];
+				v2 = sector->vertices[sector->npoints - 1];
 			}
 
 			v1.x /= 2;
@@ -794,17 +558,17 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 	if(player.vel.x > FL_ERROR || player.vel.x < -FL_ERROR || player.vel.y > FL_ERROR || player.vel.y < -FL_ERROR){
 		sector_t sect = sectors[player.sector];
 		unsigned int i;
-		for(i = 0; i < sect.npoints; i++){
+		for(i = 0; i < sector->npoints; i++){
 			xy_t v1, v2;
 			if(i > 0){
-				if(sect.npoints == 2){
+				if(sector->npoints == 2){
 					break;
 				}
-				v1 = sect.vertex[i];
-				v2 = sect.vertex[i - 1];
+				v1 = sector->vertices[i];
+				v2 = sector->vertices[i - 1];
 			}else{
-				v1 = sect.vertex[0];
-				v2 = sect.vertex[sect.npoints - 1];
+				v1 = sector->vertices[0];
+				v2 = sector->vertices[sector->npoints - 1];
 			}
 			// Find which segment the player wants to pass throught
 			xy_t isect;
@@ -813,8 +577,8 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 			}
 
 			unsigned int j;
-			for(j = 0; j < sect.nneighbors; j++){
-				sector_t neighbor = sectors[sect.neighbors[j]];
+			for(j = 0; j < sector->nneighbors; j++){
+				sector_t neighbor = sectors[sector->neighbors[j]];
 				found = 0;
 				unsigned int k;
 				for(k = 0; k < neighbor.npoints; k++){
@@ -826,7 +590,7 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 						continue;
 					}
 					if(found == 2){
-						player.sector = sect.neighbors[j];
+						player.sector = sector->neighbors[j];
 						goto foundAll;
 					}
 				}
