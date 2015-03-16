@@ -47,43 +47,6 @@ texture_t tex;
 
 double yLookup[HHEIGHT];
 
-#if 0
-void drawRightTriangle(int left, int right, int top, int bottom, bool flippedtop, bool flippedleft, int r, int g, int b)
-{
-	if(top == bottom){
-		return;
-	}
-
-	double angle = (right - left) / (double)(top - bottom);
-
-	if(flippedleft){
-		if(flippedtop){
-			int y;
-			for(y = bottom; y < top; y++){
-				hline(y, left, right - (y - bottom) * angle, r, g, b, 1);
-			}
-		}else{
-			int y;
-			for(y = bottom; y < top; y++){
-				hline(y, left, right + (y - top) * angle, r, g, b, 1);
-			}
-		}
-	}else{
-		if(flippedtop){
-			int y;
-			for(y = bottom; y < top; y++){
-				hline(y, left + (y - bottom) * angle, right, r, g, b, 1);
-			}
-		}else{
-			int y;
-			for(y = bottom; y < top; y++){
-				hline(y, left - (y - top) * angle, right, r, g, b, 1);
-			}
-		}
-	}
-}
-#endif
-
 void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
 	if(p1->y < 0){
@@ -138,74 +101,6 @@ void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom,
 	int screentoprighty = HHEIGHT - projtoprighty * HHEIGHT;
 	int screenbotrighty = HHEIGHT - projbotrighty * HHEIGHT;
 
-#if 0
-
-	// Render ceiling and top triangle wall
-	int topy;
-	if(screentoplefty > screentoprighty){
-		drawRightTriangle(screenleftx, screenrightx, screentoplefty, screentoprighty, true, true, 64, 64, 64);
-
-		drawRightTriangle(screenleftx, screenrightx, screentoplefty, screentoprighty, false, false, 64, 32, 64);
-
-		topy = screentoprighty;
-	}else{
-		drawRightTriangle(screenleftx, screenrightx, screentoprighty, screentoplefty, true, false, 64, 64, 64);
-
-		drawRightTriangle(screenleftx, screenrightx, screentoprighty, screentoplefty, false, true, 64, 32, 64);
-
-		topy = screentoplefty;
-	}
-	if(topy >= 0 && topy < HEIGHT){
-		unsigned int y;
-		if(topy < above){
-			above = topy;
-		}
-		for(y = 0; y < above; y++){
-			hline(y, screenleftx, screenrightx, 64, 64, 64, 1);
-		}
-	}
-
-	// Render floor and bottom triangle wall
-	int boty;
-	if(screenbotlefty < screenbotrighty){
-		drawRightTriangle(screenleftx, screenrightx, screenbotrighty, screenbotlefty, false, true, 64, 64, 64);
-
-		drawRightTriangle(screenleftx, screenrightx, screenbotrighty, screenbotlefty, true, false, 64, 32, 64);
-
-		boty = screenbotrighty;
-	}else{
-		drawRightTriangle(screenleftx, screenrightx, screenbotlefty, screenbotrighty, false, false, 64, 64, 64);
-
-		drawRightTriangle(screenleftx, screenrightx, screenbotlefty, screenbotrighty, true, true, 64, 32, 64);
-
-		boty = screenbotlefty;
-	}
-	if(boty >= 0 && boty < HEIGHT){
-		unsigned int y;
-		if(boty > beneath){
-			beneath = boty;
-		}
-		for(y = beneath; y < HEIGHT; y++){
-			hline(y, screenleftx, screenrightx, 64, 64, 64, 1);
-		}
-	}
-
-	// boty should always be the bottom one
-	boty = min(screenbotrighty, screenbotlefty);
-	topy = max(screentoprighty, screentoplefty);
-	if(boty < topy){
-		return;
-	}
-
-	topy = min(max(topy, 0), HEIGHT);
-	boty = min(max(boty, 0), HEIGHT);
-
-	unsigned int y;
-	for(y = topy; y < boty; y++){
-		hline(y, screenleftx, screenrightx, 64, 32, 64, 1);
-	}
-#endif
-
 	drawLine(&tex, (xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenrightx, (double)screentoprighty}, COLOR_WHITE);
 	drawLine(&tex, (xy_t){(double)screenleftx, (double)screenbotlefty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, COLOR_WHITE);
 
@@ -213,39 +108,22 @@ void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom,
 	drawLine(&tex, (xy_t){(double)screenrightx, (double)screentoprighty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, COLOR_WHITE);
 }
 
-void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, double camlen)
+void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, double camlen, edge_t *ignore)
 {
-	unsigned int i;
-#if 0
-	for(i = 0; i < sector->nvisited; i++){
-		if(sector->visited[i] == oldId || sector->visited[i] == id){
-			return;
-		}
-	}
-	if(sector->nvisited == 0){
-		sector->visited = (unsigned int*)malloc(sizeof(unsigned int));
-		sector->visited[0] = oldId;
-		sector->nvisited = 1;
-	}else{
-		sector->visited = (unsigned int*)malloc(++sector->nvisited * sizeof(unsigned int));
-		sector->visited[sector->nvisited - 1] = oldId;
-	}
-#endif
-
 	double sina = sin(player.angle);
 	double cosa = cos(player.angle);
 	xy_t camleftnorm = vectorUnit(camleft);
 	xy_t camrightnorm = vectorUnit(camright);
 
+	unsigned int i;
 	for(i = 0; i < sector->nedges; i++){
-		xy_t p1, p2;
-		if(i > 0){
-			p1 = sector->vertices[i];
-			p2 = sector->vertices[i - 1];
-		}else{
-			p1 = sector->vertices[0];
-			p2 = sector->vertices[sector->nedges - 1];
+		edge_t *edge = sector->edges + i;
+		if(edge == ignore){
+			continue;
 		}
+
+		xy_t p1 = sector->vertices[edge->vertex1];
+		xy_t p2 = sector->vertices[edge->vertex2];
 
 		xy_t v1 = {campos.x - p1.x, campos.y - p1.y};
 		xy_t v2 = {campos.x - p2.x, campos.y - p2.y};
@@ -297,10 +175,11 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 			tv2 = temp;
 		}
 
-		edge_t edge = sector->edges[i];
-		if(edge.type == PORTAL){
-			renderSector(edge.neighbor->sector, campos, tv1, tv2, camlen);
-		}else if(edge.type == WALL){
+		if(edge->type == PORTAL && edge->neighbor != NULL){
+			printf("P1 %p\nP2 %p\n", edge->neighbor, edge->neighbor->sector);
+			printf("Edges %d\n", edge->neighbor->sector->nedges);
+			renderSector(edge->neighbor->sector, campos, tv1, tv2, camlen, edge);
+		}else if(edge->type == WALL){
 			renderWall(tv1, tv2, camlen, 10, 0, HEIGHT, 0);
 		}
 	}
@@ -308,23 +187,13 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 
 void renderScene()
 {
-#if 0
-	unsigned int i;
-	for(i = 0; i < nsectors; i++){
-		if(sectors[i].nvisited > 0){
-			free(sectors[i].visited);
-			sectors[i].nvisited = 0;
-		}
-	}
-#endif
-
 	xy_t camleft = {-200, 200};
 	xy_t camright = {200, 200};
 
 	xy_t camunit = vectorUnit(camright);
 	player.fov = (camunit.x * camunit.y) * 2;
 
-	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000);
+	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, NULL);
 }
 
 void render()
@@ -334,7 +203,7 @@ void render()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, tex.pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width, tex.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -349,10 +218,7 @@ void render()
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	unsigned int i;
-	for(i = 0; i < WIDTH * HEIGHT; i++){
-		tex.pixels[i].r = tex.pixels[i].g = tex.pixels[i].b = 0;
-	}
+	clearTexture(&tex, COLOR_BLACK);
 }
 
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)

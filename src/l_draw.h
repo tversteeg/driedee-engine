@@ -21,6 +21,8 @@ void initTexture(texture_t *tex, unsigned int width, unsigned int height);
 void initFont(font_t *font, unsigned int width, unsigned int height);
 void loadFont(font_t *font, char start, char letters, char width, const bool *pixels);
 
+void clearTexture(texture_t *tex, pixel_t pixel);
+
 inline bool getPixel(texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y);
 // Force setting the pixel in a unsafe way
 inline void setPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel);

@@ -76,6 +76,14 @@ void loadFont(font_t *font, char start, char letters, char width, const bool *pi
 	memcpy(font->pixels, pixels, (font->totalwidth * font->height) * sizeof(bool));
 }
 
+void clearTexture(texture_t *tex, pixel_t pixel)
+{
+	unsigned int i, size = tex->width * tex->height;
+	for(i = 0; i < size; i++){
+		tex->pixels[i] = pixel;
+	}
+}
+
 inline bool getPixel(texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y)
 {
 	if(x < tex->width && y < tex->height){

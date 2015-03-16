@@ -19,6 +19,7 @@
 
 #include "PixelFont1.h"
 #include "l_draw.h"
+#include "l_colors.h"
 #include "l_vector.h"
 #include "l_sector.h"
 #include "l_level.h"
@@ -27,13 +28,6 @@
 #define HEIGHT 600
 
 #define MENU_HEIGHT 64
-
-#define COLOR_RED (pixel_t){255, 0, 0, 255}
-#define COLOR_GREEN (pixel_t){0, 255, 0, 255}
-#define COLOR_BLUE (pixel_t){0, 0, 255, 255}
-#define COLOR_BLUEGRAY (pixel_t){0, 128, 128, 255}
-#define COLOR_YELLOW (pixel_t){255, 255, 0, 255}
-#define COLOR_PINK (pixel_t){255, 0, 255, 255}
 
 #define NONE_SELECTED -1
 
@@ -205,7 +199,7 @@ void renderMap()
                 }
             }else{
                 if(edge.type == WALL){
-                    color = COLOR_PINK;
+                    color = COLOR_MAGENTA;
                 }else{
                     color = COLOR_BLUEGRAY;
                 }
@@ -238,10 +232,7 @@ void render()
     glEnd();
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    unsigned int i;
-    for(i = 0; i < tex.width * tex.height; i++){
-        tex.pixels[i].r = tex.pixels[i].g = tex.pixels[i].b = tex.pixels[i].a = 0;
-    }
+		clearTexture(&tex, COLOR_BLACK);
 }
 
 void handleMouseClick()
