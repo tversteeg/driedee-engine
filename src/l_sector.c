@@ -40,20 +40,26 @@ sector_t* getNextSector(sector_t *sector)
 	return (sector_t*)poolGetNext(&sectors, sector);
 }
 
-unsigned int createEdge(sector_t *sector, xy_t next, edgetype_t type)
+edge_t *createEdge(sector_t *sector, xy_t next, edgetype_t type)
 {
 	if(vectorIsEqual(next, sector->vertices[0])){
 		//TODO handle when a vertex is repeatedly clicked
-		return 0;
+		return sector->edges;
 	}
 
 	sector->vertices = (xy_t*)realloc(sector->vertices, ++sector->nedges * sizeof(xy_t));
 	sector->vertices[sector->nedges - 1] = next;
 
 	sector->edges = (edge_t*)realloc(sector->edges, sector->nedges * sizeof(edge_t));
-	sector->edges[sector->nedges - 1] = (edge_t){sector->nedges - 1, sector->nedges - 2, type, sector, .neighbor = NULL};
+	edge_t edge;
+	edge.vertex1 = sector->nedges - 1;
+	edge.vertex2 = sector->nedges - 2;
+	edge.type = type;
+	edge.sector = sector;
+	edge.neighbor = NULL;
+	sector->edges[sector->nedges - 1] = edge;
 
 	sector->edges[0].vertex2 = sector->nedges - 1;
 
-	return sector->nedges - 1;
+	return sector->edges + (sector->nedges - 1);
 }

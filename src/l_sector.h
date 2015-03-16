@@ -30,4 +30,4 @@ void deleteSector(sector_t *sector);
 sector_t* getFirstSector();
 sector_t* getNextSector(sector_t *sector);
 
-unsigned int createEdge(sector_t *sector, xy_t next, edgetype_t type);
+edge_t* createEdge(sector_t *sector, xy_t next, edgetype_t type);
