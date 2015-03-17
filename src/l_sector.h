@@ -14,6 +14,7 @@ struct _edge_t {
 	union {
 		edge_t *neighbor;
 	};
+	char _pad[4];
 };
 
 struct _sector_t {
@@ -24,7 +25,7 @@ struct _sector_t {
 
 void sectorInitialize();
 
-sector_t* createSector(xy_t start);
+sector_t* createSector(xy_t start, edgetype_t type);
 void deleteSector(sector_t *sector);
 
 sector_t* getFirstSector();

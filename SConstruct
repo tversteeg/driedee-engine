@@ -10,7 +10,7 @@ env.Append(CCFLAGS=['-DCC_USE_ALL'])
 
 env.Append(CCFLAGS=['-g'])
 env.Append(CCFLAGS=['-Wall'])
-env.Append(CCFLAGS=['-O3'])
+env.Append(CCFLAGS=['-O1'])
 env.Append(CCFLAGS=['-ffast-math'])
 env.Append(CCFLAGS=['-Iinclude/'])
 

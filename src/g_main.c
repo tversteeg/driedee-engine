@@ -177,8 +177,8 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 
 		if(edge->type == PORTAL && edge->neighbor != NULL){
 			printf("P1 %p\nP2 %p\n", edge->neighbor, edge->neighbor->sector);
+			renderSector(edge->neighbor->sector, campos, tv1, tv2, camlen, edge->neighbor);
 			printf("Edges %d\n", edge->neighbor->sector->nedges);
-			renderSector(edge->neighbor->sector, campos, tv1, tv2, camlen, edge);
 		}else if(edge->type == WALL){
 			renderWall(tv1, tv2, camlen, 10, 0, HEIGHT, 0);
 		}
