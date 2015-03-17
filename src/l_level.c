@@ -43,16 +43,22 @@ void loadLevel(const char *filename)
 					}else{
 						edge = createEdge(sect, vert, type);
 					}
+
 					if(nscanned == 5 && neighborsector < cursector){
 						// Store neighbors
+						printf("%d\n", neighborsector);
 						sector_t *neighbor = getFirstSector();
 						while(neighborsector > 0){
 							neighborsector--;
 
 							neighbor = getNextSector(neighbor);
 						}
-						(neighbor->edges + neighboredge)->neighbor = edge;
-						edge->neighbor = neighbor->edges + neighboredge;
+						printf("%p:%p -> ", edge, edge->sector);
+						edge_t *nedge = neighbor->edges + neighboredge;
+						printf("%p:%p\n", nedge, nedge->sector);
+						//(neighbor->edges + neighboredge)->neighbor = edge;
+						edge->neighbor = nedge;
+						nedge->neighbor = edge;
 					}
 				}
 				break;
