@@ -239,7 +239,7 @@ void handleMouseClick()
 {
     switch(toolselected){
         case SECTOR_ADD_TOOL:
-            sectorselected = createSector(mouse);
+            sectorselected = createSector(mouse, edgetypeselected);
             toolselected = EDGE_ADD_TOOL;
             break;
         case EDGE_ADD_TOOL:
