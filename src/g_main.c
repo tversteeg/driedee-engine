@@ -45,8 +45,6 @@ struct player {
 GLuint texture;
 texture_t tex;
 
-double yLookup[HHEIGHT];
-
 void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
 	if(p1->y < 0){
@@ -62,14 +60,6 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	}
 
 	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
-}
-
-void populateLookupTables()
-{
-	unsigned int i;
-	for(i = 1; i < HHEIGHT; i++){
-		yLookup[i] = HEIGHT / (double)(i * 2.0f);
-	}
 }
 
 void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom, double above, double beneath)
@@ -175,10 +165,11 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 			tv2 = temp;
 		}
 
-		if(edge->type == PORTAL && edge->neighbor != NULL){
-			printf("P1 %p\nP2 %p\n", edge->neighbor, edge->neighbor->sector);
-			renderSector(edge->neighbor->sector, campos, tv1, tv2, camlen, edge->neighbor);
-			printf("Edges %d\n", edge->neighbor->sector->nedges);
+		edge_t *neighbor = edge->neighbor;
+		if(edge->type == PORTAL && neighbor != NULL){
+			printf("P1 %p\nP2 %p\n", neighbor, neighbor->sector);
+			//printf("V1 %d V2 %d\n", edge->neighbor->vertex1, edge->neighbor->vertex2);
+			renderSector(neighbor->sector, campos, tv1, tv2, camlen, neighbor);
 		}else if(edge->type == WALL){
 			renderWall(tv1, tv2, camlen, 10, 0, HEIGHT, 0);
 		}
@@ -284,10 +275,10 @@ int main(int argc, char **argv)
 
 	loadLevel(argv[1]);
 	player.sector = getFirstSector();
+	//player.sector = getNextSector(getFirstSector());
 	player.pos.x = player.sector->vertices[0].x;
 	player.pos.y = player.sector->vertices[0].y;
-
-	populateLookupTables();
+	player.pos.z = player.vel.x = player.vel.y = player.vel.z = player.angle = 0;
 
 	ccDisplayInitialize();
 
