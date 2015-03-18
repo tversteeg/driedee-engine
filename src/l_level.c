@@ -28,38 +28,23 @@ void loadLevel(const char *filename)
 				break;
 			case 'e':
 				{
-					unsigned int neighborsector, neighboredge;
 					edgetype_t type;
 					xy_t vert;
-					int nscanned = sscanf(line, "%*s %d (%lf,%lf) %d %u", 
-							(int*)&type, &vert.x, &vert.y, &neighborsector, &neighboredge);
+					sscanf(line, "%*s %d (%lf,%lf)", (int*)&type, &vert.x, &vert.y);
 
-					edge_t *edge;
 					if(firstedge){
-						firstedge = false;
-
 						sect = createSector(vert, type);
-						edge = sect->edges;
+						firstedge = false;
 					}else{
-						edge = createEdge(sect, vert, type);
+						createEdge(sect, vert, type);
 					}
-
-					if(nscanned == 5 && neighborsector < cursector){
-						// Store neighbors
-						printf("%d\n", neighborsector);
-						sector_t *neighbor = getFirstSector();
-						while(neighborsector > 0){
-							neighborsector--;
-
-							neighbor = getNextSector(neighbor);
-						}
-						printf("%p:%p -> ", edge, edge->sector);
-						edge_t *nedge = neighbor->edges + neighboredge;
-						printf("%p:%p\n", nedge, nedge->sector);
-						//(neighbor->edges + neighboredge)->neighbor = edge;
-						edge->neighbor = nedge;
-						nedge->neighbor = edge;
-					}
+				}
+				break;
+			case 'p':
+				{
+					unsigned int sector1, edge1, sector2, edge2;
+					sscanf(line, "%*s %u %u %u %u", &sector1, &edge1, &sector2, &edge2);
+					printf("%u %u %u %u\n", sector1, edge1, sector2, edge2);
 				}
 				break;
 		}

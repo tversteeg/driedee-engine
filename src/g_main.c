@@ -167,11 +167,11 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 
 		edge_t *neighbor = edge->neighbor;
 		if(edge->type == PORTAL && neighbor != NULL){
-			printf("P1 %p\nP2 %p\n", neighbor, neighbor->sector);
+			//printf("P1 %p\nP2 %p\n", neighbor, neighbor->sector);
 			//printf("V1 %d V2 %d\n", edge->neighbor->vertex1, edge->neighbor->vertex2);
 			renderSector(neighbor->sector, campos, tv1, tv2, camlen, neighbor);
 		}else if(edge->type == WALL){
-			renderWall(tv1, tv2, camlen, 10, 0, HEIGHT, 0);
+			renderWall(tv1, tv2, camlen, 10, -10, HEIGHT, 0);
 		}
 	}
 }
@@ -274,8 +274,7 @@ int main(int argc, char **argv)
 	initTexture(&tex, WIDTH, HEIGHT);
 
 	loadLevel(argv[1]);
-	player.sector = getFirstSector();
-	//player.sector = getNextSector(getFirstSector());
+	player.sector = getSector(0);
 	player.pos.x = player.sector->vertices[0].x;
 	player.pos.y = player.sector->vertices[0].y;
 	player.pos.z = player.vel.x = player.vel.y = player.vel.z = player.angle = 0;
