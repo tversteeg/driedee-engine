@@ -87,11 +87,11 @@ void renderMenu()
 	char buffer[64];
 	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, COLOR_BLUEGRAY);
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, COLOR_AZURE);
 
 	pos = sprintf(buffer, "(G) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, COLOR_BLUEGRAY);
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, COLOR_AZURE);
 
 	if(saveto != NULL){
 		pos = sprintf(buffer, "(S) SAVE TO FILE: \"%s\"", saveto);
@@ -100,7 +100,7 @@ void renderMenu()
 	}
 
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, COLOR_BLUEGRAY);
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, COLOR_AZURE);
 
 	char toolname[64];
 	switch(toolselected){
@@ -145,7 +145,7 @@ void renderMenu()
 
 	pos = sprintf(buffer, "(1-5) %s", toolname);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, COLOR_RED);
+	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, COLOR_CYAN);
 }
 
 void renderMouse()
@@ -195,13 +195,21 @@ void renderMap()
 				if(edge.type == WALL){
 					color = COLOR_YELLOW;
 				}else{
-					color = COLOR_BLUE;
+					if(edge.neighbor != NULL){
+						color = COLOR_BLUE;
+					}else{
+						color = COLOR_CYAN;
+					}
 				}
 			}else{
 				if(edge.type == WALL){
 					color = COLOR_MAGENTA;
 				}else{
-					color = COLOR_BLUEGRAY;
+					if(edge.neighbor != NULL){
+						color = COLOR_VIOLET;
+					}else{
+						color = COLOR_ROSE;
+					}
 				}
 			}
 			drawLine(&tex, sect->vertices[edge.vertex1], sect->vertices[edge.vertex2], color);

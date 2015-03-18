@@ -42,9 +42,20 @@ void loadLevel(const char *filename)
 				break;
 			case 'p':
 				{
-					unsigned int sector1, edge1, sector2, edge2;
-					sscanf(line, "%*s %u %u %u %u", &sector1, &edge1, &sector2, &edge2);
-					printf("%u %u %u %u\n", sector1, edge1, sector2, edge2);
+					unsigned int isector1, iedge1, isector2, iedge2;
+					sscanf(line, "%*s %u %u %u %u", &isector1, &iedge1, &isector2, &iedge2);
+
+					sector_t *sect1 = getSector(isector1);
+					sector_t *sect2 = getSector(isector2);
+					if(sect1 == NULL || sect2 == NULL){
+						exit(1);
+					}
+
+					edge_t *edge1 = sect1->edges + iedge1;
+					edge_t *edge2 = sect2->edges + iedge2;
+
+					edge1->neighbor = edge2;
+					edge2->neighbor = edge1;
 				}
 				break;
 		}
