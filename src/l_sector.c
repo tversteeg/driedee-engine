@@ -40,6 +40,32 @@ sector_t* getNextSector(sector_t *sector)
 	return (sector_t*)poolGetNext(&sectors, sector);
 }
 
+sector_t* getSector(unsigned int index)
+{
+	sector_t *sector = getFirstSector();
+	while(index > 0){
+		sector = getNextSector(sector);
+		index--;
+	}
+	return sector;
+}
+
+/* TODO speed up this function by using pointer arithmetic */
+int getIndexSector(sector_t *sector)
+{
+	int index = 0;
+	sector_t *search = getFirstSector();
+	while(search != sector){
+		search = getNextSector(search);
+		if(search == NULL){
+			return -1;
+		}
+		index++;
+	}
+
+	return index;
+}
+
 edge_t *createEdge(sector_t *sector, xy_t next, edgetype_t type)
 {	
 	sector->vertices = (xy_t*)realloc(sector->vertices, ++sector->nedges * sizeof(xy_t));
