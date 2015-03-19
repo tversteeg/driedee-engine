@@ -29,10 +29,11 @@
 
 #define ASPECT (WIDTH / (double)HEIGHT)
 
-#define PLAYER_SPEED 0.5f
-#define PLAYER_JUMP -1.8f
-#define PLAYER_FRICTION 0.8f
-#define PLAYER_GRAVITY 0.1f
+#define PLAYER_SPEED 0.2
+#define PLAYER_JUMP -0.5
+#define PLAYER_JUMP_WOBBLE -0.2
+#define PLAYER_FRICTION 0.8
+#define PLAYER_GRAVITY 0.02
 
 //#define USE_MOUSE
 
@@ -171,7 +172,7 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 			//printf("V1 %d V2 %d\n", edge->neighbor->vertex1, edge->neighbor->vertex2);
 			renderSector(neighbor->sector, campos, tv1, tv2, camlen, neighbor);
 		}else if(edge->type == WALL){
-			renderWall(tv1, tv2, camlen, 10, -10, HEIGHT, 0);
+			renderWall(tv1, tv2, camlen, 20, -5, HEIGHT, 0);
 		}
 	}
 }
@@ -214,9 +215,20 @@ void render()
 
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
 {
+	if(spacePressed){
+		if(player.pos.z >= 0){
+			player.vel.z = PLAYER_JUMP;
+			player.pos.z = -0.01;
+		}
+	}
 	if(upPressed){
 		player.vel.x += cos(player.angle + M_PI / 2) * PLAYER_SPEED;
 		player.vel.y -= sin(player.angle + M_PI / 2) * PLAYER_SPEED;
+
+		if(player.pos.z >= 0){
+			player.vel.z = PLAYER_JUMP_WOBBLE;
+			player.pos.z = -0.01;
+		}
 	}
 	if(downPressed){
 		player.vel.x += cos(player.angle - M_PI / 2) * PLAYER_SPEED;
@@ -224,8 +236,8 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 	}
 	if(leftPressed){
 #ifdef USE_MOUSE
-		player.vel.x += cos(player.angle) * PLAYER_SPEED;
-		player.vel.y -= sin(player.angle) * PLAYER_SPEED;
+		player.vel.x += cos(player.angle) * PLAYER_SPEED / 2;
+		player.vel.y -= sin(player.angle) * PLAYER_SPEED / 2;
 #else
 		player.angle -= 0.035f;
 #endif
@@ -238,14 +250,29 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		player.angle += 0.035f;
 #endif
 	}
-	if(spacePressed){
-		if(player.pos.z >= 0){
-			player.vel.z = PLAYER_JUMP;
-			player.pos.z = -0.1f;
-		}
-	}
 
 	if(player.vel.x > V_ERROR || player.vel.x < -V_ERROR || player.vel.y > V_ERROR || player.vel.y < -V_ERROR){
+		unsigned int i;
+		sector_t *next = NULL;
+		for(i = 0; i < player.sector->nedges; i++){
+			edge_t *edge = player.sector->edges + i;
+
+			xy_t playerpos = {player.pos.x, player.pos.y};
+			xy_t playerposnext = {player.pos.x + player.vel.x, player.pos.y + player.vel.y};
+			xy_t edge1 = player.sector->vertices[edge->vertex1];
+			xy_t edge2 = player.sector->vertices[edge->vertex2];
+			xy_t result;
+			if(segmentSegmentIntersect(playerpos, playerposnext, edge1, edge2, &result)){
+				if(edge->neighbor != NULL){
+					next = edge->neighbor->sector;
+				}
+			}
+		}
+
+		if(next != NULL){
+			player.sector = next;
+		}
+
 		player.pos.x += player.vel.x;
 		player.pos.y += player.vel.y;
 		player.vel.x *= PLAYER_FRICTION;
@@ -275,7 +302,7 @@ int main(int argc, char **argv)
 
 	loadLevel(argv[1]);
 	player.sector = getSector(0);
-	player.pos.x = player.sector->vertices[0].x;
+	player.pos.x = player.sector->vertices[0].x + 5;
 	player.pos.y = player.sector->vertices[0].y;
 	player.pos.z = player.vel.x = player.vel.y = player.vel.z = player.angle = 0;
 
