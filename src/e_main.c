@@ -350,7 +350,6 @@ void save()
 	totalsectors = 0;
 	sect = getFirstSector();
 	while(sect != NULL){
-		sect = getNextSector(sect);
 		unsigned int i;
 		for(i = 0; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
