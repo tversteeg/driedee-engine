@@ -31,7 +31,7 @@
 
 #define NONE_SELECTED -1
 
-typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
+typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
 
 GLuint texture;
 texture_t tex;
@@ -46,7 +46,7 @@ int vertselected = NONE_SELECTED;
 
 char *saveto = NULL;
 
-int gridsize = 25;
+int gridsize = 24;
 int snapsize = 10;
 
 xy_t mouse;
@@ -107,6 +107,9 @@ void renderMenu()
 		case SECTOR_ADD_TOOL:
 			strcpy(toolname, "ADD SECTOR");
 			break;
+		case SECTOR_SELECT_TOOL:
+			strcpy(toolname, "SELECT SECTOR");
+			break;
 		case EDGE_ADD_TOOL:
 			strcpy(toolname, "CHANGE SECTOR");
 			switch(edgetypeselected){
@@ -162,26 +165,6 @@ void renderMouse()
 void renderMap()
 {
 	pixel_t color;
-	if(sectorselected != NULL){
-		// Draw edge add lines
-		if(toolselected == EDGE_ADD_TOOL){
-			if(edgetypeselected == WALL){
-				color = COLOR_YELLOW;
-			}else{
-				color = COLOR_BLUE;
-			}
-			drawLine(&tex, sectorselected->vertices[0], mouse, sectorselected->edges[0].type == WALL ? COLOR_YELLOW : COLOR_BLUE);
-			drawLine(&tex, sectorselected->vertices[sectorselected->nedges - 1], mouse, color);
-		}
-
-		// Draw dragged vertex
-		if(vertselected != NONE_SELECTED){
-			drawLine(&tex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_GREEN);
-			drawLine(&tex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_GREEN);
-			drawCircle(&tex, mouse, 2, COLOR_YELLOW);
-		}
-	}
-
 	sector_t *sect = getFirstSector();
 	while(sect != NULL){
 		// Draw edges
@@ -220,6 +203,26 @@ void renderMap()
 		}
 		sect = getNextSector(sect);
 	}
+	
+	if(sectorselected != NULL){
+		// Draw edge add lines
+		if(toolselected == EDGE_ADD_TOOL){
+			if(edgetypeselected == WALL){
+				color = COLOR_YELLOW;
+			}else{
+				color = COLOR_BLUE;
+			}
+			drawLine(&tex, sectorselected->vertices[0], mouse, sectorselected->edges[0].type == WALL ? COLOR_YELLOW : COLOR_BLUE);
+			drawLine(&tex, sectorselected->vertices[sectorselected->nedges - 1], mouse, color);
+		}
+
+		// Draw dragged vertex
+		if(vertselected != NONE_SELECTED){
+			drawLine(&tex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_GREEN);
+			drawLine(&tex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_GREEN);
+			drawCircle(&tex, mouse, 2, COLOR_YELLOW);
+		}
+	}
 }
 
 void render()
@@ -249,6 +252,24 @@ void handleMouseClick()
 		case SECTOR_ADD_TOOL:
 			sectorselected = createSector(mouse, edgetypeselected);
 			toolselected = EDGE_ADD_TOOL;
+			break;
+		case SECTOR_SELECT_TOOL:
+			{
+				sector_t *sect = getFirstSector();
+				while(sect != NULL){
+					if(sect != sectorselected){
+						unsigned int i;
+						for(i = 0; i < sect->nedges; i++){
+							edge_t *edge = sect->edges + i;
+							if(distanceToSegment(mouse, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
+								sectorselected = sect;
+								return;
+							}
+						}
+					}
+					sect = getNextSector(sect);
+				}
+			}
 			break;
 		case EDGE_ADD_TOOL:
 			createEdge(sectorselected, mouse, edgetypeselected);
@@ -429,15 +450,18 @@ int main(int argc, char **argv)
 						toolselected = SECTOR_ADD_TOOL;
 						break;
 					case CC_KEY_2:
-						toolselected = EDGE_ADD_TOOL;
+						toolselected = SECTOR_SELECT_TOOL;
 						break;
 					case CC_KEY_3:
-						toolselected = EDGE_CHANGE_TOOL;
+						toolselected = EDGE_ADD_TOOL;
 						break;
 					case CC_KEY_4:
-						toolselected = EDGE_CONNECT_TOOL;
+						toolselected = EDGE_CHANGE_TOOL;
 						break;
 					case CC_KEY_5:
+						toolselected = EDGE_CONNECT_TOOL;
+						break;
+					case CC_KEY_6:
 						toolselected = VERTEX_MOVE_TOOL;
 						break;
 					case CC_KEY_S:
