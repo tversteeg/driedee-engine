@@ -2,6 +2,8 @@
 
 #include "l_draw.h"
 
+#define COLOR_NONE ((pixel_t){0, 0, 0, 0})
+
 #define COLOR_WHITE ((pixel_t){255, 255, 255, 255})
 #define COLOR_BLACK ((pixel_t){0, 0, 0, 255})
 

@@ -84,6 +84,11 @@ void clearTexture(texture_t *tex, pixel_t pixel)
 	}
 }
 
+inline bool samePixel(pixel_t p1, pixel_t p2)
+{
+	return p1.r == p2.r && p1.g == p2.g && p1.b == p2.b && p1.a == p2.a;
+}
+
 inline bool getPixel(texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y)
 {
 	if(x < tex->width && y < tex->height){
@@ -203,6 +208,20 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 			x += font->width * 2;
 		}else{
 			drawLetter(tex, font, string[i], x + i * font->width, y, pixel);
+		}
+	}
+}
+
+void drawTexture(texture_t *target, const texture_t *source, int x, int y, pixel_t mask)
+{
+	unsigned int i;
+	for(i = x; i < source->width; i++){
+		unsigned int j;
+		for(j = y; j < source->height; j++){
+			pixel_t pixel = source->pixels[x + y * source->width];
+			if(!samePixel(pixel, mask)){
+				drawPixel(target, i, j, pixel);
+			}
 		}
 	}
 }

@@ -2,35 +2,137 @@
 
 #include <png.h>
 
-typedef struct {
-	const png_byte *data;
-	const png_size_t size;
-} datahandle;
-
-typedef struct {
-	const datahandle data;
-	png_size_t offset;
-} readdatahandle;
-
-typedef struct {
-	const png_uint_32 width;
-	const png_uint_32 height;
-	const int color_type;
-} pnginfo;
-
-static void readPngData(png_structp ptr, png_byte *data, png_size_t len);
-static pnginfo readInfo(const png_structp ptr, const png_infop info);
-static datahandle readPng(const png_structp ptr, const png_info info, const png_uint_32 height);
-
-bool loadPng(texture_t *tex, const char *file)
+bool getSizePng(const char *file, unsigned int *width, unsigned int *height)
 {
+	FILE *fp = fopen(file, "rb");
+	if(!fp){
+		printf("Couldn't open file: %s\n", file);
+		return false;
+	}
+
+	unsigned char header[8];
+	fread(header, 1, sizeof(header), fp);
+	if(png_sig_cmp(header, 0, sizeof(header))){
+		printf("File supplied is not a valid PNG: %s\n", file);
+		return false;
+	}
+
 	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-	if(png == NULL){
+	if(!png){
 		return false;
 	}
 
 	png_infop info = png_create_info_struct(png);
-	if(info == NULL){
+	if(!info){
+		png_destroy_read_struct(&png, NULL, NULL);
+		fclose(fp);
+		return false;
+	}
+
+	if(setjmp(png_jmpbuf(png))){
+		png_destroy_read_struct(&png, &info, NULL);
+		fclose(fp);
+		return false;
+	}
+
+	png_init_io(png, fp);
+	png_set_sig_bytes(png, sizeof(header));
+
+	png_read_info(png, info);
+
+	*width = png_get_image_width(png, info);
+	*height = png_get_image_height(png, info);
+
+	return true;
+}
+
+bool loadPng(texture_t *tex, const char *file)
+{
+	FILE *fp = fopen(file, "rb");
+	if(!fp){
+		printf("Couldn't open file: %s\n", file);
+		return false;
+	}
+
+	unsigned char header[8];
+	fread(header, 1, sizeof(header), fp);
+	if(png_sig_cmp(header, 0, sizeof(header))){
+		printf("File supplied is not a valid PNG: %s\n", file);
+		return false;
+	}
+
+	png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	if(!png){
+		return false;
+	}
+
+	png_infop info = png_create_info_struct(png);
+	if(!info){
+		png_destroy_read_struct(&png, NULL, NULL);
+		fclose(fp);
+		return false;
+	}
+
+	if(setjmp(png_jmpbuf(png))){
+		printf("Error during PNG initialization\n");
+		png_destroy_read_struct(&png, &info, NULL);
+		fclose(fp);
+		return false;
+	}
+
+	png_init_io(png, fp);
+	png_set_sig_bytes(png, sizeof(header));
+
+	png_read_info(png, info);
+
+	int width = png_get_image_width(png, info);
+	int height = png_get_image_height(png, info);
+	png_byte colortype = png_get_color_type(png, info);
+
+	png_read_update_info(png, info);
+
+	if(setjmp(png_jmpbuf(png))){
+		printf("Error during PNG loading\n");
+		png_destroy_read_struct(&png, &info, NULL);
+		fclose(fp);
+		return false;
+	}
+
+	png_bytep *rows = (png_bytep*)malloc(sizeof(png_bytep) * height);
+	int y;
+	for(y = 0; y < height; y++){
+		rows[y] = (png_byte*)malloc(png_get_rowbytes(png, info));
+	}
+
+	fclose(fp);
+
+	if(colortype == PNG_COLOR_TYPE_RGB){
+		for(y = 0; y < height; y++){
+			png_byte *row = rows[y];
+			unsigned int x;
+			for(x = 0; x < width; x++){
+				png_byte *color = row + x * 3;
+				drawPixel(tex, x, y, (pixel_t){color[0], color[1], color[2], 255});
+			}
+		}
+	}else if(colortype == PNG_COLOR_TYPE_RGBA){
+		for(y = 0; y < height; y++){
+			png_byte *row = rows[y];
+			unsigned int x;
+			for(x = 0; x < width; x++){
+				png_byte *color = row + x * 4;
+				drawPixel(tex, x, y, (pixel_t){color[0], color[1], color[2], color[4]});
+			}
+		}
+	}
+
+	for(y = 0; y < height; y++){
+		free(rows[y]);
+	}
+	free(rows);
+
+	if(colortype != PNG_COLOR_TYPE_RGB && colortype != PNG_COLOR_TYPE_RGBA){
+		printf("Unrecognized PNG colortype: %d\n", colortype);
 		return false;
 	}
 

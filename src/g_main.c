@@ -21,6 +21,7 @@
 #include "l_sector.h"
 #include "l_level.h"
 #include "l_colors.h"
+#include "l_png.h"
 
 #define WIDTH 800
 #define HEIGHT 600
@@ -44,7 +45,7 @@ struct player {
 } player;
 
 GLuint texture;
-texture_t tex;
+texture_t tex, wall;
 
 void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
@@ -299,6 +300,11 @@ int main(int argc, char **argv)
 	sectorInitialize();
 
 	initTexture(&tex, WIDTH, HEIGHT);
+
+	unsigned int width, height;
+	getSizePng(argv[2], &width, &height);
+	initTexture(&wall, width, height);
+	loadPng(&wall, argv[2]);
 
 	loadLevel(argv[1]);
 	player.sector = getSector(0);
