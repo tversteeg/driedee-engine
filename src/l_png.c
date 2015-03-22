@@ -87,12 +87,20 @@ bool loadPng(texture_t *tex, const char *file)
 
 	int width = png_get_image_width(png, info);
 	int height = png_get_image_height(png, info);
+
+	png_byte bitdepth = png_get_bit_depth(png, info);
+	if(bitdepth < 8){
+		png_set_packing(png);
+	}else if(bitdepth == 16){
+		png_set_strip_16(png);
+	}
+
 	png_byte colortype = png_get_color_type(png, info);
 
 	png_read_update_info(png, info);
 
 	if(setjmp(png_jmpbuf(png))){
-		printf("Error during PNG loading\n");
+		printf("Error during PNG reading\n");
 		png_destroy_read_struct(&png, &info, NULL);
 		fclose(fp);
 		return false;
@@ -103,6 +111,8 @@ bool loadPng(texture_t *tex, const char *file)
 	for(y = 0; y < height; y++){
 		rows[y] = (png_byte*)malloc(png_get_rowbytes(png, info));
 	}
+
+	png_read_image(png, rows);
 
 	fclose(fp);
 
@@ -120,8 +130,8 @@ bool loadPng(texture_t *tex, const char *file)
 			png_byte *row = rows[y];
 			unsigned int x;
 			for(x = 0; x < width; x++){
-				png_byte *color = row + x * 4;
-				drawPixel(tex, x, y, (pixel_t){color[0], color[1], color[2], color[4]});
+				png_byte *color = row + (x << 2);
+				drawPixel(tex, x, y, (pixel_t){color[0], color[1], color[2], color[3]});
 			}
 		}
 	}
@@ -130,6 +140,8 @@ bool loadPng(texture_t *tex, const char *file)
 		free(rows[y]);
 	}
 	free(rows);
+
+	png_destroy_read_struct(&png, &info, NULL);
 
 	if(colortype != PNG_COLOR_TYPE_RGB && colortype != PNG_COLOR_TYPE_RGBA){
 		printf("Unrecognized PNG colortype: %d\n", colortype);

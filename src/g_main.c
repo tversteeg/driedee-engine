@@ -187,6 +187,8 @@ void renderScene()
 	player.fov = (camunit.x * camunit.y) * 2;
 
 	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, NULL);
+
+	drawTexture(&tex, &wall, 0, 0, COLOR_NONE);
 }
 
 void render()

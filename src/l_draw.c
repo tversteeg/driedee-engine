@@ -215,12 +215,12 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 void drawTexture(texture_t *target, const texture_t *source, int x, int y, pixel_t mask)
 {
 	unsigned int i;
-	for(i = x; i < source->width; i++){
+	for(i = 0; i < source->width; i++){
 		unsigned int j;
-		for(j = y; j < source->height; j++){
-			pixel_t pixel = source->pixels[x + y * source->width];
+		for(j = 0; j < source->height; j++){
+			pixel_t pixel = source->pixels[i + j * source->width];
 			if(!samePixel(pixel, mask)){
-				drawPixel(target, i, j, pixel);
+				drawPixel(target, x + i, y + j, pixel);
 			}
 		}
 	}
