@@ -93,6 +93,16 @@ void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom,
 	int screentoprighty = HHEIGHT - projtoprighty * HHEIGHT;
 	int screenbotrighty = HHEIGHT - projbotrighty * HHEIGHT;
 
+	unsigned int width = screenrightx - screenleftx;
+	double slopetop = (screentoprighty - screentoplefty) / (double)width;
+	double slopebot = (screenbotrighty - screenbotlefty) / (double)width;
+	int x;
+	for(x = 0; x < width; x++){
+		xy_t top = {(double)(screenleftx + x), (double)(screentoplefty + x * slopetop)};
+		xy_t bot = {top.x, (double)(screenbotlefty + x * slopebot)};
+		drawLine(&tex, top, bot, COLOR_GREEN);
+	}
+
 	drawLine(&tex, (xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenrightx, (double)screentoprighty}, COLOR_WHITE);
 	drawLine(&tex, (xy_t){(double)screenleftx, (double)screenbotlefty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, COLOR_WHITE);
 
@@ -169,8 +179,6 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 
 		edge_t *neighbor = edge->neighbor;
 		if(edge->type == PORTAL && neighbor != NULL){
-			//printf("P1 %p\nP2 %p\n", neighbor, neighbor->sector);
-			//printf("V1 %d V2 %d\n", edge->neighbor->vertex1, edge->neighbor->vertex2);
 			renderSector(neighbor->sector, campos, tv1, tv2, camlen, neighbor);
 		}else if(edge->type == WALL){
 			renderWall(tv1, tv2, camlen, 20, -5, HEIGHT, 0);
@@ -219,9 +227,9 @@ void render()
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
 {
 	if(spacePressed){
-		if(player.pos.z >= 0){
+		if(player.pos.z > -1){
 			player.vel.z = PLAYER_JUMP;
-			player.pos.z = -0.01;
+			player.pos.z = -1;
 		}
 	}
 	if(upPressed){
