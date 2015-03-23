@@ -234,11 +234,10 @@ void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, 
 	}else{
 		uvcx = source->width * uvx;
 	}
-	double uvcy = source->height / (double)height;
 	unsigned int j;
 	for(j = 0; j < height; j++){
-		//drawPixel(target, x, y + j, source->pixels[uvcx + (j * source->height) % source->height]);
-		drawPixel(target, x, y + j, (pixel_t){0, (int)(j * uvcy) % 255, 0, 255});
+		pixel_t pixel = source->pixels[uvcx + (int)(j / (double)height * source->height) * source->height];
+		drawPixel(target, x, y + j, pixel);
 	}
 }
 

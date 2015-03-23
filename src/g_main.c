@@ -100,12 +100,6 @@ void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom,
 	for(x = 0; x < width; x++){
 		int top = screentoplefty + x * slopetop;
 		int bot = screenbotlefty + x * slopebot;
-		if(top < 0){
-			top = 0;
-		}
-		if(top >= HEIGHT - 1){
-			top = HEIGHT - 1;
-		}
 		drawTextureSlice(&tex, &wall, screenleftx + x, top, bot - top, x / (double)width);
 	}
 
