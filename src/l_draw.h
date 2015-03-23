@@ -38,5 +38,6 @@ void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, p
 void drawString(texture_t *tex, const font_t *font, const char *text, int x, int y, pixel_t pixel);
 
 void drawTexture(texture_t *target, const texture_t *source, int x, int y, pixel_t mask);
+void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, int height, double uvx);
 
 void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int gridwidth, unsigned int gridheight, pixel_t pixel);

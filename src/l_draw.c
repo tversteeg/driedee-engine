@@ -226,6 +226,22 @@ void drawTexture(texture_t *target, const texture_t *source, int x, int y, pixel
 	}
 }
 
+void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, int height, double uvx)
+{
+	int uvcx;
+	if(uvx == 0){
+		uvcx = 0;
+	}else{
+		uvcx = source->width * uvx;
+	}
+	double uvcy = source->height / (double)height;
+	unsigned int j;
+	for(j = 0; j < height; j++){
+		//drawPixel(target, x, y + j, source->pixels[uvcx + (j * source->height) % source->height]);
+		drawPixel(target, x, y + j, (pixel_t){0, (int)(j * uvcy) % 255, 0, 255});
+	}
+}
+
 void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int gridwidth, unsigned int gridheight, pixel_t pixel)
 {
 	if(gridwidth <= 1 || gridheight <= 1){

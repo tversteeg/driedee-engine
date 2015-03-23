@@ -98,9 +98,15 @@ void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom,
 	double slopebot = (screenbotrighty - screenbotlefty) / (double)width;
 	int x;
 	for(x = 0; x < width; x++){
-		xy_t top = {(double)(screenleftx + x), (double)(screentoplefty + x * slopetop)};
-		xy_t bot = {top.x, (double)(screenbotlefty + x * slopebot)};
-		drawLine(&tex, top, bot, COLOR_GREEN);
+		int top = screentoplefty + x * slopetop;
+		int bot = screenbotlefty + x * slopebot;
+		if(top < 0){
+			top = 0;
+		}
+		if(top >= HEIGHT - 1){
+			top = HEIGHT - 1;
+		}
+		drawTextureSlice(&tex, &wall, screenleftx + x, top, bot - top, x / (double)width);
 	}
 
 	drawLine(&tex, (xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenrightx, (double)screentoprighty}, COLOR_WHITE);
