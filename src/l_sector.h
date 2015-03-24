@@ -11,7 +11,10 @@ struct _edge_t {
 	unsigned int vertex1, vertex2;
 	edgetype_t type;
 	sector_t *sector;
-	edge_t *neighbor;
+	union {
+		edge_t *neighbor;
+		double uvdiv;
+	};
 };
 
 struct _sector_t {

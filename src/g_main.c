@@ -64,7 +64,7 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
 }
 
-void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom, double above, double beneath)
+void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom, double above, double beneath, double leftuv, double rightuv)
 {
 	if(left.y <= 1 || right.y <= 1){
 		return;
@@ -186,8 +186,10 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 			xy_t norm = {tv2.x - tv1.x, tv2.y - tv1.y};
 			xy_t leftnorm = {cv1.x - tv1.x, cv1.y - tv1.y};
 			xy_t rightnorm = {cv2.x - tv1.x, cv2.y - tv1.y};
-			printf("%f %f\n", vectorProjectScalar(leftnorm, norm), vectorProjectScalar(rightnorm, norm));
-			renderWall(cv1, cv2, camlen, 20, -5, HEIGHT, 0);
+			
+			double leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
+			double rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
+			renderWall(cv1, cv2, camlen, 20, -5, HEIGHT, 0, leftuv, rightuv);
 		}
 	}
 }

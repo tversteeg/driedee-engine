@@ -53,6 +53,13 @@ xy_t vectorProject(xy_t p1, xy_t p2)
 	return normal;
 }
 
+double vectorDistance(xy_t p1, xy_t p2)
+{
+	double dx = p1.x - p2.x;
+	double dy = p1.y - p2.y;
+	return sqrt(dx * dx + dy * dy);
+}
+
 bool segmentSegmentIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
 	double denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
