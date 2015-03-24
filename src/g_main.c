@@ -160,22 +160,12 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 		}
 
 		xy_t cv1 = tv1;
-		double leftproj = 0;
 		if(notbetween1 && !vectorIsEqual(tv1, camleft) && !vectorIsEqual(tv1, camright)){
 			clipPointToCamera(camleftnorm, camrightnorm, &cv1, tv2);
-
-			xy_t norm = {tv2.x - tv1.x, tv2.y - tv1.y};
-			xy_t leftnorm = {cv1.x - tv1.x, cv1.y - tv1.y};
-			leftproj = vectorProjectScalar(leftnorm, norm);
 		}
 		xy_t cv2 = tv2;
-		double rightproj = 0;
 		if(notbetween2 && !vectorIsEqual(tv2, camleft) && !vectorIsEqual(tv2, camright)){
 			clipPointToCamera(camleftnorm, camrightnorm, &cv2, tv1);
-
-			xy_t norm = {tv2.x - tv1.x, tv2.y - tv1.y};
-			xy_t rightnorm = {cv2.x - tv1.x, cv2.y - tv1.y};
-			rightproj = vectorProjectScalar(rightnorm, norm);
 		}
 
 		double cross = vectorCrossProduct(cv1, cv2);
@@ -184,15 +174,18 @@ void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, do
 			tv1 = tv2;
 			tv2 = temp;
 
-			double temp2 = leftproj;
-			leftproj = rightproj;
-			rightproj = temp2;
+			temp = cv1;
+			cv1 = cv2;
+			cv2 = temp;
 		}
 
 		edge_t *neighbor = edge->neighbor;
 		if(edge->type == PORTAL && neighbor != NULL){
 			renderSector(neighbor->sector, campos, cv1, cv2, camlen, neighbor);
 		}else if(edge->type == WALL){
+			xy_t norm = {tv2.x - tv1.x, tv2.y - tv1.y};
+			xy_t leftnorm = {cv1.x - tv1.x, cv1.y - tv1.y};
+			xy_t rightnorm = {cv2.x - tv1.x, cv2.y - tv1.y};
 			printf("%f %f\n", vectorProjectScalar(leftnorm, norm), vectorProjectScalar(rightnorm, norm));
 			renderWall(cv1, cv2, camlen, 20, -5, HEIGHT, 0);
 		}
