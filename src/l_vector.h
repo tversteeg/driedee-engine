@@ -10,9 +10,13 @@ typedef struct {
 	double x, y;
 } xy_t;
 
+#define XY_ZERO ((xy_t){0, 0})
+
 typedef struct {
 	double x, y, z;
 } xyz_t;
+
+#define XYZ_ZERO ((xyz_t){0, 0, 0})
 
 xy_t vectorUnit(xy_t p);
 

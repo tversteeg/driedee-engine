@@ -20,6 +20,7 @@
 #include "l_draw.h"
 #include "l_sector.h"
 #include "l_level.h"
+#include "l_render.h"
 #include "l_colors.h"
 #include "l_png.h"
 
@@ -39,179 +40,18 @@
 //#define USE_MOUSE
 
 struct player {
+	camera_t cam;
 	xyz_t pos, vel;
-	double angle, fov, yaw, height, radius;
+	double height, radius;
 	sector_t *sector;
 } player;
 
 GLuint texture;
 texture_t tex, wall;
 
-void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
-{
-	if(p1->y < 0){
-		p1->x += -p1->y * (p2.x - p1->x) / (p2.y - p1->y);
-		p1->y = 0;
-	}
-
-	xy_t cam;
-	if(vectorIsLeft(*p1, (xy_t){0, 0}, camleft)){
-		cam = camleft;
-	}else{
-		cam = camright;
-	}
-
-	lineSegmentIntersect((xy_t){0, 0}, cam, *p1, p2, p1);
-}
-
-void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom, double above, double beneath, double leftuv, double rightuv)
-{
-	if(left.y <= 1 || right.y <= 1){
-		return;
-	}
-
-	// Near plane is 1, find x position on the plane
-	double projleftx = (left.x / left.y) * player.fov;
-	double projrightx = (right.x / right.y) * player.fov;
-
-	// Convert to screen coordinates
-	int screenleftx = HWIDTH + projleftx * HWIDTH;
-	int screenrightx = HWIDTH + projrightx * HWIDTH;
-	if(screenleftx == screenrightx){
-		return;
-	}
-
-	// Divide by the y value to get the distance and use that to calculate the height
-	double eyeheight = player.pos.z - player.height;
-	double projtoplefty = (top + eyeheight) / left.y;
-	double projbotlefty = (bottom + eyeheight) / left.y;
-	double projtoprighty = (top + eyeheight) / right.y;
-	double projbotrighty = (bottom + eyeheight) / right.y;
-
-	int screentoplefty = HHEIGHT - projtoplefty * HHEIGHT;
-	int screenbotlefty = HHEIGHT - projbotlefty * HHEIGHT;
-	int screentoprighty = HHEIGHT - projtoprighty * HHEIGHT;
-	int screenbotrighty = HHEIGHT - projbotrighty * HHEIGHT;
-
-	unsigned int width = screenrightx - screenleftx;
-	double slopetop = (screentoprighty - screentoplefty) / (double)width;
-	double slopebot = (screenbotrighty - screenbotlefty) / (double)width;
-	int x;
-	double uvdiff = (rightuv - leftuv) / width;
-	//printf("%f < %f\n", uvdiff, leftuv);
-	for(x = 0; x < width; x++){
-		int top = screentoplefty + x * slopetop;
-		int bot = screenbotlefty + x * slopebot;
-		drawTextureSlice(&tex, &wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
-	}
-
-	drawLine(&tex, (xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenrightx, (double)screentoprighty}, COLOR_WHITE);
-	drawLine(&tex, (xy_t){(double)screenleftx, (double)screenbotlefty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, COLOR_WHITE);
-
-	drawLine(&tex, (xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenleftx, (double)screenbotlefty}, COLOR_WHITE);
-	drawLine(&tex, (xy_t){(double)screenrightx, (double)screentoprighty}, (xy_t){(double)screenrightx, (double)screenbotrighty}, COLOR_WHITE);
-}
-
-void renderSector(sector_t *sector, xy_t campos, xy_t camleft, xy_t camright, double camlen, edge_t *ignore)
-{
-	double sina = sin(player.angle);
-	double cosa = cos(player.angle);
-	xy_t camleftnorm = vectorUnit(camleft);
-	xy_t camrightnorm = vectorUnit(camright);
-
-	unsigned int i;
-	for(i = 0; i < sector->nedges; i++){
-		edge_t *edge = sector->edges + i;
-		if(edge == ignore){
-			continue;
-		}
-
-		xy_t p1 = sector->vertices[edge->vertex1];
-		xy_t p2 = sector->vertices[edge->vertex2];
-
-		xy_t v1 = {campos.x - p1.x, campos.y - p1.y};
-		xy_t v2 = {campos.x - p2.x, campos.y - p2.y};
-
-		// 2D transformation matrix for rotations
-		xy_t tv1 = {.y = sina * v1.x + cosa * v1.y};
-		xy_t tv2 = {.y = sina * v2.x + cosa * v2.y};
-
-		// Clip everything behind the player
-		if(tv1.y <= 0 && tv2.y <= 0){
-			continue;
-		}
-
-		tv1.x = cosa * v1.x - sina * v1.y;
-		tv2.x = cosa * v2.x - sina * v2.y;
-
-		// Clip everything outside of the field of view
-		xy_t uv1 = vectorUnit(tv1);
-		xy_t uv2 = vectorUnit(tv2);
-		bool notbetween1 = !vectorIsBetween(uv1, camleftnorm, camrightnorm);
-		bool notbetween2 = !vectorIsBetween(uv2, camleftnorm, camrightnorm);
-		if(notbetween1 && notbetween2){
-			// Remove them if they both lie on the same side
-			if(vectorIsLeft(tv1, (xy_t){0, 0}, camleftnorm) && vectorIsLeft(tv2, (xy_t){0, 0}, camleftnorm)){
-				continue;
-			}else if(!vectorIsLeft(tv1, (xy_t){0, 0}, camrightnorm) && !vectorIsLeft(tv2, (xy_t){0, 0}, camrightnorm)){
-				continue;
-			}else if(tv1.y - ((tv2.y - tv1.y) / (tv2.x - tv1.x)) * tv1.x <= 0){
-				// Use the function y = ax + b to determine if the line is above or under the player and clip if it's under
-				continue;
-			}
-		}
-
-		xy_t cv1 = tv1;
-		if(notbetween1 && !vectorIsEqual(tv1, camleft) && !vectorIsEqual(tv1, camright)){
-			clipPointToCamera(camleftnorm, camrightnorm, &cv1, tv2);
-		}
-		xy_t cv2 = tv2;
-		if(notbetween2 && !vectorIsEqual(tv2, camleft) && !vectorIsEqual(tv2, camright)){
-			clipPointToCamera(camleftnorm, camrightnorm, &cv2, tv1);
-		}
-
-		double cross = vectorCrossProduct(cv1, cv2);
-		if(cross > 0){
-			xy_t temp = tv1;
-			tv1 = tv2;
-			tv2 = temp;
-
-			temp = cv1;
-			cv1 = cv2;
-			cv2 = temp;
-		}
-
-		edge_t *neighbor = edge->neighbor;
-		if(edge->type == PORTAL && neighbor != NULL){
-			renderSector(neighbor->sector, campos, cv1, cv2, camlen, neighbor);
-		}else if(edge->type == WALL){
-			xy_t norm = {tv2.x - tv1.x, tv2.y - tv1.y};
-			xy_t leftnorm = {cv1.x - tv1.x, cv1.y - tv1.y};
-			xy_t rightnorm = {cv2.x - tv1.x, cv2.y - tv1.y};
-			
-			double leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
-			double rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
-			renderWall(cv1, cv2, camlen, 20, -5, HEIGHT, 0, leftuv, rightuv);
-		}
-	}
-}
-
-void renderScene()
-{
-	xy_t camleft = {-200, 200};
-	xy_t camright = {200, 200};
-
-	xy_t camunit = vectorUnit(camright);
-	player.fov = (camunit.x * camunit.y) * 2;
-
-	renderSector(player.sector, (xy_t){player.pos.x, player.pos.y}, camleft, camright, 1000, NULL);
-
-	drawTexture(&tex, &wall, 0, 0, COLOR_NONE);
-}
-
 void render()
 {
-	renderScene();
+	renderFromSector(&tex, &wall, player.sector, player.cam);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -237,38 +77,38 @@ void render()
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
 {
 	if(spacePressed){
-		if(player.pos.z > -1){
-			player.vel.z = PLAYER_JUMP;
-			player.pos.z = -1;
+		if(player.pos.y > -1){
+			player.vel.y = PLAYER_JUMP;
+			player.pos.y = -1;
 		}
 	}
 	if(upPressed){
-		player.vel.x += cos(player.angle + M_PI / 2) * PLAYER_SPEED;
-		player.vel.y -= sin(player.angle + M_PI / 2) * PLAYER_SPEED;
+		player.vel.x += cos(player.cam.angle + M_PI / 2) * PLAYER_SPEED;
+		player.vel.z -= sin(player.cam.angle + M_PI / 2) * PLAYER_SPEED;
 
-		if(player.pos.z >= 0){
-			player.vel.z = PLAYER_JUMP_WOBBLE;
-			player.pos.z = -0.01;
+		if(player.pos.y >= 0){
+			player.vel.y = PLAYER_JUMP_WOBBLE;
+			player.pos.y = -0.01;
 		}
 	}
 	if(downPressed){
-		player.vel.x += cos(player.angle - M_PI / 2) * PLAYER_SPEED;
-		player.vel.y -= sin(player.angle - M_PI / 2) * PLAYER_SPEED;
+		player.vel.x += cos(player.cam.angle - M_PI / 2) * PLAYER_SPEED;
+		player.vel.z -= sin(player.cam.angle - M_PI / 2) * PLAYER_SPEED;
 	}
 	if(leftPressed){
 #ifdef USE_MOUSE
-		player.vel.x += cos(player.angle) * PLAYER_SPEED / 2;
-		player.vel.y -= sin(player.angle) * PLAYER_SPEED / 2;
+		player.vel.x += cos(player.cam.angle) * PLAYER_SPEED / 2;
+		player.vel.z -= sin(player.cam.angle) * PLAYER_SPEED / 2;
 #else
-		player.angle -= 0.035f;
+		player.cam.angle -= 0.035f;
 #endif
 	}
 	if(rightPressed){
 #ifdef USE_MOUSE
-		player.vel.x += cos(player.angle - M_PI) * PLAYER_SPEED / 2;
-		player.vel.y -= sin(player.angle - M_PI) * PLAYER_SPEED / 2;
+		player.vel.x += cos(player.cam.angle - M_PI) * PLAYER_SPEED / 2;
+		player.vel.z -= sin(player.cam.angle - M_PI) * PLAYER_SPEED / 2;
 #else
-		player.angle += 0.035f;
+		player.cam.angle += 0.035f;
 #endif
 	}
 
@@ -277,16 +117,17 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		sector_t *next = NULL;
 		for(i = 0; i < player.sector->nedges; i++){
 			edge_t *edge = player.sector->edges + i;
+			if(edge->type != PORTAL){
+				continue;
+			}
 
-			xy_t playerpos = {player.pos.x, player.pos.y};
-			xy_t playerposnext = {player.pos.x + player.vel.x, player.pos.y + player.vel.y};
+			xy_t playerpos = {player.pos.x, player.pos.z};
+			xy_t playerposnext = {player.pos.x + player.vel.x, player.pos.z + player.vel.z};
 			xy_t edge1 = player.sector->vertices[edge->vertex1];
 			xy_t edge2 = player.sector->vertices[edge->vertex2];
 			xy_t result;
 			if(segmentSegmentIntersect(playerpos, playerposnext, edge1, edge2, &result)){
-				if(edge->neighbor != NULL){
-					next = edge->neighbor->sector;
-				}
+				next = edge->neighbor->sector;
 			}
 		}
 
@@ -295,20 +136,22 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		}
 
 		player.pos.x += player.vel.x;
-		player.pos.y += player.vel.y;
-		player.vel.x *= PLAYER_FRICTION;
-		player.vel.y *= PLAYER_FRICTION;
-	}
-	if(player.pos.z < -V_ERROR){
 		player.pos.z += player.vel.z;
-		player.vel.z += PLAYER_GRAVITY;
+		player.vel.x *= PLAYER_FRICTION;
+		player.vel.z *= PLAYER_FRICTION;
+	}
+	if(player.pos.y < -V_ERROR){
+		player.pos.y += player.vel.y;
+		player.vel.y += PLAYER_GRAVITY;
 	}else{
-		player.pos.z = 0;
+		player.pos.y = 0;
 	}
 
+	player.cam.pos = player.pos;
+	player.cam.pos.y += player.height;
+
 #ifdef USE_MOUSE
-	player.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
-	player.yaw += (ccWindowGetMouse().y - HHEIGHT) / 1000.0f;
+	player.cam.angle += (ccWindowGetMouse().x - HWIDTH) / 1000.0f;
 	ccWindowMouseSetPosition((ccPoint){HWIDTH, HHEIGHT});
 #endif
 }
@@ -329,8 +172,10 @@ int main(int argc, char **argv)
 	loadLevel(argv[1]);
 	player.sector = getSector(0);
 	player.pos.x = player.sector->vertices[0].x + 5;
-	player.pos.y = player.sector->vertices[0].y;
-	player.pos.z = player.vel.x = player.vel.y = player.vel.z = player.angle = 0;
+	player.pos.z = player.sector->vertices[0].y;
+	player.pos.y = player.vel.x = player.vel.y = player.vel.z = player.cam.angle = 0;
+	calculateViewport(&player.cam, (xy_t){1, 1});
+	player.cam.pos = player.pos;
 
 	ccDisplayInitialize();
 

@@ -232,7 +232,7 @@ void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, 
 	if(uvx == 0){
 		uvcx = 0;
 	}else{
-		uvcx = source->width * uvx;
+		uvcx = (int)(source->width * uvx) % source->width;
 	}
 	unsigned int j;
 	for(j = 0; j < height; j++){
