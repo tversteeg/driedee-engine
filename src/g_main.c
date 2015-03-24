@@ -97,10 +97,12 @@ void renderWall(xy_t left, xy_t right, double camlen, double top, double bottom,
 	double slopetop = (screentoprighty - screentoplefty) / (double)width;
 	double slopebot = (screenbotrighty - screenbotlefty) / (double)width;
 	int x;
+	double uvdiff = (rightuv - leftuv) / width;
+	//printf("%f < %f\n", uvdiff, leftuv);
 	for(x = 0; x < width; x++){
 		int top = screentoplefty + x * slopetop;
 		int bot = screenbotlefty + x * slopebot;
-		drawTextureSlice(&tex, &wall, screenleftx + x, top, bot - top, x / (double)width);
+		drawTextureSlice(&tex, &wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
 	}
 
 	drawLine(&tex, (xy_t){(double)screenleftx, (double)screentoplefty}, (xy_t){(double)screenrightx, (double)screentoprighty}, COLOR_WHITE);
