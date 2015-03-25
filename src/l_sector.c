@@ -94,7 +94,7 @@ edge_t *createEdge(sector_t *sector, xy_t next, edgetype_t type)
 		xy_t v2 = sector->vertices[sector->edges[0].vertex2];
 		sector->edges[0].uvdiv = vectorDistance(v1, v2);
 		*/
-		edge->uvdiv = 25;
+		sector->edges[0].uvdiv = 25;
 	}
 
 	return edge;

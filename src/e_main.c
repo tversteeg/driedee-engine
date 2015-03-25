@@ -236,6 +236,9 @@ void renderMap()
 
 	if(camsector != NULL){
 		drawCircle(&editortex, (xy_t){cam.pos.x, cam.pos.z}, 3, COLOR_WHITE);
+		xy_t p1 = {cam.pos.x, cam.pos.z};
+		xy_t p2 = {cam.pos.x + sin(cam.angle + M_PI) * 10, cam.pos.z + cos(cam.angle + M_PI) * 10};
+		drawLine(&editortex, p1, p2, COLOR_WHITE);
 	}
 }
 
@@ -303,9 +306,9 @@ void handleMouseClick()
 			break;
 		case EDGE_ADD_TOOL:
 			createEdge(sectorselected, mouse, edgetypeselected);
-			if(camsector == NULL){
-				cam.pos.x = sectorselected->vertices[0].x;
-				cam.pos.z = sectorselected->vertices[0].y;
+			if(camsector == NULL && sectorselected->nedges > 2){
+				cam.pos.x = (sectorselected->vertices[0].x + sectorselected->vertices[1].x + sectorselected->vertices[2].x) / 3;
+				cam.pos.z = (sectorselected->vertices[0].y + sectorselected->vertices[1].y + sectorselected->vertices[2].y) / 3;
 				camsector = sectorselected;
 			}
 			break;
@@ -377,6 +380,8 @@ void handleMouseClick()
 
 void moveCam(bool up, bool down, bool left, bool right)
 {
+	xyz_t oldcam = cam.pos;
+	
 	if(up){
 		cam.pos.x += cos(cam.angle + M_PI / 2) * CAM_SPEED;
 		cam.pos.z -= sin(cam.angle + M_PI / 2) * CAM_SPEED;
@@ -390,6 +395,24 @@ void moveCam(bool up, bool down, bool left, bool right)
 	}
 	if(right){
 		cam.angle += 0.035f;
+	}
+
+	unsigned int i;
+	for(i = 0; i < camsector->nedges; i++){
+		edge_t *edge = camsector->edges + i;
+		if(edge->type != PORTAL || edge->neighbor == NULL){
+			continue;
+		}
+
+		xy_t p1 = {cam.pos.x, cam.pos.z};
+		xy_t p2 = {oldcam.x, oldcam.z};
+		xy_t edge1 = camsector->vertices[edge->vertex1];
+		xy_t edge2 = camsector->vertices[edge->vertex2];
+		xy_t result;
+		if(segmentSegmentIntersect(p1, p2, edge1, edge2, &result)){
+			camsector = edge->neighbor->sector;
+			break;
+		}
 	}
 
 	redrawpreview = true;
@@ -477,15 +500,10 @@ int main(int argc, char **argv)
 		camsector = getFirstSector();
 	}
 
-	if(argc >= 4){
-		unsigned int width, height;
-		getSizePng(argv[3], &width, &height);
-		initTexture(&wall, width, height);
-		loadPng(&wall, argv[3]);
-	}else{
-		initTexture(&wall, 1, 1);
-		drawPixel(&wall, 0, 0, COLOR_VIOLET);
-	}
+	unsigned int width, height;
+	getSizePng("wall1.png", &width, &height);
+	initTexture(&wall, width, height);
+	loadPng(&wall, "wall1.png");
 
 	cam.pos.y = cam.angle = 0;
 	cam.znear = 1;
@@ -595,7 +613,7 @@ int main(int argc, char **argv)
 			}
 		}
 
-		if(uppressed || downpressed || leftpressed || rightpressed){
+		if(camsector != NULL && (uppressed || downpressed || leftpressed || rightpressed)){
 			moveCam(uppressed, downpressed, leftpressed, rightpressed);
 		}
 
