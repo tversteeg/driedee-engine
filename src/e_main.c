@@ -23,18 +23,22 @@
 #include "l_vector.h"
 #include "l_sector.h"
 #include "l_level.h"
+#include "l_render.h"
+#include "l_png.h"
 
-#define WIDTH 800
+#define EDITOR_WIDTH 600
+#define PREVIEW_WIDTH 600
 #define HEIGHT 600
+#define MENU_HEIGHT 50
 
-#define MENU_HEIGHT 64
+#define CAM_SPEED 1
 
 #define NONE_SELECTED -1
 
 typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
 
 GLuint texture;
-texture_t tex;
+texture_t previewtex, editortex, tex, wall;
 font_t font;
 
 bool snaptogrid = false;
@@ -44,12 +48,18 @@ tool_t toolselected = NO_TOOL;
 edgetype_t edgetypeselected = WALL;
 int vertselected = NONE_SELECTED;
 
+bool redrawpreview = true;
+bool redraweditor = true;
+int redrawupdate = 0;
+
 char *saveto = NULL;
 
 int gridsize = 24;
 int snapsize = 10;
 
 xy_t mouse;
+camera_t cam;
+sector_t *camsector = NULL;
 
 double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 {
@@ -75,23 +85,23 @@ double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 
 void renderBackground()
 {
-	drawGrid(&tex, 0, 0, WIDTH, HEIGHT - MENU_HEIGHT, gridsize, gridsize, (pixel_t){32, 32, 32, 255});
+	drawGrid(&editortex, 0, 0, EDITOR_WIDTH, HEIGHT - MENU_HEIGHT, gridsize, gridsize, (pixel_t){32, 32, 32, 255});
 }
 
 void renderMenu()
 {
-	drawLine(&tex, (xy_t){0, HEIGHT - MENU_HEIGHT}, (xy_t){WIDTH, HEIGHT - MENU_HEIGHT}, (pixel_t){255, 255, 0, 255});
+	drawLine(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT}, (xy_t){EDITOR_WIDTH, HEIGHT - MENU_HEIGHT}, (pixel_t){255, 255, 0, 255});
 
-	drawRect(&tex, (xy_t){0, HEIGHT - MENU_HEIGHT + 1}, WIDTH, MENU_HEIGHT, (pixel_t){16, 16, 16, 255});
+	drawRect(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT + 1}, EDITOR_WIDTH, MENU_HEIGHT, (pixel_t){16, 16, 16, 255});
 
 	char buffer[64];
 	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, COLOR_AZURE);
+	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, COLOR_AZURE);
 
 	pos = sprintf(buffer, "(G) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, COLOR_AZURE);
+	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, COLOR_AZURE);
 
 	if(saveto != NULL){
 		pos = sprintf(buffer, "(S) SAVE TO FILE: \"%s\"", saveto);
@@ -100,7 +110,7 @@ void renderMenu()
 	}
 
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, COLOR_AZURE);
+	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, COLOR_AZURE);
 
 	char toolname[64];
 	switch(toolselected){
@@ -148,7 +158,7 @@ void renderMenu()
 
 	pos = sprintf(buffer, "(1-5) %s", toolname);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, COLOR_CYAN);
+	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, COLOR_CYAN);
 }
 
 void renderMouse()
@@ -156,10 +166,10 @@ void renderMouse()
 	char buffer[64];
 	int pos = sprintf(buffer, "(%.f,%.f)", mouse.x, mouse.y);
 	buffer[pos] = '\0';
-	drawString(&tex, &font, buffer, 8, 8, COLOR_YELLOW);
+	drawString(&editortex, &font, buffer, 8, 8, COLOR_YELLOW);
 
-	drawLine(&tex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
-	drawLine(&tex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
+	drawLine(&editortex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
+	drawLine(&editortex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
 }
 
 void renderMap()
@@ -195,11 +205,11 @@ void renderMap()
 					}
 				}
 			}
-			drawLine(&tex, sect->vertices[edge.vertex1], sect->vertices[edge.vertex2], color);
+			drawLine(&editortex, sect->vertices[edge.vertex1], sect->vertices[edge.vertex2], color);
 		}
 		// Draw vertices
 		for(i = 0; i < sect->nedges; i++){
-			drawCircle(&tex, sect->vertices[i], 2, COLOR_RED);
+			drawCircle(&editortex, sect->vertices[i], 2, COLOR_RED);
 		}
 		sect = getNextSector(sect);
 	}
@@ -212,21 +222,43 @@ void renderMap()
 			}else{
 				color = COLOR_BLUE;
 			}
-			drawLine(&tex, sectorselected->vertices[0], mouse, sectorselected->edges[0].type == WALL ? COLOR_YELLOW : COLOR_BLUE);
-			drawLine(&tex, sectorselected->vertices[sectorselected->nedges - 1], mouse, color);
+			drawLine(&editortex, sectorselected->vertices[0], mouse, sectorselected->edges[0].type == WALL ? COLOR_YELLOW : COLOR_BLUE);
+			drawLine(&editortex, sectorselected->vertices[sectorselected->nedges - 1], mouse, color);
 		}
 
 		// Draw dragged vertex
 		if(vertselected != NONE_SELECTED){
-			drawLine(&tex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_GREEN);
-			drawLine(&tex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_GREEN);
-			drawCircle(&tex, mouse, 2, COLOR_YELLOW);
+			drawLine(&editortex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_GREEN);
+			drawLine(&editortex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_GREEN);
+			drawCircle(&editortex, mouse, 2, COLOR_YELLOW);
 		}
+	}
+
+	if(camsector != NULL){
+		drawCircle(&editortex, (xy_t){cam.pos.x, cam.pos.z}, 3, COLOR_WHITE);
 	}
 }
 
 void render()
 {	
+	if(camsector != NULL && redrawpreview){
+		renderFromSector(&previewtex, &wall, camsector, &cam);
+		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0, COLOR_NONE);
+		clearTexture(&previewtex, COLOR_BLACK);
+		redrawpreview = false;
+	}
+
+	if(redraweditor){
+		renderBackground();
+		renderMap();
+		renderMenu();
+		renderMouse();
+
+		drawTexture(&tex, &editortex, 0, 0, COLOR_NONE);
+		clearTexture(&editortex, COLOR_BLACK);
+		redraweditor = false;
+	}
+
 	glClear(GL_COLOR_BUFFER_BIT);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width, tex.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.pixels);
@@ -242,8 +274,6 @@ void render()
 	glVertex2f(1.0f, 1.0f);
 	glEnd();
 	glBindTexture(GL_TEXTURE_2D, 0);
-
-	clearTexture(&tex, COLOR_BLACK);
 }
 
 void handleMouseClick()
@@ -273,6 +303,11 @@ void handleMouseClick()
 			break;
 		case EDGE_ADD_TOOL:
 			createEdge(sectorselected, mouse, edgetypeselected);
+			if(camsector == NULL){
+				cam.pos.x = sectorselected->vertices[0].x;
+				cam.pos.z = sectorselected->vertices[0].y;
+				camsector = sectorselected;
+			}
 			break;
 		case EDGE_CHANGE_TOOL:
 			{
@@ -340,6 +375,31 @@ void handleMouseClick()
 	}
 }
 
+void moveCam(bool up, bool down, bool left, bool right)
+{
+	if(up){
+		cam.pos.x += cos(cam.angle + M_PI / 2) * CAM_SPEED;
+		cam.pos.z -= sin(cam.angle + M_PI / 2) * CAM_SPEED;
+	}
+	if(down){
+		cam.pos.x += cos(cam.angle - M_PI / 2) * CAM_SPEED;
+		cam.pos.z -= sin(cam.angle - M_PI / 2) * CAM_SPEED;
+	}
+	if(left){
+		cam.angle -= 0.035f;
+	}
+	if(right){
+		cam.angle += 0.035f;
+	}
+
+	redrawpreview = true;
+	redrawupdate++;
+	if(redrawupdate >= 10){
+		redrawupdate = 0;
+		redraweditor = true;
+	}
+}
+
 void save()
 {
 	if(saveto == NULL){
@@ -398,7 +458,10 @@ int main(int argc, char **argv)
 {
 	sectorInitialize();
 
-	initTexture(&tex, WIDTH, HEIGHT);
+	initTexture(&tex, EDITOR_WIDTH + PREVIEW_WIDTH, HEIGHT);
+	initTexture(&editortex, EDITOR_WIDTH, HEIGHT);
+	initTexture(&previewtex, PREVIEW_WIDTH, HEIGHT);
+
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
 
@@ -409,11 +472,29 @@ int main(int argc, char **argv)
 
 	if(argc >= 3){
 		loadLevel(argv[2]);
+		cam.pos.x = getFirstSector()->vertices[0].x + 10;
+		cam.pos.z = getFirstSector()->vertices[0].y;
+		camsector = getFirstSector();
 	}
+
+	if(argc >= 4){
+		unsigned int width, height;
+		getSizePng(argv[3], &width, &height);
+		initTexture(&wall, width, height);
+		loadPng(&wall, argv[3]);
+	}else{
+		initTexture(&wall, 1, 1);
+		drawPixel(&wall, 0, 0, COLOR_VIOLET);
+	}
+
+	cam.pos.y = cam.angle = 0;
+	cam.znear = 1;
+	cam.zfar = 200;
+	calculateViewport(&cam, (xy_t){1, 1});
 
 	ccDisplayInitialize();
 
-	ccWindowCreate((ccRect){0, 0, WIDTH, HEIGHT}, "3D - editor", CC_WINDOW_FLAG_NORESIZE);
+	ccWindowCreate((ccRect){0, 0, (int)tex.width, (int)tex.height}, "3D - editor", CC_WINDOW_FLAG_NORESIZE);
 	ccWindowMouseSetCursor(CC_CURSOR_NONE);
 
 	ccGLContextBind();
@@ -431,6 +512,8 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	bool loop = true;
+	bool leftpressed, rightpressed, uppressed, downpressed;
+	leftpressed = rightpressed = uppressed = downpressed = false;
 	while(loop){
 		while(ccWindowEventPoll()){
 			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
@@ -439,6 +522,18 @@ int main(int argc, char **argv)
 				switch(ccWindowEventGet().keyCode){
 					case CC_KEY_ESCAPE:
 						loop = false;
+						break;
+					case CC_KEY_UP:
+						uppressed = true;
+						break;
+					case CC_KEY_DOWN:
+						downpressed = true;
+						break;
+					case CC_KEY_LEFT:
+						leftpressed = true;
+						break;
+					case CC_KEY_RIGHT:
+						rightpressed = true;
 						break;
 				}
 			}else if(ccWindowEventGet().type == CC_EVENT_KEY_UP){
@@ -473,6 +568,18 @@ int main(int argc, char **argv)
 					case CC_KEY_P:
 						edgetypeselected = PORTAL;
 						break;
+					case CC_KEY_UP:
+						uppressed = false;
+						break;
+					case CC_KEY_DOWN:
+						downpressed = false;
+						break;
+					case CC_KEY_LEFT:
+						leftpressed = false;
+						break;
+					case CC_KEY_RIGHT:
+						rightpressed = false;
+						break;
 					case CC_KEY_9:
 						if(gridsize > 0){
 							gridsize--;
@@ -484,8 +591,15 @@ int main(int argc, char **argv)
 				}
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
 				handleMouseClick();
+				redrawpreview = true;
 			}
 		}
+
+		if(uppressed || downpressed || leftpressed || rightpressed){
+			moveCam(uppressed, downpressed, leftpressed, rightpressed);
+		}
+
+		xy_t oldmouse = mouse;
 
 		mouse.x = ccWindowGetMouse().x;
 		mouse.y = ccWindowGetMouse().y;
@@ -495,15 +609,14 @@ int main(int argc, char **argv)
 			mouse.y = round(mouse.y / gridsize) * gridsize;
 		}
 
-		renderBackground();
-		renderMap();
-		renderMenu();
-		renderMouse();
+		if(!vectorIsEqual(oldmouse, mouse)){
+			redraweditor = true;
+		}
 
 		render();
 		ccGLBuffersSwap();
 
-		ccTimeDelay(6);
+		ccTimeDelay(5);
 	}
 
 	ccFree();

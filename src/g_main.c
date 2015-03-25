@@ -26,10 +26,6 @@
 
 #define WIDTH 800
 #define HEIGHT 600
-#define HWIDTH (WIDTH / 2)
-#define HHEIGHT (HEIGHT / 2)
-
-#define ASPECT (WIDTH / (double)HEIGHT)
 
 #define PLAYER_SPEED 0.2
 #define PLAYER_JUMP -0.5
