@@ -23,16 +23,12 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 
 void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
 {
-	if(left.x <= 1 || right.x <= 1){
-		return;
-	}
-
 	// Find x position on the near plane
 	//TODO change near plane from 1 to cam->znear
 	double projleftx = (left.x / left.y) * cam->fov;
 	double projrightx = (right.x / right.y) * cam->fov;
 
-	unsigned int halfwidth = target->width >> 1;
+	int halfwidth = target->width >> 1;
 
 	// Convert to screen coordinates
 	int screenleftx = halfwidth + projleftx * halfwidth;
@@ -104,7 +100,9 @@ static void renderSector(texture_t *texture, texture_t *wall, sector_t *sector, 
 		transp1.x = anglecos * relp1.x - anglesin * relp1.y;
 		transp2.x = anglecos * relp2.x - anglesin * relp2.y;
 
-		drawLine(texture, transp1, transp2, (pixel_t){255, 255, 0, 255});
+		xy_t map1 = {transp1.x + texture->width / 2, texture->height / 2 - transp1.y};
+		xy_t map2 = {transp2.x + texture->width / 2, texture->height / 2 - transp2.y};
+		drawLine(texture, map1, map2, (pixel_t){255, 255, 255, 255});
 
 		xy_t unit1 = vectorUnit(transp1);
 		xy_t unit2 = vectorUnit(transp2);
@@ -117,8 +115,6 @@ static void renderSector(texture_t *texture, texture_t *wall, sector_t *sector, 
 				continue;
 			}else if(!vectorIsLeft(transp1, XY_ZERO, camrightnorm) &&
 					!vectorIsLeft(transp2, XY_ZERO, camrightnorm)){
-
-		drawLine(texture, p1, p2, (pixel_t){255, 0, 0, 255});
 				continue;
 			}else if(transp1.y - ((transp2.y - transp1.y) / (transp2.x - transp1.x)) * transp1.x <= 0){
 				// Clip the edge when the line 'y = ax + b' is above the camera
@@ -127,10 +123,10 @@ static void renderSector(texture_t *texture, texture_t *wall, sector_t *sector, 
 		}
 
 		xy_t camedge1 = transp1;
-		xy_t camedge2 = transp2;
 		if(isnotinview1 && !vectorIsEqual(transp1, camleft) && !vectorIsEqual(transp1, camright)){
 			clipPointToCamera(camleftnorm, camrightnorm, &camedge1, transp2);
 		}
+		xy_t camedge2 = transp2;
 		if(isnotinview2 && !vectorIsEqual(transp2, camleft) && !vectorIsEqual(transp2, camright)){
 			clipPointToCamera(camleftnorm, camrightnorm, &camedge2, transp1);
 		}
@@ -148,7 +144,7 @@ static void renderSector(texture_t *texture, texture_t *wall, sector_t *sector, 
 
 		edge_t *neighbor = edge->neighbor;
 		if(edge->type == PORTAL && neighbor != NULL){
-			renderSector(texture, wall, neighbor->sector, cam, camedge1, camedge2, edge);
+			renderSector(texture, wall, neighbor->sector, cam, camedge1, camedge2, neighbor);
 		}else if(edge->type == WALL){
 			xy_t norm = {transp2.x - transp1.x, transp2.y - transp1.y};
 			xy_t leftnorm = {camedge1.x - transp1.x, camedge1.y - transp1.y};
@@ -167,11 +163,11 @@ void calculateViewport(camera_t *cam, xy_t right)
 	cam->fov = camunit.x * camunit.y * 2;
 }
 
-void renderFromSector(texture_t *texture, texture_t *wall, sector_t *sector, camera_t cam)
+void renderFromSector(texture_t *texture, texture_t *wall, sector_t *sector, camera_t *cam)
 {
-	double camdis = cam.zfar - cam.znear;
-	xy_t camleft = {-camdis * cam.fov, camdis};
-	xy_t camright = {camdis * cam.fov, camdis};
+	double camdis = cam->zfar - cam->znear;
+	xy_t camleft = {camdis * -cam->fov, camdis};
+	xy_t camright = {camdis * cam->fov, camdis};
 
-	renderSector(texture, wall, sector, &cam, camleft, camright, NULL);
+	renderSector(texture, wall, sector, cam, camleft, camright, NULL);
 }

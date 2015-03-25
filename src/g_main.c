@@ -51,7 +51,7 @@ texture_t tex, wall;
 
 void render()
 {
-	renderFromSector(&tex, &wall, player.sector, player.cam);
+	renderFromSector(&tex, &wall, player.sector, &player.cam);
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -174,6 +174,8 @@ int main(int argc, char **argv)
 	player.pos.x = player.sector->vertices[0].x + 5;
 	player.pos.z = player.sector->vertices[0].y;
 	player.pos.y = player.vel.x = player.vel.y = player.vel.z = player.cam.angle = 0;
+	player.cam.znear = 1;
+	player.cam.zfar = 200;
 	calculateViewport(&player.cam, (xy_t){1, 1});
 	player.cam.pos = player.pos;
 
