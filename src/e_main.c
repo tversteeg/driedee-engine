@@ -57,6 +57,7 @@ char *saveto = NULL;
 int gridsize = 24;
 int snapsize = 10;
 
+xy_t mapoffset;
 xy_t mouse;
 camera_t cam;
 sector_t *camsector = NULL;
@@ -205,15 +206,24 @@ void renderMap()
 					}
 				}
 			}
-			drawLine(&editortex, sect->vertices[edge.vertex1], sect->vertices[edge.vertex2], color);
+			xy_t vert1 = sect->vertices[edge.vertex1];
+			vert1.x += mapoffset.x;
+			vert1.y += mapoffset.y;
+			xy_t vert2 = sect->vertices[edge.vertex2];
+			vert2.x += mapoffset.x;
+			vert2.y += mapoffset.y;
+			drawLine(&editortex, vert1, vert2, color);
 		}
 		// Draw vertices
 		for(i = 0; i < sect->nedges; i++){
-			drawCircle(&editortex, sect->vertices[i], 2, COLOR_RED);
+			xy_t vert = sect->vertices[i];
+			vert.x += mapoffset.x;
+			vert.y += mapoffset.y;
+			drawCircle(&editortex, vert, 2, COLOR_RED);
 		}
 		sect = getNextSector(sect);
 	}
-	
+
 	if(sectorselected != NULL){
 		// Draw edge add lines
 		if(toolselected == EDGE_ADD_TOOL){
@@ -222,22 +232,37 @@ void renderMap()
 			}else{
 				color = COLOR_BLUE;
 			}
-			drawLine(&editortex, sectorselected->vertices[0], mouse, sectorselected->edges[0].type == WALL ? COLOR_YELLOW : COLOR_BLUE);
-			drawLine(&editortex, sectorselected->vertices[sectorselected->nedges - 1], mouse, color);
+			xy_t vert = sectorselected->vertices[0];
+			vert.x += mapoffset.x;
+			vert.y += mapoffset.y;
+			drawLine(&editortex, vert, mouse, sectorselected->edges[0].type == WALL ? COLOR_YELLOW : COLOR_BLUE);
+			
+			vert = sectorselected->vertices[sectorselected->nedges - 1];
+			vert.x += mapoffset.x;
+			vert.y += mapoffset.y;
+			drawLine(&editortex, vert, mouse, color);
 		}
 
 		// Draw dragged vertex
 		if(vertselected != NONE_SELECTED){
-			drawLine(&editortex, sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1], mouse, COLOR_GREEN);
-			drawLine(&editortex, sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1], mouse, COLOR_GREEN);
+			xy_t vert = sectorselected->vertices[vertselected == sectorselected->nedges - 1 ? 0 : vertselected + 1];
+			vert.x += mapoffset.x;
+			vert.y += mapoffset.y;
+			drawLine(&editortex, vert, mouse, COLOR_GREEN);
+			
+			vert = sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1];
+			vert.x += mapoffset.x;
+			vert.y += mapoffset.y;
+			drawLine(&editortex, vert, mouse, COLOR_GREEN);
 			drawCircle(&editortex, mouse, 2, COLOR_YELLOW);
 		}
 	}
 
 	if(camsector != NULL){
-		drawCircle(&editortex, (xy_t){cam.pos.x, cam.pos.z}, 3, COLOR_WHITE);
-		xy_t p1 = {cam.pos.x, cam.pos.z};
-		xy_t p2 = {cam.pos.x + sin(cam.angle + M_PI) * 10, cam.pos.z + cos(cam.angle + M_PI) * 10};
+		xy_t p1 = {cam.pos.x + mapoffset.x, cam.pos.z + mapoffset.y};
+		xy_t p2 = {cam.pos.x + mapoffset.x + sin(cam.angle + M_PI) * 10, cam.pos.z + mapoffset.y + cos(cam.angle + M_PI) * 10};
+
+		drawCircle(&editortex, p1, 3, COLOR_WHITE);
 		drawLine(&editortex, p1, p2, COLOR_WHITE);
 	}
 }
@@ -281,9 +306,11 @@ void render()
 
 void handleMouseClick()
 {
+	xy_t mousemap = {mouse.x - mapoffset.x, mouse.y - mapoffset.y};
+	
 	switch(toolselected){
 		case SECTOR_ADD_TOOL:
-			sectorselected = createSector(mouse, edgetypeselected);
+			sectorselected = createSector(mousemap, edgetypeselected);
 			toolselected = EDGE_ADD_TOOL;
 			break;
 		case SECTOR_SELECT_TOOL:
@@ -294,7 +321,7 @@ void handleMouseClick()
 						unsigned int i;
 						for(i = 0; i < sect->nedges; i++){
 							edge_t *edge = sect->edges + i;
-							if(distanceToSegment(mouse, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
+							if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
 								sectorselected = sect;
 								return;
 							}
@@ -305,7 +332,7 @@ void handleMouseClick()
 			}
 			break;
 		case EDGE_ADD_TOOL:
-			createEdge(sectorselected, mouse, edgetypeselected);
+			createEdge(sectorselected, mousemap, edgetypeselected);
 			if(camsector == NULL && sectorselected->nedges > 2){
 				cam.pos.x = (sectorselected->vertices[0].x + sectorselected->vertices[1].x + sectorselected->vertices[2].x) / 3;
 				cam.pos.z = (sectorselected->vertices[0].y + sectorselected->vertices[1].y + sectorselected->vertices[2].y) / 3;
@@ -319,7 +346,7 @@ void handleMouseClick()
 					unsigned int i;
 					for(i = 0; i < sect->nedges; i++){
 						edge_t *edge = sect->edges + i;
-						if(distanceToSegment(mouse, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
+						if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
 							edge->type = edgetypeselected;
 							if(edge->type == WALL){
 								edge->sector = NULL;
@@ -338,7 +365,7 @@ void handleMouseClick()
 					unsigned int i;
 					for(i = 0; i < sect->nedges; i++){
 						edge_t *edge = sect->edges + i;
-						if(distanceToSegment(mouse, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
+						if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
 							if(edgeselected == NULL){
 								edgeselected = edge;
 								return;
@@ -361,15 +388,15 @@ void handleMouseClick()
 				unsigned int i;
 				for(i = 0; i < sectorselected->nedges; i++){
 					xy_t v = sectorselected->vertices[i];
-					int dx = mouse.x - v.x;
-					int dy = mouse.y - v.y;
+					int dx = mousemap.x - v.x;
+					int dy = mousemap.y - v.y;
 					if(sqrt(dx * dx + dy * dy) < snapsize){
 						vertselected = i;
 						break;
 					}
 				}
 			}else{
-				sectorselected->vertices[vertselected] = mouse;
+				sectorselected->vertices[vertselected] = mousemap;
 				vertselected = NONE_SELECTED;
 			}
 			break;
@@ -381,7 +408,7 @@ void handleMouseClick()
 void moveCam(bool up, bool down, bool left, bool right)
 {
 	xyz_t oldcam = cam.pos;
-	
+
 	if(up){
 		cam.pos.x += cos(cam.angle + M_PI / 2) * CAM_SPEED;
 		cam.pos.z -= sin(cam.angle + M_PI / 2) * CAM_SPEED;
@@ -488,6 +515,8 @@ int main(int argc, char **argv)
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
 
+	mapoffset = XY_ZERO;
+
 	if(argc >= 2){
 		saveto = (char*)malloc(strlen(argv[1]) + 1);
 		strcpy(saveto, argv[1]);
@@ -530,6 +559,7 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	bool loop = true;
+	bool rightmousepressed = false;
 	bool leftpressed, rightpressed, uppressed, downpressed;
 	leftpressed = rightpressed = uppressed = downpressed = false;
 	while(loop){
@@ -607,9 +637,18 @@ int main(int argc, char **argv)
 						gridsize++;
 						break;
 				}
+				redraweditor = true;
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
-				handleMouseClick();
-				redrawpreview = true;
+				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT){
+					handleMouseClick();
+					redrawpreview = true;
+					redraweditor = true;
+				}
+				rightmousepressed = false;
+			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_DOWN){
+				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_RIGHT){
+					rightmousepressed = true;
+				}
 			}
 		}
 
@@ -629,6 +668,10 @@ int main(int argc, char **argv)
 
 		if(!vectorIsEqual(oldmouse, mouse)){
 			redraweditor = true;
+			if(rightmousepressed){
+				mapoffset.x += mouse.x - oldmouse.x;
+				mapoffset.y += mouse.y - oldmouse.y;
+			}
 		}
 
 		render();
