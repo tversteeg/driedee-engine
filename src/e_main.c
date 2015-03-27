@@ -35,7 +35,7 @@
 
 #define NONE_SELECTED -1
 
-typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
+typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, SECTOR_DELETE_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
 
 GLuint texture;
 texture_t previewtex, editortex, tex, wall;
@@ -120,6 +120,9 @@ void renderMenu()
 			break;
 		case SECTOR_SELECT_TOOL:
 			strcpy(toolname, "SELECT SECTOR");
+			break;
+		case SECTOR_DELETE_TOOL:
+			strcpy(toolname, "DELETE SECTOR");
 			break;
 		case EDGE_ADD_TOOL:
 			strcpy(toolname, "CHANGE SECTOR");
@@ -325,6 +328,28 @@ void handleMouseClick()
 								sectorselected = sect;
 								return;
 							}
+						}
+					}
+					sect = getNextSector(sect);
+				}
+			}
+			break;
+		case SECTOR_DELETE_TOOL:
+			{
+				sector_t *sect = getFirstSector();
+				while(sect != NULL){
+					unsigned int i;
+					for(i = 0; i < sect->nedges; i++){
+						edge_t *edge = sect->edges + i;
+						if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
+							if(sectorselected == sect){
+								sectorselected = NULL;
+							}
+							if(camsector == sect){
+								camsector = NULL;
+							}
+							deleteSector(sect);
+							return;
 						}
 					}
 					sect = getNextSector(sect);
@@ -606,6 +631,9 @@ int main(int argc, char **argv)
 						break;
 					case CC_KEY_6:
 						toolselected = VERTEX_MOVE_TOOL;
+						break;
+					case CC_KEY_7:
+						toolselected = SECTOR_DELETE_TOOL;
 						break;
 					case CC_KEY_S:
 						save();
