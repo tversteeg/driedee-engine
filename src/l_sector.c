@@ -27,6 +27,18 @@ sector_t* createSector(xy_t start, edgetype_t type)
 
 void deleteSector(sector_t *sector)
 {
+  sector_t *sect = getFirstSector();
+  while(sect != NULL){
+    unsigned int i;
+    for(i = 0; i < sect->nedges; i++){
+      edge_t *edge = sect->edges + i;
+      if(edge->neighbor->sector == sector){
+        edge->neighbor = NULL;
+      } 
+    }
+    sect = getNextSector(sect);
+  }
+
 	poolFree(&sectors, sector);
 }
 

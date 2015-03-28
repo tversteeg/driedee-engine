@@ -348,7 +348,7 @@ void handleMouseClick()
 							if(camsector == sect){
 								camsector = NULL;
 							}
-							deleteSector(sect);
+							//deleteSector(sect);
 							return;
 						}
 					}
