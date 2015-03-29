@@ -91,12 +91,12 @@ edge_t *createEdge(sector_t *sector, xy_t next, edgetype_t type)
 	edge->sector = sector;
 	edge->neighbor = NULL;
 	if(type == WALL){
-		/*
+		
 		xy_t v1 = sector->vertices[edge->vertex1];
 		xy_t v2 = sector->vertices[edge->vertex2];
 		edge->uvdiv = vectorDistance(v1, v2);
-		*/
-		edge->uvdiv = 25;
+		
+		//edge->uvdiv = 25;
 	}
 
 	sector->edges[0].vertex2 = sector->nedges - 1;

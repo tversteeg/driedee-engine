@@ -60,7 +60,10 @@ void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge,
 	for(x = 0; x < screenwidth; x++){
 		int top = screentoplefty + x * slopetop;
 		int bot = screenbotlefty + x * slopebot;
-		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
+		//drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
+		xy_t v1 = {screenleftx + (double)x, (double)top};	
+		xy_t v2 = {v1.x, (double)bot};	
+		drawLine(target, v1, v2, (pixel_t){(unsigned char)(leftuv + (x * uvdiff) * 255), 0, 0, 255});
 	}
 }
 
