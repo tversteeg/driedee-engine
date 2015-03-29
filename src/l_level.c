@@ -2,17 +2,17 @@
 
 #include <stdio.h>
 
-void loadLevel(const char *filename)
+bool loadLevel(const char *filename)
 {
 	if(filename == NULL){
 		printf("No level file supplied\n");
-		return;
+		return false;
 	}
 
 	FILE *fp = fopen(filename, "rt");
 	if(!fp){
 		printf("Couldn't open file for reading: %s\n", filename);
-		return;
+		return false;
 	}
 
 	unsigned int cursector = 0;
@@ -60,4 +60,6 @@ void loadLevel(const char *filename)
 				break;
 		}
 	}
+
+	return true;
 }

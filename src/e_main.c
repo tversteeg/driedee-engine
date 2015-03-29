@@ -547,8 +547,7 @@ int main(int argc, char **argv)
 		strcpy(saveto, argv[1]);
 	}
 
-	if(argc >= 3){
-		loadLevel(argv[2]);
+	if(argc >= 3 && loadLevel(argv[2])){
 		cam.pos.x = getFirstSector()->vertices[0].x + 10;
 		cam.pos.z = getFirstSector()->vertices[0].y;
 		camsector = getFirstSector();
