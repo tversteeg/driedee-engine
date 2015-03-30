@@ -29,6 +29,7 @@ void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge,
 	double projrightx = (right.x / right.y) * cam->fov;
 
 	int halfwidth = target->width >> 1;
+	int halfheight = target->height >> 1;
 
 	// Convert to screen coordinates
 	int screenleftx = halfwidth + projleftx * halfwidth;
@@ -46,24 +47,25 @@ void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge,
 	double projtoprighty = (top + cam->pos.y) / right.y;
 	double projbotrighty = (bot + cam->pos.y) / right.y;
 
-	int screentoplefty = halfwidth - projtoplefty * halfwidth;
-	int screenbotlefty = halfwidth - projbotlefty * halfwidth;
-	int screentoprighty = halfwidth - projtoprighty * halfwidth;
-	int screenbotrighty = halfwidth - projbotrighty * halfwidth;
+	int screentoplefty = halfheight - projtoplefty * halfheight;
+	int screenbotlefty = halfheight - projbotlefty * halfheight;
+	int screentoprighty = halfheight - projtoprighty * halfheight;
+	int screenbotrighty = halfheight - projbotrighty * halfheight;
 
 	int screenwidth = screenrightx - screenleftx;
 	double slopetop = (screentoprighty - screentoplefty) / (double)screenwidth;
 	double slopebot = (screenbotrighty - screenbotlefty) / (double)screenwidth;
-	double uvdiff = (rightuv - leftuv) / screenwidth;
+	double uvdiff = (rightuv - leftuv) / (double)screenwidth;
 
 	int x;
 	for(x = 0; x < screenwidth; x++){
 		int top = screentoplefty + x * slopetop;
 		int bot = screenbotlefty + x * slopebot;
-		//drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
-		xy_t v1 = {screenleftx + (double)x, (double)top};	
+		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
+		/*xy_t v1 = {screenleftx + (double)x, (double)top};	
 		xy_t v2 = {v1.x, (double)bot};	
-		drawLine(target, v1, v2, (pixel_t){(unsigned char)(leftuv + (x * uvdiff) * 255), 0, 0, 255});
+		drawLine(target, v1, v2, (pixel_t){(unsigned char)((leftuv + (x * uvdiff)) * 255), 0, 0, 255});
+		*/
 	}
 }
 
