@@ -17,8 +17,7 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	edge_t *edge2 = sector->edges;
 	edge2->type = edge->type;
 	edge2->sector = sector;
-	edge2->vertex1 = sector->nedges - 1;
-	edge2->vertex2 = sector->nedges - 2;
+	edge2->vertex1 = edge2->vertex2 = 0;
 	if(edge2->type == WALL){
 		edge2->wallbot = edge->wallbot;
 		edge2->walltop = edge->walltop;
