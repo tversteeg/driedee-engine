@@ -21,6 +21,12 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect(XY_ZERO, cam, *p1, p2, p1);
 }
 
+double interpolate(double i, double a, double b, double exponent)
+{
+	i = pow(i, exponent);
+	return (a * i) + (b * (1 - i));
+}
+
 void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
 {
 	// Find x position on the near plane
@@ -39,13 +45,10 @@ void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge,
 	}
 
 	// Divide by the z value to get the distance and calculate the height with that
-	int top = 20;
-	int bot = -5;
-
-	double projtoplefty = (top + cam->pos.y) / left.y;
-	double projbotlefty = (bot + cam->pos.y) / left.y;
-	double projtoprighty = (top + cam->pos.y) / right.y;
-	double projbotrighty = (bot + cam->pos.y) / right.y;
+	double projtoplefty = (edge->walltop + cam->pos.y) / left.y;
+	double projbotlefty = (edge->wallbot + cam->pos.y) / left.y;
+	double projtoprighty = (edge->walltop + cam->pos.y) / right.y;
+	double projbotrighty = (edge->wallbot + cam->pos.y) / right.y;
 
 	int screentoplefty = halfheight - projtoplefty * halfheight;
 	int screenbotlefty = halfheight - projbotlefty * halfheight;
@@ -55,13 +58,17 @@ void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge,
 	int screenwidth = screenrightx - screenleftx;
 	double slopetop = (screentoprighty - screentoplefty) / (double)screenwidth;
 	double slopebot = (screenbotrighty - screenbotlefty) / (double)screenwidth;
-	double uvdiff = (rightuv - leftuv) / (double)screenwidth;
+	//double uvdiff = rightuv - leftuv) / (double)screenwidth;
+	//printf("%f\n", projtoplefty / projtoprighty);
 
 	int x;
 	for(x = 0; x < screenwidth; x++){
 		int top = screentoplefty + x * slopetop;
 		int bot = screenbotlefty + x * slopebot;
-		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
+		//drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
+		
+		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, interpolate(x / (double)screenwidth, leftuv, rightuv, projtoplefty / projtoprighty));
+		
 		/*xy_t v1 = {screenleftx + (double)x, (double)top};	
 		xy_t v2 = {v1.x, (double)bot};	
 		drawLine(target, v1, v2, (pixel_t){(unsigned char)((leftuv + (x * uvdiff)) * 255), 0, 0, 255});

@@ -13,7 +13,9 @@ struct _edge_t {
 	sector_t *sector;
 	union {
 		edge_t *neighbor;
-		double uvdiv;
+		struct {
+			double uvdiv, walltop, wallbot;
+		};
 	};
 };
 
@@ -25,7 +27,7 @@ struct _sector_t {
 
 void sectorInitialize();
 
-sector_t* createSector(xy_t start, edgetype_t type);
+sector_t* createSector(xy_t start, edge_t *edge);
 void deleteSector(sector_t *sector);
 
 sector_t* getFirstSector();
@@ -34,4 +36,4 @@ sector_t* getSector(unsigned int index);
 /* Return the index of a sector and -1 if it's not found */
 int getIndexSector(sector_t *sector);
 
-edge_t* createEdge(sector_t *sector, xy_t next, edgetype_t type);
+edge_t* createEdge(sector_t *sector, xy_t next, edge_t *edge);

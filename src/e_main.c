@@ -313,8 +313,16 @@ void handleMouseClick()
 	
 	switch(toolselected){
 		case SECTOR_ADD_TOOL:
-			sectorselected = createSector(mousemap, edgetypeselected);
-			toolselected = EDGE_ADD_TOOL;
+			{
+				edge_t edge;
+				edge.type = edgetypeselected;
+				if(edge.type == WALL){
+					edge.wallbot = 0;
+					edge.walltop = 10;
+				}
+				sectorselected = createSector(mousemap, &edge);
+				toolselected = EDGE_ADD_TOOL;
+			}
 			break;
 		case SECTOR_SELECT_TOOL:
 			{
@@ -357,11 +365,19 @@ void handleMouseClick()
 			}
 			break;
 		case EDGE_ADD_TOOL:
-			createEdge(sectorselected, mousemap, edgetypeselected);
-			if(camsector == NULL && sectorselected->nedges > 2){
-				cam.pos.x = (sectorselected->vertices[0].x + sectorselected->vertices[1].x + sectorselected->vertices[2].x) / 3;
-				cam.pos.z = (sectorselected->vertices[0].y + sectorselected->vertices[1].y + sectorselected->vertices[2].y) / 3;
-				camsector = sectorselected;
+			{
+				edge_t edge;
+				edge.type = edgetypeselected;
+				if(edge.type == WALL){
+					edge.wallbot = 0;
+					edge.walltop = 10;
+				}
+				createEdge(sectorselected, mousemap, &edge);
+				if(camsector == NULL && sectorselected->nedges > 2){
+					cam.pos.x = (sectorselected->vertices[0].x + sectorselected->vertices[1].x + sectorselected->vertices[2].x) / 3;
+					cam.pos.z = (sectorselected->vertices[0].y + sectorselected->vertices[1].y + sectorselected->vertices[2].y) / 3;
+					camsector = sectorselected;
+				}
 			}
 			break;
 		case EDGE_CHANGE_TOOL:

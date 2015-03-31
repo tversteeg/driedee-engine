@@ -28,15 +28,20 @@ bool loadLevel(const char *filename)
 				break;
 			case 'e':
 				{
-					edgetype_t type;
+					edge_t edge;
 					xy_t vert;
-					sscanf(line, "%*s %d (%lf,%lf)", (int*)&type, &vert.x, &vert.y);
+					sscanf(line, "%*s %d (%lf,%lf)", (int*)&edge.type, &vert.x, &vert.y);
+
+					if(edge.type == WALL){
+						edge.walltop = 20;
+						edge.wallbot = -5;
+					}
 
 					if(firstedge){
-						sect = createSector(vert, type);
+						sect = createSector(vert, &edge);
 						firstedge = false;
 					}else{
-						createEdge(sect, vert, type);
+						createEdge(sect, vert, &edge);
 					}
 				}
 				break;
