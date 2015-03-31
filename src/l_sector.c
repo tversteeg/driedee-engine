@@ -12,8 +12,21 @@ void sectorInitialize()
 sector_t* createSector(xy_t start, edge_t *edge)
 {
 	sector_t *sector = (sector_t*)poolMalloc(&sectors);
+
 	sector->edges = (edge_t*)malloc(sizeof(edge_t));
-	sector->edges[0] = *edge;
+	edge_t *edge2 = sector->edges;
+	edge2->type = edge->type;
+	edge2->sector = sector;
+	edge2->vertex1 = sector->nedges - 1;
+	edge2->vertex2 = sector->nedges - 2;
+	if(edge2->type == WALL){
+		edge2->wallbot = edge->wallbot;
+		edge2->walltop = edge->walltop;
+		edge2->uvdiv = 0;
+	}else{
+		edge2->neighbor = NULL;
+	}
+
 	sector->vertices = (xy_t*)malloc(sizeof(xy_t));
 	sector->vertices[0] = start;
 	sector->nedges = 1;
@@ -94,6 +107,7 @@ edge_t *createEdge(sector_t *sector, xy_t next, edge_t *edge)
 		xy_t v1 = sector->vertices[edge2->vertex1];
 		xy_t v2 = sector->vertices[edge2->vertex2];
 		edge2->uvdiv = vectorDistance(v1, v2);
+
 		edge2->wallbot = edge->wallbot;
 		edge2->walltop = edge->walltop;
 	}else{
@@ -107,5 +121,5 @@ edge_t *createEdge(sector_t *sector, xy_t next, edge_t *edge)
 		sector->edges[0].uvdiv = vectorDistance(v1, v2);
 	}
 
-	return edge;
+	return edge2;
 }

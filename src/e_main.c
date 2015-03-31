@@ -373,6 +373,7 @@ void handleMouseClick()
 					edge.walltop = 10;
 				}
 				createEdge(sectorselected, mousemap, &edge);
+
 				if(camsector == NULL && sectorselected->nedges > 2){
 					cam.pos.x = (sectorselected->vertices[0].x + sectorselected->vertices[1].x + sectorselected->vertices[2].x) / 3;
 					cam.pos.z = (sectorselected->vertices[0].y + sectorselected->vertices[1].y + sectorselected->vertices[2].y) / 3;

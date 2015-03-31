@@ -174,9 +174,11 @@ static void renderSector(texture_t *texture, texture_t *wall, sector_t *sector, 
 			camedge2 = temp;
 		}
 
-		edge_t *neighbor = edge->neighbor;
-		if(edge->type == PORTAL && neighbor != NULL){
-			renderSector(texture, wall, neighbor->sector, cam, camedge1, camedge2, neighbor);
+		if(edge->type == PORTAL){
+			edge_t *neighbor = edge->neighbor;
+			if(neighbor != NULL){
+				renderSector(texture, wall, neighbor->sector, cam, camedge1, camedge2, neighbor);
+			}
 
 #ifdef DEBUG_DRAW
 			xy_t mapline1;
