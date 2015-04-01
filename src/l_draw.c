@@ -78,9 +78,13 @@ void loadFont(font_t *font, char start, char letters, char width, const bool *pi
 
 void clearTexture(texture_t *tex, pixel_t pixel)
 {
-	unsigned int i, size = tex->width * tex->height;
-	for(i = 0; i < size; i++){
-		tex->pixels[i] = pixel;
+	if(pixel.r == 0 && pixel.g == 0 && pixel.b == 0 && pixel.a == 0){
+		memset(tex->pixels, 0, tex->width * tex->height * sizeof(pixel_t));
+	}else{
+		unsigned int i, size = tex->width * tex->height;
+		for(i = 0; i < size; i++){
+			tex->pixels[i] = pixel;
+		}
 	}
 }
 

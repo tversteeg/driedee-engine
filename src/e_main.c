@@ -275,7 +275,7 @@ void render()
 	if(camsector != NULL && redrawpreview){
 		renderFromSector(&previewtex, &wall, camsector, &cam);
 		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0);
-		clearTexture(&previewtex, COLOR_BLACK);
+		clearTexture(&previewtex, COLOR_NONE);
 		redrawpreview = false;
 	}
 
