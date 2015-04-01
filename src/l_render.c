@@ -68,8 +68,9 @@ void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge,
 		double alpha = x / (double)screenwidth;
 		double uvx = ((1 - alpha) * (leftuv / left.y) + alpha * (rightuv / right.y)) / ((1 - alpha) / left.y + alpha / right.y);
 		*/
-		int divx = screenwidth - x;
-		double uvx = (leftuv * right.y * divx + rightuv * left.y * x) / (divx * right.y + x * left.y);
+		double xt1 = (screenwidth - x) * right.y;
+		double xt2 = x * left.y;
+		double uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
 		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, uvx);
 	}
 }

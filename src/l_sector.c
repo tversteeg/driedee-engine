@@ -44,7 +44,7 @@ void deleteSector(sector_t *sector)
     unsigned int i;
     for(i = 0; i < sect->nedges; i++){
       edge_t *edge = sect->edges + i;
-      if(edge->neighbor->sector == sector){
+      if(edge->type == PORTAL && edge->neighbor != NULL && edge->neighbor->sector == sector){
         edge->neighbor = NULL;
       } 
     }

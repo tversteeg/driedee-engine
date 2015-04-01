@@ -356,7 +356,7 @@ void handleMouseClick()
 							if(camsector == sect){
 								camsector = NULL;
 							}
-							//deleteSector(sect);
+							deleteSector(sect);
 							return;
 						}
 					}
@@ -683,7 +683,7 @@ int main(int argc, char **argv)
 				}
 				redraweditor = true;
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
-				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT){
+				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT && ccWindowGetMouse().x <= EDITOR_WIDTH){
 					handleMouseClick();
 					redrawpreview = true;
 					redraweditor = true;

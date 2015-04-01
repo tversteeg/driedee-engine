@@ -214,15 +214,15 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 
 void drawTexture(texture_t *target, const texture_t *source, int x, int y, pixel_t mask)
 {
+	if(x >= target->width || y >= target->height || x < -source->width || y < -source->height){
+		return;
+	}
+
+	//TODO handle cases where texture is (partially) out of bounds
+
 	unsigned int i;
-	for(i = 0; i < source->width; i++){
-		unsigned int j;
-		for(j = 0; j < source->height; j++){
-			pixel_t pixel = source->pixels[i + j * source->width];
-			if(!samePixel(pixel, mask)){
-				drawPixel(target, x + i, y + j, pixel);
-			}
-		}
+	for(i = 0; i < source->height; i++){
+		memcpy(target->pixels + x + y * target->height, source->pixels + i * source->height, source->width * sizeof(pixel_t));
 	}
 }
 

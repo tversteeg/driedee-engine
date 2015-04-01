@@ -103,6 +103,7 @@ void *poolGetNext(pool_t *p, void *ptr)
 
 found: ;
 	void *next = NULL;
+	unsigned int totalblocks = p->block * p->blockSize + (p->used + 1) * p->elementSize;
 	do{
 		if(!poolIsFree(p, next)){
 			return next;
@@ -115,7 +116,7 @@ found: ;
 			}
 		}
 		next = p->blocks[i] + j;
-	}	while(next != NULL && i * p->blockSize + j < p->block * p->blockSize + (p->used + 1) * p->elementSize);
+	}	while(next != NULL && i * p->blockSize + j < totalblocks);
 
 	return NULL;
 }
