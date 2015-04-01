@@ -52,24 +52,25 @@ void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge,
 	int screenwidth = screenrightx - screenleftx;
 	double slopetop = (screentoprighty - screentoplefty) / (double)screenwidth;
 	double slopebot = (screenbotrighty - screenbotlefty) / (double)screenwidth;
-	double uvdiff = (rightuv - leftuv) / (double)screenwidth;
 
 	int x;
 	for(x = 0; x < screenwidth; x++){
 		int top = screentoplefty + x * slopetop;
 		int bot = screenbotlefty + x * slopebot;
 		// Affine transformation
-		//drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
+		/*
+		double uvdiff = (rightuv - leftuv) / (double)screenwidth;
+		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
+		*/
 		
 		// Perspective transformation
+		/* Naive method
 		double alpha = x / (double)screenwidth;
 		double uvx = ((1 - alpha) * (leftuv / left.y) + alpha * (rightuv / right.y)) / ((1 - alpha) / left.y + alpha / right.y);
-		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, uvx);
-		
-		/*xy_t v1 = {screenleftx + (double)x, (double)top};	
-		xy_t v2 = {v1.x, (double)bot};	
-		drawLine(target, v1, v2, (pixel_t){(unsigned char)((leftuv + (x * uvdiff)) * 255), 0, 0, 255});
 		*/
+		int divx = screenwidth - x;
+		double uvx = (leftuv * right.y * divx + rightuv * left.y * x) / (divx * right.y + x * left.y);
+		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, uvx);
 	}
 }
 
