@@ -21,12 +21,6 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect(XY_ZERO, cam, *p1, p2, p1);
 }
 
-double interpolate(double i, double a, double b, double exponent)
-{
-	i = pow(i, exponent);
-	return (a * i) + (b * (1 - i));
-}
-
 void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
 {
 	// Find x position on the near plane
@@ -58,16 +52,19 @@ void renderWall(texture_t *target, texture_t *wall, camera_t *cam, edge_t *edge,
 	int screenwidth = screenrightx - screenleftx;
 	double slopetop = (screentoprighty - screentoplefty) / (double)screenwidth;
 	double slopebot = (screenbotrighty - screenbotlefty) / (double)screenwidth;
-	//double uvdiff = rightuv - leftuv) / (double)screenwidth;
-	//printf("%f\n", projtoplefty / projtoprighty);
+	double uvdiff = (rightuv - leftuv) / (double)screenwidth;
 
 	int x;
 	for(x = 0; x < screenwidth; x++){
 		int top = screentoplefty + x * slopetop;
 		int bot = screenbotlefty + x * slopebot;
+		// Affine transformation
 		//drawTextureSlice(target, wall, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
 		
-		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, interpolate(x / (double)screenwidth, leftuv, rightuv, projtoplefty / projtoprighty));
+		// Perspective transformation
+		double alpha = x / (double)screenwidth;
+		double uvx = ((1 - alpha) * (leftuv / left.y) + alpha * (rightuv / right.y)) / ((1 - alpha) / left.y + alpha / right.y);
+		drawTextureSlice(target, wall, screenleftx + x, top, bot - top, uvx);
 		
 		/*xy_t v1 = {screenleftx + (double)x, (double)top};	
 		xy_t v2 = {v1.x, (double)bot};	
