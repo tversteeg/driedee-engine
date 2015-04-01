@@ -274,7 +274,7 @@ void render()
 {	
 	if(camsector != NULL && redrawpreview){
 		renderFromSector(&previewtex, &wall, camsector, &cam);
-		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0, COLOR_NONE);
+		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0);
 		clearTexture(&previewtex, COLOR_BLACK);
 		redrawpreview = false;
 	}
@@ -285,7 +285,7 @@ void render()
 		renderMenu();
 		renderMouse();
 
-		drawTexture(&tex, &editortex, 0, 0, COLOR_NONE);
+		drawTexture(&tex, &editortex, 0, 0);
 		clearTexture(&editortex, COLOR_BLACK);
 		redraweditor = false;
 	}

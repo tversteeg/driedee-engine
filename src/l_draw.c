@@ -212,7 +212,7 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 	}
 }
 
-void drawTexture(texture_t *target, const texture_t *source, int x, int y, pixel_t mask)
+void drawTexture(texture_t *target, const texture_t *source, int x, int y)
 {
 	if(x >= target->width || y >= target->height || x < -source->width || y < -source->height){
 		return;
@@ -222,7 +222,7 @@ void drawTexture(texture_t *target, const texture_t *source, int x, int y, pixel
 
 	unsigned int i;
 	for(i = 0; i < source->height; i++){
-		memcpy(target->pixels + x + y * target->height, source->pixels + i * source->height, source->width * sizeof(pixel_t));
+		memcpy(target->pixels + x + (y + i) * target->width, source->pixels + i * source->width, source->width * sizeof(pixel_t));
 	}
 }
 
