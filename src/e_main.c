@@ -25,6 +25,7 @@
 #include "l_level.h"
 #include "l_render.h"
 #include "l_png.h"
+#include "l_gui.h"
 
 #define EDITOR_WIDTH 600
 #define PREVIEW_WIDTH 600
@@ -40,6 +41,9 @@ typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_
 GLuint texture;
 texture_t previewtex, editortex, tex, wall;
 font_t font;
+
+simplebutton_t gridsizeplus, gridsizemin;
+simplebutton_t *buttons[] = {&gridsizeplus, &gridsizemin};
 
 bool snaptogrid = false;
 sector_t *sectorselected = NULL;
@@ -94,6 +98,11 @@ void renderMenu()
 	drawLine(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT}, (xy_t){EDITOR_WIDTH, HEIGHT - MENU_HEIGHT}, (pixel_t){255, 255, 0, 255});
 
 	drawRect(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT + 1}, EDITOR_WIDTH, MENU_HEIGHT, (pixel_t){16, 16, 16, 255});
+
+	int i;
+	for(i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++){
+		renderSimpleButton(&editortex, buttons[i]);
+	}
 
 	char buffer[64];
 	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
@@ -556,6 +565,9 @@ int main(int argc, char **argv)
 
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
+
+	initializeSimpleButton(&gridsizeplus, EDITOR_WIDTH - 24, HEIGHT - MENU_HEIGHT + 4, 20, 20, &font, "+");
+	initializeSimpleButton(&gridsizemin, EDITOR_WIDTH - 48, HEIGHT - MENU_HEIGHT + 4, 20, 20, &font, "-");
 
 	mapoffset = XY_ZERO;
 
