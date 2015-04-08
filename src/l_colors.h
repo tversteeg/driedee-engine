@@ -7,9 +7,9 @@
 #define COLOR_WHITE ((pixel_t){255, 255, 255, 255})
 #define COLOR_BLACK ((pixel_t){0, 0, 0, 255})
 
-#define COLOR_LIGHTGRAY ((pixel_t){63, 63, 63, 255})
+#define COLOR_LIGHTGRAY ((pixel_t){191, 191, 191, 255})
 #define COLOR_GRAY ((pixel_t){127, 127, 127, 255})
-#define COLOR_DARKGRAY ((pixel_t){191, 191, 191, 255})
+#define COLOR_DARKGRAY ((pixel_t){63, 63, 63, 255})
 
 #define COLOR_RED ((pixel_t){255, 0, 0, 255})
 #define COLOR_GREEN ((pixel_t){0, 255, 0, 255})

@@ -14,7 +14,9 @@ typedef struct {
 	buttonstate_t state;
 	const font_t *font;
 	char *text;
+	bool hold;
 } simplebutton_t;
 
 void initializeSimpleButton(simplebutton_t *button, int x, int y, int width, int height, const font_t *font, const char *text);
 void renderSimpleButton(texture_t *tex, const simplebutton_t *button);
+void handleMouseSimpleButton(simplebutton_t *button, int x, int y, bool mousepressed);

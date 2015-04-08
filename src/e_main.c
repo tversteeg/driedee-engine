@@ -456,6 +456,18 @@ void handleMouseClick()
 	}
 }
 
+void handleButtons()
+{
+	if(gridsizeplus.state == BUTTON_STATE_DOWN){
+		gridsize++;
+	}
+	if(gridsizemin.state == BUTTON_STATE_DOWN){
+		if(gridsize > 0){
+			gridsize--;
+		}
+	}
+}
+
 void moveCam(bool up, bool down, bool left, bool right)
 {
 	xyz_t oldcam = cam.pos;
@@ -612,9 +624,8 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	bool loop = true;
-	bool rightmousepressed = false;
-	bool leftpressed, rightpressed, uppressed, downpressed;
-	leftpressed = rightpressed = uppressed = downpressed = false;
+	bool leftpressed, rightpressed, uppressed, downpressed, rightmousepressed, leftmousepressed;
+	rightmousepressed = leftmousepressed = leftpressed = rightpressed = uppressed = downpressed = false;
 	while(loop){
 		while(ccWindowEventPoll()){
 			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
@@ -699,6 +710,7 @@ int main(int argc, char **argv)
 					handleMouseClick();
 					redrawpreview = true;
 					redraweditor = true;
+					leftmousepressed = true;
 				}
 				rightmousepressed = false;
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_DOWN){
@@ -717,6 +729,12 @@ int main(int argc, char **argv)
 		mouse.x = ccWindowGetMouse().x;
 		mouse.y = ccWindowGetMouse().y;
 
+		int i;
+		for(i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++){
+			handleMouseSimpleButton(buttons[i], mouse.x, mouse.y, leftmousepressed);
+		}
+		handleButtons();
+
 		if(snaptogrid){
 			mouse.x = round(mouse.x / gridsize) * gridsize;
 			mouse.y = round(mouse.y / gridsize) * gridsize;
@@ -732,6 +750,11 @@ int main(int argc, char **argv)
 
 		render();
 		ccGLBuffersSwap();
+
+		if(leftmousepressed){
+			redraweditor = true;
+			leftmousepressed = false;
+		}
 
 		ccTimeDelay(5);
 	}
