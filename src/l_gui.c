@@ -10,8 +10,8 @@ void initializeSimpleButton(simplebutton_t *button, int x, int y, int width, int
 	button->width = width;
 	button->height = height;
 	button->font = font;
-	button->text = (char*)malloc(strlen(text));
 	button->hold = false;
+	button->text = (char*)malloc(strlen(text));
 	strcpy(button->text, text);
 }
 
@@ -62,4 +62,19 @@ void handleMouseSimpleButton(simplebutton_t *button, int x, int y, bool mousepre
 	}else if(button->state == BUTTON_STATE_HOVER){
 		button->state = BUTTON_STATE_UP;
 	}
+}
+
+void initializeSimpleTextField(simpletextfield_t *field, int x, int y, const font_t *font, const char *text, pixel_t color)
+{
+	field->x = x;
+	field->y = y;
+	field->font = font;
+	field->color = color;
+	field->text = (char*)malloc(strlen(text));
+	strcpy(field->text, text);
+}
+
+void renderSimpleTextField(texture_t *tex, const simpletextfield_t *field)
+{
+	drawString(tex, field->font, field->text, field->x, field->y, field->color);
 }

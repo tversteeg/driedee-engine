@@ -17,6 +17,16 @@ typedef struct {
 	bool hold;
 } simplebutton_t;
 
+typedef struct {
+	int x, y;
+	const font_t *font;
+	char *text;
+	pixel_t color;
+} simpletextfield_t;
+
 void initializeSimpleButton(simplebutton_t *button, int x, int y, int width, int height, const font_t *font, const char *text);
 void renderSimpleButton(texture_t *tex, const simplebutton_t *button);
 void handleMouseSimpleButton(simplebutton_t *button, int x, int y, bool mousepressed);
+
+void initializeSimpleTextField(simpletextfield_t *field, int x, int y, const font_t *font, const char *text, pixel_t color);
+void renderSimpleTextField(texture_t *tex, const simpletextfield_t *field);

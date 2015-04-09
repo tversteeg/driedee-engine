@@ -45,6 +45,9 @@ font_t font;
 simplebutton_t gridsizeplus, gridsizemin;
 simplebutton_t *buttons[] = {&gridsizeplus, &gridsizemin};
 
+simpletextfield_t gridsizetext;
+simpletextfield_t *textfields[] = {&gridsizetext};
+
 bool snaptogrid = false;
 sector_t *sectorselected = NULL;
 edge_t *edgeselected = NULL;
@@ -99,15 +102,9 @@ void renderMenu()
 
 	drawRect(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT + 1}, EDITOR_WIDTH, MENU_HEIGHT, (pixel_t){16, 16, 16, 255});
 
-	int i;
-	for(i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++){
-		renderSimpleButton(&editortex, buttons[i]);
-	}
-
 	char buffer[64];
-	int pos = sprintf(buffer, "(9&0) GRID SIZE: (%dx%d)", gridsize, gridsize);
+	int pos = sprintf(gridsizetext.text, "(9&0) Grid size: (%dx%d)", gridsize, gridsize);
 	buffer[pos] = '\0';
-	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 8, COLOR_AZURE);
 
 	pos = sprintf(buffer, "(G) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
 	buffer[pos] = '\0';
@@ -172,6 +169,15 @@ void renderMenu()
 	pos = sprintf(buffer, "(1-5) %s", toolname);
 	buffer[pos] = '\0';
 	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, COLOR_CYAN);
+
+	int i;
+	for(i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++){
+		renderSimpleButton(&editortex, buttons[i]);
+	}
+
+	for(i = 0; i < sizeof(textfields) / sizeof(textfields[0]); i++){
+		renderSimpleTextField(&editortex, textfields[i]);
+	}
 }
 
 void renderMouse()
@@ -578,8 +584,10 @@ int main(int argc, char **argv)
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
 
-	initializeSimpleButton(&gridsizeplus, EDITOR_WIDTH - 24, HEIGHT - MENU_HEIGHT + 4, 20, 20, &font, "+");
-	initializeSimpleButton(&gridsizemin, EDITOR_WIDTH - 48, HEIGHT - MENU_HEIGHT + 4, 20, 20, &font, "-");
+	initializeSimpleButton(&gridsizeplus, 300, HEIGHT - MENU_HEIGHT + 4, 16, 16, &font, "+");
+	initializeSimpleButton(&gridsizemin, 320, HEIGHT - MENU_HEIGHT + 4, 16, 16, &font, "-");
+
+	initializeSimpleTextField(&gridsizetext, 4, HEIGHT - MENU_HEIGHT + 8, &font, "Grid size: ", COLOR_WHITE);
 
 	mapoffset = XY_ZERO;
 
