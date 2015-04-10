@@ -42,8 +42,8 @@ GLuint texture;
 texture_t previewtex, editortex, tex, wall;
 font_t font;
 
-simplebutton_t gridsizeplus, gridsizemin;
-simplebutton_t *buttons[] = {&gridsizeplus, &gridsizemin};
+simplebutton_t savebutton, loadbutton, gridsizeplus, gridsizemin;
+simplebutton_t *buttons[] = {&savebutton, &loadbutton, &gridsizeplus, &gridsizemin};
 
 simpletextfield_t gridsizetext;
 simpletextfield_t *textfields[] = {&gridsizetext};
@@ -68,6 +68,60 @@ xy_t mapoffset;
 xy_t mouse;
 camera_t cam;
 sector_t *camsector = NULL;
+
+void save()
+{
+	if(saveto == NULL){
+		printf("No save file supplied.\n");
+		exit(1);
+	}
+
+	FILE *fp = fopen(saveto, "wt");
+	if(!fp){
+		printf("Couldn't open file for writing: %s\n", saveto);
+		exit(1);
+	}
+
+	unsigned int totalsectors = 0;
+	sector_t *sect = getFirstSector();
+	while(sect != NULL){
+		fprintf(fp, "s %u\n", totalsectors);
+		unsigned int i;
+		for(i = 0; i < sect->nedges; i++){
+			edge_t edge = sect->edges[i];
+			xy_t v = sect->vertices[edge.vertex1];
+			fprintf(fp, "e %d (%.lf,%.lf)\n", edge.type, v.x, v.y);
+		}
+		fprintf(fp, "\n");
+		sect = getNextSector(sect);
+		totalsectors++;
+	}
+
+	totalsectors = 0;
+	sect = getFirstSector();
+	while(sect != NULL){
+		unsigned int i;
+		for(i = 0; i < sect->nedges; i++){
+			edge_t edge = sect->edges[i];
+			if(edge.type != PORTAL || edge.neighbor == NULL){
+				continue;
+			}
+
+			sector_t *neighbor = edge.neighbor->sector;
+			int sector2 = getIndexSector(neighbor);
+			if(sector2 == -1){
+				exit(1);
+			}
+			fprintf(fp, "p %u %u %u %u\n", totalsectors, i, sector2, (unsigned int)(edge.neighbor - neighbor->edges));
+		}
+		sect = getNextSector(sect);
+		totalsectors++;
+	}
+
+	fclose(fp);
+
+	printf("Succesfully written level to file \"%s\"!\n", saveto);
+}
 
 double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 {
@@ -472,6 +526,12 @@ void handleButtons()
 			gridsize--;
 		}
 	}
+	if(savebutton.state == BUTTON_STATE_DOWN){
+		save();
+	}
+	if(loadbutton.state == BUTTON_STATE_DOWN){
+		//load();
+	}
 }
 
 void moveCam(bool up, bool down, bool left, bool right)
@@ -519,60 +579,6 @@ void moveCam(bool up, bool down, bool left, bool right)
 	}
 }
 
-void save()
-{
-	if(saveto == NULL){
-		printf("No save file supplied.\n");
-		exit(1);
-	}
-
-	FILE *fp = fopen(saveto, "wt");
-	if(!fp){
-		printf("Couldn't open file for writing: %s\n", saveto);
-		exit(1);
-	}
-
-	unsigned int totalsectors = 0;
-	sector_t *sect = getFirstSector();
-	while(sect != NULL){
-		fprintf(fp, "s %u\n", totalsectors);
-		unsigned int i;
-		for(i = 0; i < sect->nedges; i++){
-			edge_t edge = sect->edges[i];
-			xy_t v = sect->vertices[edge.vertex1];
-			fprintf(fp, "e %d (%.lf,%.lf)\n", edge.type, v.x, v.y);
-		}
-		fprintf(fp, "\n");
-		sect = getNextSector(sect);
-		totalsectors++;
-	}
-
-	totalsectors = 0;
-	sect = getFirstSector();
-	while(sect != NULL){
-		unsigned int i;
-		for(i = 0; i < sect->nedges; i++){
-			edge_t edge = sect->edges[i];
-			if(edge.type != PORTAL || edge.neighbor == NULL){
-				continue;
-			}
-
-			sector_t *neighbor = edge.neighbor->sector;
-			int sector2 = getIndexSector(neighbor);
-			if(sector2 == -1){
-				exit(1);
-			}
-			fprintf(fp, "p %u %u %u %u\n", totalsectors, i, sector2, (unsigned int)(edge.neighbor - neighbor->edges));
-		}
-		sect = getNextSector(sect);
-		totalsectors++;
-	}
-
-	fclose(fp);
-
-	printf("Succesfully written level to file \"%s\"!\n", saveto);
-}
-
 int main(int argc, char **argv)
 {
 	sectorInitialize();
@@ -586,6 +592,8 @@ int main(int argc, char **argv)
 
 	initializeSimpleButton(&gridsizeplus, 300, HEIGHT - MENU_HEIGHT + 4, 16, 16, &font, "+");
 	initializeSimpleButton(&gridsizemin, 320, HEIGHT - MENU_HEIGHT + 4, 16, 16, &font, "-");
+	initializeSimpleButton(&savebutton, EDITOR_WIDTH - 44, HEIGHT - MENU_HEIGHT + 4, 40, 12, &font, "Save");
+	initializeSimpleButton(&loadbutton, EDITOR_WIDTH - 44, HEIGHT - MENU_HEIGHT + 20, 40, 12, &font, "Load");
 
 	initializeSimpleTextField(&gridsizetext, 4, HEIGHT - MENU_HEIGHT + 8, &font, "Grid size: ", COLOR_WHITE);
 

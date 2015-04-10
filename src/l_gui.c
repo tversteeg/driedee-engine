@@ -35,7 +35,7 @@ void renderSimpleButton(texture_t *tex, const simplebutton_t *button)
 	drawLine(tex, (xy_t){(double)button->x, (double)button->y}, (xy_t){(double)(button->x + button->width), (double)button->y}, COLOR_WHITE);
 
 	int x = (button->width - button->font->width * strlen(button->text)) / 2 + button->x;
-	int y = (button->width - button->font->height) / 2 + button->y;
+	int y = (button->height - button->font->height) / 2 + button->y;
 
 	drawString(tex, button->font, button->text, x, y, COLOR_BLACK);
 }
