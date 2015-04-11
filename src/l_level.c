@@ -15,7 +15,6 @@ bool loadLevel(const char *filename)
 		return false;
 	}
 
-	unsigned int cursector = 0;
 	char *line = NULL;
 	size_t len = 0;
 	bool firstedge = true;
@@ -23,7 +22,6 @@ bool loadLevel(const char *filename)
 	while(getline(&line, &len, fp) != -1){
 		switch(line[0]){
 			case 's':
-				sscanf(line,"%*s %u", &cursector);
 				firstedge = true;
 				break;
 			case 'e':
@@ -43,6 +41,21 @@ bool loadLevel(const char *filename)
 					}else{
 						createEdge(sect, vert, &edge);
 					}
+				}
+				break;
+			case 'd':
+				{
+					unsigned int id;
+					double walltop, wallbot, uvdiv;
+					unsigned char textureid;
+					sscanf(line, "%*s %u %lf %lf %lf %d", &id, &wallbot, &walltop, &uvdiv, (int*)&textureid);
+					printf("%u %lf %lf %lf %d\n", id, wallbot, walltop, uvdiv, textureid);
+
+					edge_t *edge = sect->edges + id;
+					edge->wallbot = wallbot;
+					edge->walltop = walltop;
+					edge->uvdiv = uvdiv;
+					edge->texture = textureid;
 				}
 				break;
 			case 'p':

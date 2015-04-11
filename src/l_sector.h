@@ -15,7 +15,7 @@ struct _edge_t {
 		edge_t *neighbor;
 		struct {
 			double uvdiv, walltop, wallbot;
-			char texture;
+			unsigned char texture;
 		};
 	};
 };

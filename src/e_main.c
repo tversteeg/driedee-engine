@@ -81,16 +81,29 @@ void save()
 		printf("Couldn't open file for writing: %s\n", saveto);
 		exit(1);
 	}
+		
+	fprintf(fp, "// s (Sector:) id\n");
+	fprintf(fp, "// e (Edge:) type, vertex position\n");
+	fprintf(fp, "// dw (Edge wall data:) id, bottom, top, uv scale, texture id\n");
+	fprintf(fp, "// p (Portal:) sector1, edge1, sector2, edge2\n\n");
 
 	unsigned int totalsectors = 0;
 	sector_t *sect = getFirstSector();
 	while(sect != NULL){
 		fprintf(fp, "s %u\n", totalsectors);
+
 		unsigned int i;
 		for(i = 0; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
 			xy_t v = sect->vertices[edge.vertex1];
 			fprintf(fp, "e %d (%.lf,%.lf)\n", edge.type, v.x, v.y);
+		}
+
+		for(i = 0; i < sect->nedges; i++){
+			edge_t edge = sect->edges[i];
+			if(edge.type == WALL){
+				fprintf(fp, "dw %d %.lf %.lf %.lf %d\n", i, edge.wallbot, edge.walltop, edge.uvdiv, edge.texture);
+			}
 		}
 		fprintf(fp, "\n");
 		sect = getNextSector(sect);
