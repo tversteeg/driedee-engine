@@ -1,6 +1,7 @@
 #include "l_gui.h"
 
 #include <string.h>
+#include <libconfig.h>
 
 void initializeSimpleButton(simplebutton_t *button, int x, int y, int width, int height, const font_t *font, const char *text)
 {
@@ -77,4 +78,35 @@ void initializeSimpleTextField(simpletextfield_t *field, int x, int y, const fon
 void renderSimpleTextField(texture_t *tex, const simpletextfield_t *field)
 {
 	drawString(tex, field->font, field->text, field->x, field->y, field->color);
+}
+
+button_t *buttons = NULL;
+unsigned int nbuttons = 0;
+
+bool loadFromFile(const char *file)
+{
+	config_t config;
+	config_init(&config);
+	if(!config_read_file(&config, file)){
+		config_destroy(&config);
+		return false;
+	}
+
+	config_setting_t *setting = config_lookup(&config, "buttons");
+
+	nbuttons = config_setting_length(setting);
+	buttons = (button_t*)malloc(sizeof(button_t) * nbuttons);
+	int i;
+	for(i = 0; i < nbuttons; i++){
+		button_t *button = buttons + i;
+		config_setting_t *elem = config_setting_get_elem(setting, i);
+
+		config_setting_lookup_int(elem, "x", &button->x);
+		config_setting_lookup_int(elem, "y", &button->y);
+		config_setting_lookup_int(elem, "width", &button->width);
+		config_setting_lookup_int(elem, "height", &button->height);
+		config_setting_lookup_string(elem, "text", (const char**)&button->text);
+	}
+
+	return true;
 }

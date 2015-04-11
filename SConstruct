@@ -3,7 +3,7 @@ import os
 env=Environment(CC='gcc')
 
 sources=[Glob('src/l_*.c')]
-libs=['ccore', 'X11', 'Xrandr', 'Xinerama', 'Xi', 'GL', 'GLU', 'GLEW', 'pthread', 'm', 'png']
+libs=['ccore', 'X11', 'Xrandr', 'Xinerama', 'Xi', 'GL', 'GLU', 'GLEW', 'pthread', 'm', 'png', 'config']
 libpaths=['/usr/lib', '/usr/local/lib', '.']
 
 env.Append(CCFLAGS=['-DCC_USE_ALL'])
