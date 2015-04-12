@@ -20,6 +20,7 @@ typedef struct {
 typedef struct {
 	int x, y, width, height;
 	char *text;
+	const font_t *font;
 } button_t;
 
 typedef struct {
@@ -36,4 +37,6 @@ void handleMouseSimpleButton(simplebutton_t *button, int x, int y, bool mousepre
 void initializeSimpleTextField(simpletextfield_t *field, int x, int y, const font_t *font, const char *text, pixel_t color);
 void renderSimpleTextField(texture_t *tex, const simpletextfield_t *field);
 
-bool loadFromFile(const char *file);
+bool loadGuiFromFile(const char *file);
+void renderGui(texture_t *tex);
+void bindFont(const font_t *font, const char *name);

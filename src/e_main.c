@@ -42,9 +42,6 @@ GLuint texture;
 texture_t previewtex, editortex, tex, wall;
 font_t font;
 
-simplebutton_t savebutton, loadbutton, gridsizeplus, gridsizemin;
-simplebutton_t *buttons[] = {&savebutton, &loadbutton, &gridsizeplus, &gridsizemin};
-
 simpletextfield_t gridsizetext;
 simpletextfield_t *textfields[] = {&gridsizetext};
 
@@ -237,14 +234,7 @@ void renderMenu()
 	buffer[pos] = '\0';
 	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, COLOR_CYAN);
 
-	int i;
-	for(i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++){
-		renderSimpleButton(&editortex, buttons[i]);
-	}
-
-	for(i = 0; i < sizeof(textfields) / sizeof(textfields[0]); i++){
-		renderSimpleTextField(&editortex, textfields[i]);
-	}
+	renderGui(&editortex);
 }
 
 void renderMouse()
@@ -531,20 +521,7 @@ void handleMouseClick()
 
 void handleButtons()
 {
-	if(gridsizeplus.state == BUTTON_STATE_DOWN){
-		gridsize++;
-	}
-	if(gridsizemin.state == BUTTON_STATE_DOWN){
-		if(gridsize > 0){
-			gridsize--;
-		}
-	}
-	if(savebutton.state == BUTTON_STATE_DOWN){
-		save();
-	}
-	if(loadbutton.state == BUTTON_STATE_DOWN){
-		//load();
-	}
+
 }
 
 void moveCam(bool up, bool down, bool left, bool right)
@@ -603,11 +580,6 @@ int main(int argc, char **argv)
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
 
-	initializeSimpleButton(&gridsizeplus, 300, HEIGHT - MENU_HEIGHT + 4, 16, 16, &font, "+");
-	initializeSimpleButton(&gridsizemin, 320, HEIGHT - MENU_HEIGHT + 4, 16, 16, &font, "-");
-	initializeSimpleButton(&savebutton, EDITOR_WIDTH - 44, HEIGHT - MENU_HEIGHT + 4, 40, 12, &font, "Save");
-	initializeSimpleButton(&loadbutton, EDITOR_WIDTH - 44, HEIGHT - MENU_HEIGHT + 20, 40, 12, &font, "Load");
-
 	initializeSimpleTextField(&gridsizetext, 4, HEIGHT - MENU_HEIGHT + 8, &font, "Grid size: ", COLOR_WHITE);
 
 	mapoffset = XY_ZERO;
@@ -622,6 +594,9 @@ int main(int argc, char **argv)
 		cam.pos.z = getFirstSector()->vertices[0].y;
 		camsector = getFirstSector();
 	}
+
+	bindFont(&font, "default");
+	loadGuiFromFile("gui.cfg");
 
 	unsigned int width, height;
 	getSizePng("wall1.png", &width, &height);
@@ -758,10 +733,6 @@ int main(int argc, char **argv)
 		mouse.x = ccWindowGetMouse().x;
 		mouse.y = ccWindowGetMouse().y;
 
-		int i;
-		for(i = 0; i < sizeof(buttons) / sizeof(buttons[0]); i++){
-			handleMouseSimpleButton(buttons[i], mouse.x, mouse.y, leftmousepressed);
-		}
 		handleButtons();
 
 		if(snaptogrid){
