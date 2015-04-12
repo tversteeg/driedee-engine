@@ -9,6 +9,13 @@
 
 typedef enum {BUTTON_STATE_DOWN, BUTTON_STATE_UP, BUTTON_STATE_HOVER} buttonstate_t;
 
+typedef enum {
+	EVENT_ON_MOUSE_DOWN,
+	EVENT_ON_MOUSE_UP,
+	EVENT_ON_MOUSE_OVER,
+	EVENT_ON_MOUSE_OUT
+} guievent_t;
+
 typedef struct {
 	int x, y, width, height;
 	buttonstate_t state;
@@ -18,9 +25,14 @@ typedef struct {
 } simplebutton_t;
 
 typedef struct {
+	unsigned long id;
 	int x, y, width, height;
 	char *text;
 	const font_t *font;
+	void (*onMouseDownEvent)();
+	void (*onMouseUpEvent)();
+	void (*onMouseOverEvent)();
+	void (*onMouseOutEvent)();
 } button_t;
 
 typedef struct {
@@ -40,3 +52,4 @@ void renderSimpleTextField(texture_t *tex, const simpletextfield_t *field);
 bool loadGuiFromFile(const char *file);
 void renderGui(texture_t *tex);
 void bindFont(const font_t *font, const char *name);
+void bindEvent(const char *name, void (*event)(), guievent_t type);

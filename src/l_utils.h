@@ -26,3 +26,5 @@ void poolFree(pool_t *p, void *ptr);
 void poolFreeAll(pool_t *p);
 
 void *poolGetNext(pool_t *p, void *ptr);
+
+unsigned long hash(const char *string);

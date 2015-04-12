@@ -120,3 +120,16 @@ found: ;
 
 	return NULL;
 }
+
+// http://www.cse.yorku.ca/~oz/hash.html
+unsigned long hash(const char *string)
+{
+	unsigned long val = 538l;
+
+	int c;
+	while((c = *string++)){
+		val = ((val << 5) + val) + c;
+	}
+
+	return val;
+}

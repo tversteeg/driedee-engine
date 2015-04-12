@@ -1,5 +1,7 @@
 #include "l_gui.h"
 
+#include "l_utils.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -105,7 +107,7 @@ bool loadGuiFromFile(const char *file)
 	config_setting_t *setting = config_lookup(&config, "buttons");
 
 	nbuttons = config_setting_length(setting);
-	buttons = (button_t*)malloc(sizeof(button_t) * nbuttons);
+	buttons = (button_t*)calloc(nbuttons, sizeof(button_t));
 	int i;
 	for(i = 0; i < nbuttons; i++){
 		button_t *button = buttons + i;
@@ -127,6 +129,10 @@ bool loadGuiFromFile(const char *file)
 				break;
 			}
 		}
+
+		const char *name;
+		config_setting_lookup_string(elem, "name", &name);
+		button->id = hash(name);
 	}
 
 	config_destroy(&config);
@@ -158,4 +164,17 @@ void bindFont(const font_t *font, const char *name)
 	bound->font = font;
 	bound->name = (char*)malloc(strlen(name));
 	strcpy(bound->name, name);
+}
+
+void bindEvent(const char *name, void (*event)(), guievent_t type)
+{
+	unsigned long id = hash(name);
+
+	int i;
+	for(i = 0; i < nbuttons; i++){
+		button_t *button = buttons + i;
+		if(button->id == id){
+			
+		}
+	}
 }
