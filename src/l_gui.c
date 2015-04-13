@@ -18,19 +18,7 @@ static unsigned int nboundfonts = 0;
 static button_t *buttons = NULL;
 static unsigned int nbuttons = 0;
 
-void initializeSimpleButton(simplebutton_t *button, int x, int y, int width, int height, const font_t *font, const char *text)
-{
-	button->state = BUTTON_STATE_UP;
-	button->x = x;
-	button->y = y;
-	button->width = width;
-	button->height = height;
-	button->font = font;
-	button->hold = false;
-	button->text = (char*)malloc(strlen(text));
-	strcpy(button->text, text);
-}
-
+/*
 void renderSimpleButton(texture_t *tex, const simplebutton_t *button)
 {
 	pixel_t backgroundcolor;
@@ -55,30 +43,7 @@ void renderSimpleButton(texture_t *tex, const simplebutton_t *button)
 
 	drawString(tex, button->font, button->text, x, y, COLOR_BLACK);
 }
-
-void handleMouseSimpleButton(simplebutton_t *button, int x, int y, bool mousepressed)
-{
-	bool ismouseover = x >= button->x && x <= button->x + button->width &&
-		y >= button->y && y <= button->y + button->height;
-
-	if(!button->hold){
-		button->state = BUTTON_STATE_UP;
-	}
-	if(ismouseover){
-		if(button->state == BUTTON_STATE_UP){
-			button->state = BUTTON_STATE_HOVER;
-		}
-		if(mousepressed){
-			if(button->state == BUTTON_STATE_HOVER){
-				button->state = BUTTON_STATE_DOWN;
-			}else{
-				button->state = BUTTON_STATE_HOVER;
-			}
-		}
-	}else if(button->state == BUTTON_STATE_HOVER){
-		button->state = BUTTON_STATE_UP;
-	}
-}
+*/
 
 void initializeSimpleTextField(simpletextfield_t *field, int x, int y, const font_t *font, const char *text, pixel_t color)
 {
@@ -145,7 +110,13 @@ void renderButton(texture_t *tex, button_t *button)
 	int x = (button->width - button->font->width * strlen(button->text)) / 2 + button->x;
 	int y = (button->height - button->font->height) / 2 + button->y;
 
-	drawString(tex, button->font, button->text, x, y, COLOR_BLACK);
+	pixel_t color;
+	if(button->state == BUTTON_STATE_OVER){
+		color = COLOR_RED;
+	}else{
+		color = COLOR_WHITE;
+	}
+	drawString(tex, button->font, button->text, x, y, color);
 }
 
 void renderGui(texture_t *tex)
@@ -153,6 +124,40 @@ void renderGui(texture_t *tex)
 	unsigned int i;
 	for(i = 0; i < nbuttons; i++){
 		renderButton(tex, buttons + i);
+	}
+}
+
+void updateGui(int mousex, int mousey, bool mousedown)
+{
+	int i;
+	for(i = 0; i < nbuttons; i++){
+		button_t *button = buttons + i;
+		bool ismouseover = mousex >= button->x && mousex <= button->x + button->width &&
+			mousey >= button->y && mousey <= button->y + button->height;
+
+		if(button->onMouseOverEvent != NULL && 
+				button->state == BUTTON_STATE_OUT && ismouseover){
+			button->onMouseOverEvent(button);
+		}else if(button->onMouseOutEvent != NULL && 
+				button->state == BUTTON_STATE_OVER && !ismouseover){
+			button->onMouseOutEvent(button);
+		}else	if(button->onMouseUpEvent != NULL && 
+				button->state == BUTTON_STATE_DOWN && !mousedown){
+			button->onMouseUpEvent(button);
+		}else if(button->onMouseDownEvent != NULL && 
+				button->state != BUTTON_STATE_DOWN && mousedown && ismouseover){
+			button->onMouseDownEvent(button);
+		}
+
+		if(ismouseover){
+			if(mousedown){
+				button->state = BUTTON_STATE_DOWN;
+			}else{
+				button->state = BUTTON_STATE_OVER;
+			}
+		}else{
+			button->state = BUTTON_STATE_OUT;
+		}
 	}
 }
 
@@ -166,7 +171,7 @@ void bindFont(const font_t *font, const char *name)
 	strcpy(bound->name, name);
 }
 
-void bindEvent(const char *name, void (*event)(), guievent_t type)
+void bindEvent(const char *name, void (*event)(button_t*), guievent_t type)
 {
 	unsigned long id = hash(name);
 
@@ -174,7 +179,20 @@ void bindEvent(const char *name, void (*event)(), guievent_t type)
 	for(i = 0; i < nbuttons; i++){
 		button_t *button = buttons + i;
 		if(button->id == id){
-			
+			switch(type){
+				case EVENT_ON_MOUSE_DOWN:
+					button->onMouseDownEvent = event;
+					break;
+				case EVENT_ON_MOUSE_UP:
+					button->onMouseUpEvent = event;
+					break;
+				case EVENT_ON_MOUSE_OVER:
+					button->onMouseOverEvent = event;
+					break;
+				case EVENT_ON_MOUSE_OUT:
+					button->onMouseOutEvent = event;
+					break;
+			}
 		}
 	}
 }

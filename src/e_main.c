@@ -519,11 +519,6 @@ void handleMouseClick()
 	}
 }
 
-void handleButtons()
-{
-
-}
-
 void moveCam(bool up, bool down, bool left, bool right)
 {
 	xyz_t oldcam = cam.pos;
@@ -714,12 +709,19 @@ int main(int argc, char **argv)
 					handleMouseClick();
 					redrawpreview = true;
 					redraweditor = true;
-					leftmousepressed = true;
 				}
-				rightmousepressed = false;
+				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_RIGHT){
+					rightmousepressed = false;
+				}
+				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT){
+					leftmousepressed = false;
+				}
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_DOWN){
 				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_RIGHT){
 					rightmousepressed = true;
+				}
+				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT){
+					leftmousepressed = true;
 				}
 			}
 		}
@@ -733,7 +735,7 @@ int main(int argc, char **argv)
 		mouse.x = ccWindowGetMouse().x;
 		mouse.y = ccWindowGetMouse().y;
 
-		handleButtons();
+		updateGui((int)mouse.x, (int)mouse.y, leftmousepressed);
 
 		if(snaptogrid){
 			mouse.x = round(mouse.x / gridsize) * gridsize;
@@ -750,11 +752,6 @@ int main(int argc, char **argv)
 
 		render();
 		ccGLBuffersSwap();
-
-		if(leftmousepressed){
-			redraweditor = true;
-			leftmousepressed = false;
-		}
 
 		ccTimeDelay(5);
 	}
