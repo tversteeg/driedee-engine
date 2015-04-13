@@ -82,7 +82,11 @@ bool loadGuiFromFile(const char *file)
 		config_setting_lookup_int(elem, "y", &button->y);
 		config_setting_lookup_int(elem, "width", &button->width);
 		config_setting_lookup_int(elem, "height", &button->height);
-		config_setting_lookup_string(elem, "text", (const char**)&button->text);
+
+		const char *text;
+		config_setting_lookup_string(elem, "text", &text);
+		button->text = (char*)malloc(strlen(text));
+		strcpy(button->text, text);
 
 		const char *fontname;
 		config_setting_lookup_string(elem, "font", &fontname);

@@ -564,6 +564,11 @@ void moveCam(bool up, bool down, bool left, bool right)
 	}
 }
 
+void buttonEventDown(button_t *button)
+{
+	button->x += 5;
+}
+
 int main(int argc, char **argv)
 {
 	sectorInitialize();
@@ -592,6 +597,7 @@ int main(int argc, char **argv)
 
 	bindFont(&font, "default");
 	loadGuiFromFile("gui.cfg");
+	bindEvent("Save", buttonEventDown, EVENT_ON_MOUSE_DOWN);
 
 	unsigned int width, height;
 	getSizePng("wall1.png", &width, &height);
