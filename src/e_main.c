@@ -42,9 +42,6 @@ GLuint texture;
 texture_t previewtex, editortex, tex, wall;
 font_t font;
 
-simpletextfield_t gridsizetext;
-simpletextfield_t *textfields[] = {&gridsizetext};
-
 bool snaptogrid = false;
 sector_t *sectorselected = NULL;
 edge_t *edgeselected = NULL;
@@ -158,82 +155,14 @@ double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 void renderBackground()
 {
 	drawGrid(&editortex, 0, 0, EDITOR_WIDTH, HEIGHT - MENU_HEIGHT, gridsize, gridsize, (pixel_t){32, 32, 32, 255});
+	
+	drawLine(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT}, (xy_t){EDITOR_WIDTH, HEIGHT - MENU_HEIGHT}, (pixel_t){255, 255, 0, 255});
+
+	drawRect(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT + 1}, EDITOR_WIDTH, MENU_HEIGHT, (pixel_t){16, 16, 16, 255});
 }
 
 void renderMenu()
 {
-	drawLine(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT}, (xy_t){EDITOR_WIDTH, HEIGHT - MENU_HEIGHT}, (pixel_t){255, 255, 0, 255});
-
-	drawRect(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT + 1}, EDITOR_WIDTH, MENU_HEIGHT, (pixel_t){16, 16, 16, 255});
-
-	char buffer[64];
-	int pos = sprintf(gridsizetext.text, "(9&0) Grid size: (%dx%d)", gridsize, gridsize);
-	buffer[pos] = '\0';
-
-	pos = sprintf(buffer, "(G) SNAP TO GRID: %s", snaptogrid ? "ON" : "OFF");
-	buffer[pos] = '\0';
-	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 18, COLOR_AZURE);
-
-	if(saveto != NULL){
-		pos = sprintf(buffer, "(S) SAVE TO FILE: \"%s\"", saveto);
-	}else{
-		pos = sprintf(buffer, "NO SAVE FILE SUPPLIED");
-	}
-
-	buffer[pos] = '\0';
-	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 28, COLOR_AZURE);
-
-	char toolname[64];
-	switch(toolselected){
-		case SECTOR_ADD_TOOL:
-			strcpy(toolname, "ADD SECTOR");
-			break;
-		case SECTOR_SELECT_TOOL:
-			strcpy(toolname, "SELECT SECTOR");
-			break;
-		case SECTOR_DELETE_TOOL:
-			strcpy(toolname, "DELETE SECTOR");
-			break;
-		case EDGE_ADD_TOOL:
-			strcpy(toolname, "CHANGE SECTOR");
-			switch(edgetypeselected){
-				case WALL:
-					strcpy(toolname, "ADD EDGE - (W&P) WALL");
-					break;
-				case PORTAL:
-					strcpy(toolname, "ADD EDGE - (W&P) PORTAL");
-					break;
-			}
-			break;
-		case EDGE_CHANGE_TOOL:
-			switch(edgetypeselected){
-				case WALL:
-					strcpy(toolname, "CHANGE EDGE TYPE - (W&P) WALL");
-					break;
-				case PORTAL:
-					strcpy(toolname, "CHANGE EDGE TYPE - (W&P) PORTAL");
-					break;
-			}
-			break;
-		case EDGE_CONNECT_TOOL:
-			if(edgeselected != NULL){
-				sprintf(toolname, "CONNECT EDGES - SECTOR SELECTED %p", edgeselected->sector);
-			}else{
-				strcpy(toolname, "CONNECT EDGES - SELECT EDGE");
-			}
-			break;
-		case VERTEX_MOVE_TOOL:
-			strcpy(toolname, "MOVE VERTEX");
-			break;
-		default:
-			strcpy(toolname, "NO TOOL SELECTED");
-			break;
-	}
-
-	pos = sprintf(buffer, "(1-5) %s", toolname);
-	buffer[pos] = '\0';
-	drawString(&editortex, &font, buffer, 8, HEIGHT - MENU_HEIGHT + 38, COLOR_CYAN);
-
 	renderGui(&editortex);
 }
 
@@ -566,7 +495,6 @@ void moveCam(bool up, bool down, bool left, bool right)
 
 void buttonEventDown(button_t *button)
 {
-	button->x += 5;
 }
 
 int main(int argc, char **argv)
@@ -579,8 +507,6 @@ int main(int argc, char **argv)
 
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
-
-	initializeSimpleTextField(&gridsizetext, 4, HEIGHT - MENU_HEIGHT + 8, &font, "Grid size: ", COLOR_WHITE);
 
 	mapoffset = XY_ZERO;
 
@@ -597,7 +523,7 @@ int main(int argc, char **argv)
 
 	bindFont(&font, "default");
 	loadGuiFromFile("gui.cfg");
-	bindEvent("Save", buttonEventDown, EVENT_ON_MOUSE_DOWN);
+	bindButtonEvent("Save", buttonEventDown, EVENT_ON_MOUSE_DOWN);
 
 	unsigned int width, height;
 	getSizePng("wall1.png", &width, &height);

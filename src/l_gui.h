@@ -32,21 +32,20 @@ struct _button_t {
 	void (*onMouseOverEvent)(button_t *self);
 	void (*onMouseOutEvent)(button_t *self);
 	buttonstate_t state;
+	pixel_t color;
 };
 
 typedef struct {
+	unsigned long id;
 	int x, y;
-	const font_t *font;
 	char *text;
+	const font_t *font;
 	pixel_t color;
-} simpletextfield_t;
-
-void initializeSimpleTextField(simpletextfield_t *field, int x, int y, const font_t *font, const char *text, pixel_t color);
-void renderSimpleTextField(texture_t *tex, const simpletextfield_t *field);
+} textfield_t;
 
 bool loadGuiFromFile(const char *file);
 void renderGui(texture_t *tex);
 void updateGui(int mousex, int mousey, bool mousedown);
 
 void bindFont(const font_t *font, const char *name);
-void bindEvent(const char *name, void (*event)(button_t*), guievent_t type);
+void bindButtonEvent(const char *name, void (*event)(button_t*), guievent_t type);
