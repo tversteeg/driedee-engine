@@ -35,3 +35,4 @@ double vectorDistance(xy_t p1, xy_t p2);
 bool segmentSegmentIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p);
 bool lineSegmentIntersect(xy_t line, xy_t dir, xy_t p1, xy_t p2, xy_t *p);
 bool segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p);
+double distanceToSegment(xy_t p, xy_t p1, xy_t p2);

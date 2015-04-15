@@ -140,3 +140,25 @@ bool segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *
 		return false;
 	}
 }
+
+double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
+{
+	xy_t seg = {p2.x - p1.x, p2.y - p1.y};
+	xy_t cir = {p.x - p1.x, p.y - p1.y};
+	double proj = vectorProjectScalar(cir, seg);
+
+	xy_t closest;
+	if(proj < 0){
+		closest = p1;
+	}else if(proj > sqrt(seg.x * seg.x + seg.y * seg.y)){
+		closest = p2;
+	}else{
+		xy_t projv = vectorProject(cir, seg);
+		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
+	}
+
+	double dx = p.x - closest.x;
+	double dy = p.y - closest.y;
+
+	return sqrt(dx * dx + dy * dy);
+}
