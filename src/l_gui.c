@@ -40,6 +40,7 @@ bool loadGuiFromFile(const char *file)
 	config_init(&config);
 	if(!config_read_file(&config, file)){
 		config_destroy(&config);
+		printf("Error: Could not load gui configuration file \"%s\"\n", file);
 		return false;
 	}
 
