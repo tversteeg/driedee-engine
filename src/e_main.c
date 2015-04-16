@@ -96,7 +96,7 @@ void save()
 		for(i = 0; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
 			if(edge.type == WALL){
-				fprintf(fp, "dw %d %.lf %.lf %.lf %d\n", i, edge.wallbot, edge.walltop, edge.uvdiv, edge.texture);
+				fprintf(fp, "dw %u %.lf %.lf %.lf %d\n", i, edge.wallbot, edge.walltop, edge.uvdiv, edge.texture);
 			}
 		}
 		fprintf(fp, "\n");

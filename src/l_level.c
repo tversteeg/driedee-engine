@@ -28,7 +28,7 @@ bool loadLevel(const char *filename)
 				{
 					edge_t edge;
 					xy_t vert;
-					sscanf(line, "%*s %d (%lf,%lf)", (int*)&edge.type, &vert.x, &vert.y);
+					sscanf(line + 2, "%d (%lf,%lf)", (int*)&edge.type, &vert.x, &vert.y);
 
 					if(edge.type == WALL){
 						edge.walltop = 20;
@@ -47,9 +47,9 @@ bool loadLevel(const char *filename)
 				{
 					unsigned int id;
 					double walltop, wallbot, uvdiv;
-					unsigned char textureid;
-					sscanf(line, "%*s %u %lf %lf %lf %d", &id, &wallbot, &walltop, &uvdiv, (int*)&textureid);
-					printf("%u %lf %lf %lf %d\n", id, wallbot, walltop, uvdiv, textureid);
+					unsigned int textureid;
+
+					sscanf(line + 3, "%u%lf%lf%lf%d", &id, &wallbot, &walltop, &uvdiv, &textureid);
 
 					edge_t *edge = sect->edges + id;
 					edge->wallbot = wallbot;
@@ -61,7 +61,7 @@ bool loadLevel(const char *filename)
 			case 'p':
 				{
 					unsigned int isector1, iedge1, isector2, iedge2;
-					sscanf(line, "%*s %u %u %u %u", &isector1, &iedge1, &isector2, &iedge2);
+					sscanf(line + 2, "%u%u%u%u", &isector1, &iedge1, &isector2, &iedge2);
 
 					sector_t *sect1 = getSector(isector1);
 					sector_t *sect2 = getSector(isector2);
