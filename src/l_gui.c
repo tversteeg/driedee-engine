@@ -181,12 +181,11 @@ void bindFont(const font_t *font, const char *name)
 
 void bindButtonEvent(const char *name, void (*event)(button_t*), guievent_t type)
 {
-	unsigned long id = hash(name);
-
 	int i;
-	for(i = 0; i < nbuttons; i++){
-		button_t *button = buttons + i;
-		if(button->id == id){
+	if(name == NULL){
+		// Bind event for all buttons
+		for(i = 0; i < nbuttons; i++){
+			button_t *button = buttons + i;
 			switch(type){
 				case EVENT_ON_MOUSE_DOWN:
 					button->onMouseDownEvent = event;
@@ -200,6 +199,28 @@ void bindButtonEvent(const char *name, void (*event)(button_t*), guievent_t type
 				case EVENT_ON_MOUSE_OUT:
 					button->onMouseOutEvent = event;
 					break;
+			}
+		}
+	}else{
+		unsigned long id = hash(name);
+
+		for(i = 0; i < nbuttons; i++){
+			button_t *button = buttons + i;
+			if(button->id == id){
+				switch(type){
+					case EVENT_ON_MOUSE_DOWN:
+						button->onMouseDownEvent = event;
+						break;
+					case EVENT_ON_MOUSE_UP:
+						button->onMouseUpEvent = event;
+						break;
+					case EVENT_ON_MOUSE_OVER:
+						button->onMouseOverEvent = event;
+						break;
+					case EVENT_ON_MOUSE_OUT:
+						button->onMouseOutEvent = event;
+						break;
+				}
 			}
 		}
 	}
