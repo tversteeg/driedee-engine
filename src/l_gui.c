@@ -48,6 +48,7 @@ bool loadGuiFromFile(const char *file)
 
 	nbuttons = config_setting_length(setting);
 	buttons = (button_t*)calloc(nbuttons, sizeof(button_t));
+
 	int i;
 	for(i = 0; i < nbuttons; i++){
 		button_t *button = buttons + i;

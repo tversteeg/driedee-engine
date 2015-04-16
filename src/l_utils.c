@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #include "l_utils.h"
+#include "l_colors.h"
 
 #ifndef max
 #define max(a,b) (a<b?b:a)
@@ -136,6 +137,9 @@ unsigned long hash(const char *string)
 
 pixel_t strtopixel(const char *hexstr)
 {
+	if(hexstr == NULL){
+		return COLOR_NONE;
+	}
 	long int number = strtol(hexstr, NULL, 16);
 
 	pixel_t pixel;
