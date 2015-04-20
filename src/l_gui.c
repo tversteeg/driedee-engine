@@ -225,3 +225,35 @@ void bindButtonEvent(const char *name, void (*event)(button_t*), guievent_t type
 		}
 	}
 }
+
+button_t* getButtonByName(const char *name)
+{
+	return getButtonByHash(hash(name));
+}
+
+button_t* getButtonByHash(unsigned long id)
+{
+	int i;
+	for(i = 0; i < nbuttons; i++){
+		if(buttons[i].id == id){
+			return buttons + i;
+		}
+	}
+	return NULL;
+}
+
+textfield_t* getTextfieldByName(const char *name)
+{
+	return getTextfieldByHash(hash(name));
+}
+
+textfield_t* getTextfieldByHash(unsigned long id)
+{
+	int i;
+	for(i = 0; i < ntextfields; i++){
+		if(textfields[i].id == id){
+			return textfields + i;
+		}
+	}
+	return NULL;
+}

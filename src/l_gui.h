@@ -49,3 +49,9 @@ void updateGui(int mousex, int mousey, bool mousedown);
 
 void bindFont(const font_t *font, const char *name);
 void bindButtonEvent(const char *name, void (*event)(button_t*), guievent_t type);
+
+button_t* getButtonByName(const char *name);
+button_t* getButtonByHash(unsigned long id);
+
+textfield_t* getTextfieldByName(const char *name);
+textfield_t* getTextfieldByHash(unsigned long id);
