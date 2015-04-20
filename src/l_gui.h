@@ -33,7 +33,7 @@ struct _button_t {
 	void (*onMouseOverEvent)(button_t *self);
 	void (*onMouseOutEvent)(button_t *self);
 	buttonstate_t state;
-	pixel_t color;
+	pixel_t color, background;
 };
 
 typedef struct {

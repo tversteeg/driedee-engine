@@ -141,7 +141,6 @@ pixel_t strtopixel(const char *hexstr)
 		return COLOR_NONE;
 	}
 	long int number = strtol(hexstr, NULL, 16);
-	printf("%ld\n", number);
 
 	pixel_t pixel;
 	if(strlen(hexstr) == 8){

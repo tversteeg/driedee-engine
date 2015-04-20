@@ -31,6 +31,9 @@ static void renderButton(texture_t *tex, button_t *button)
 	int x = (button->width - button->font->width * strlen(button->text)) / 2 + button->x;
 	int y = (button->height - button->font->height) / 2 + button->y;
 
+	xy_t topleft = {(double)button->x, (double)button->y};
+
+	drawRect(tex, topleft, button->width, button->height, button->background);
 	drawString(tex, button->font, button->text, x, y, button->color);
 }
 
@@ -82,6 +85,10 @@ bool loadGuiFromFile(const char *file)
 		const char *color;
 		config_setting_lookup_string(elem, "color", &color);
 		button->color = strtopixel(color);
+
+		const char *background;
+		config_setting_lookup_string(elem, "background", &background);
+		button->background = strtopixel(background);
 	}
 
 	setting = config_lookup(&config, "textfields");

@@ -479,9 +479,14 @@ void moveCam(bool up, bool down, bool left, bool right)
 	}
 }
 
-void buttonEventDown(button_t *button)
+void buttonEventOut(button_t *button)
 {
-	button->x += 5;
+	button->background = strtopixel("999999");
+}
+
+void buttonEventOver(button_t *button)
+{
+	button->background = strtopixel("AAAAAA");
 }
 
 int main(int argc, char **argv)
@@ -510,7 +515,8 @@ int main(int argc, char **argv)
 
 	bindFont(&font, "default");
 	loadGuiFromFile("gui.cfg");
-	bindButtonEvent(NULL, buttonEventDown, EVENT_ON_MOUSE_DOWN);
+	bindButtonEvent(NULL, buttonEventOver, EVENT_ON_MOUSE_OVER);
+	bindButtonEvent(NULL, buttonEventOut, EVENT_ON_MOUSE_OUT);
 
 	unsigned int width, height;
 	getSizePng("wall1.png", &width, &height);
