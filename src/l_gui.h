@@ -2,6 +2,7 @@
 
 #include "l_draw.h"
 #include "l_colors.h"
+#include "l_utils.h"
 
 #define DEFAULT_BACKGROUND_UP_COLOR COLOR_GRAY
 #define DEFAULT_BACKGROUND_DOWN_COLOR COLOR_DARKGRAY
@@ -23,7 +24,7 @@ typedef enum {
 typedef struct _button_t button_t;
 
 struct _button_t {
-	unsigned long id;
+	hash_t id;
 	int x, y, width, height;
 	char *text;
 	const font_t *font;
@@ -36,7 +37,7 @@ struct _button_t {
 };
 
 typedef struct {
-	unsigned long id;
+	hash_t id;
 	int x, y;
 	char *text;
 	const font_t *font;
@@ -51,7 +52,7 @@ void bindFont(const font_t *font, const char *name);
 void bindButtonEvent(const char *name, void (*event)(button_t*), guievent_t type);
 
 button_t* getButtonByName(const char *name);
-button_t* getButtonByHash(unsigned long id);
+button_t* getButtonByHash(hash_t id);
 
 textfield_t* getTextfieldByName(const char *name);
-textfield_t* getTextfieldByHash(unsigned long id);
+textfield_t* getTextfieldByHash(hash_t id);

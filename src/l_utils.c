@@ -123,9 +123,9 @@ found: ;
 }
 
 // http://www.cse.yorku.ca/~oz/hash.html
-unsigned long hash(const char *string)
+hash_t hash(const char *string)
 {
-	unsigned long val = 538l;
+	hash_t val = 538l;
 
 	int c;
 	while((c = *string++)){
@@ -141,6 +141,7 @@ pixel_t strtopixel(const char *hexstr)
 		return COLOR_NONE;
 	}
 	long int number = strtol(hexstr, NULL, 16);
+	printf("%ld\n", number);
 
 	pixel_t pixel;
 	if(strlen(hexstr) == 8){
@@ -149,9 +150,9 @@ pixel_t strtopixel(const char *hexstr)
 		pixel.b = (number & 0x0000FF00) >> 8;
 		pixel.a = number & 0x000000FF;
 	}else{
-		pixel.r = (number & 0xFF000000) >> 24;
-		pixel.g = (number & 0x00FF0000) >> 16;
-		pixel.b = (number & 0x0000FF00) >> 8;
+		pixel.r = (number & 0xFF0000) >> 16;
+		pixel.g = (number & 0x00FF00) >> 8;
+		pixel.b = number & 0x0000FF;
 		pixel.a = 255;
 	}
 	

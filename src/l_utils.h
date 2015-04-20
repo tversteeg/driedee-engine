@@ -19,6 +19,8 @@ typedef struct {
 	char *blocks[POOL_BLOCKS];
 } pool_t;
 
+typedef unsigned long hash_t;
+
 void poolInitialize(pool_t *p, unsigned int elementSize, unsigned int blockSize);
 void poolFreePool(pool_t *p);
 
@@ -29,6 +31,6 @@ void poolFreeAll(pool_t *p);
 
 void *poolGetNext(pool_t *p, void *ptr);
 
-unsigned long hash(const char *string);
+hash_t hash(const char *string);
 
 pixel_t strtopixel(const char *hexstr);

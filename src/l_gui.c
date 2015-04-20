@@ -202,7 +202,7 @@ void bindButtonEvent(const char *name, void (*event)(button_t*), guievent_t type
 			}
 		}
 	}else{
-		unsigned long id = hash(name);
+		hash_t id = hash(name);
 
 		for(i = 0; i < nbuttons; i++){
 			button_t *button = buttons + i;
@@ -231,7 +231,7 @@ button_t* getButtonByName(const char *name)
 	return getButtonByHash(hash(name));
 }
 
-button_t* getButtonByHash(unsigned long id)
+button_t* getButtonByHash(hash_t id)
 {
 	int i;
 	for(i = 0; i < nbuttons; i++){
@@ -247,7 +247,7 @@ textfield_t* getTextfieldByName(const char *name)
 	return getTextfieldByHash(hash(name));
 }
 
-textfield_t* getTextfieldByHash(unsigned long id)
+textfield_t* getTextfieldByHash(hash_t id)
 {
 	int i;
 	for(i = 0; i < ntextfields; i++){

@@ -141,6 +141,14 @@ void renderBackground()
 
 void renderMenu()
 {
+	char str[64];
+	int pos = sprintf(str, "(9&0) Grid size: (%dx%d)", gridsize, gridsize);
+	str[pos] = '\0';
+
+	textfield_t *gridtextfield = getTextfieldByName("gridsize");
+	gridtextfield->text = (char*)realloc(gridtextfield->text, strlen(str));
+	strcpy(gridtextfield->text, str);
+
 	renderGui(&editortex);
 }
 
