@@ -489,6 +489,16 @@ void buttonEventOver(button_t *button)
 	button->background = strtopixel("AAAAAA");
 }
 
+void gridSizePlus(button_t *button)
+{
+	gridsize += 1;
+}
+
+void gridSizeMin(button_t *button)
+{
+	gridsize -= 1;
+}
+
 int main(int argc, char **argv)
 {
 	sectorInitialize();
@@ -517,6 +527,8 @@ int main(int argc, char **argv)
 	loadGuiFromFile("gui.cfg");
 	bindButtonEvent(NULL, buttonEventOver, EVENT_ON_MOUSE_OVER);
 	bindButtonEvent(NULL, buttonEventOut, EVENT_ON_MOUSE_OUT);
+	bindButtonEvent("gridplus", gridSizePlus, EVENT_ON_MOUSE_UP);
+	bindButtonEvent("gridmin", gridSizeMin, EVENT_ON_MOUSE_UP);
 
 	unsigned int width, height;
 	getSizePng("wall1.png", &width, &height);
