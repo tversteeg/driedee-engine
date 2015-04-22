@@ -158,11 +158,11 @@ int main(int argc, char **argv)
 
 	sectorInitialize();
 
-	initTexture(&tex, WIDTH, HEIGHT);
+	initTexture(&tex, NULL, WIDTH, HEIGHT);
 
 	unsigned int width, height;
 	getSizePng(argv[2], &width, &height);
-	initTexture(&wall, width, height);
+	initTexture(&wall, "wall", width, height);
 	loadPng(&wall, argv[2]);
 
 	loadLevel(argv[1]);

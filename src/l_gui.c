@@ -28,8 +28,8 @@ static void renderTextfield(texture_t *tex, const textfield_t *field)
 
 static void renderButton(texture_t *tex, button_t *button)
 {
-	int x = (button->width - button->font->width * strlen(button->text)) / 2 + button->x;
-	int y = (button->height - button->font->height) / 2 + button->y;
+	int x = (button->width - button->font->size * strlen(button->text)) / 2 + button->x;
+	int y = (button->height - button->font->size) / 2 + button->y;
 
 	xy_t topleft = {(double)button->x, (double)button->y};
 

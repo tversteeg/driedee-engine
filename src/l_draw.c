@@ -1,5 +1,7 @@
 #include "l_draw.h"
 
+#include "l_colors.h"
+
 #include <string.h>
 
 inline void drawPixel(texture_t *tex, int x, int y, pixel_t pixel);
@@ -54,8 +56,9 @@ static inline void hline(texture_t *tex, int y, int left, int right, pixel_t pix
 	}
 }
 
-void initTexture(texture_t *tex, unsigned int width, unsigned int height)
+void initTexture(texture_t *tex, const char *name, unsigned int width, unsigned int height)
 {
+	tex->id = hash(name);
 	tex->width = width;
 	tex->height = height;
 	tex->pixels = (pixel_t*)calloc(width * height, sizeof(pixel_t));
@@ -64,16 +67,15 @@ void initTexture(texture_t *tex, unsigned int width, unsigned int height)
 void initFont(font_t *font, unsigned int width, unsigned int height)
 {
 	font->totalwidth = width;
-	font->height = height;
+	font->size = height;
 	font->pixels = (bool*)calloc(width * height, sizeof(bool));
 }
 
-void loadFont(font_t *font, char start, char letters, char width, const bool *pixels)
+void loadFont(font_t *font, char start, const bool *pixels)
 {
-	font->letters = letters;
+	font->letters = font->totalwidth / font->size;
 	font->start = start;
-	font->width = width;
-	memcpy(font->pixels, pixels, (font->totalwidth * font->height) * sizeof(bool));
+	memcpy(font->pixels, pixels, (font->totalwidth * font->size) * sizeof(bool));
 }
 
 void clearTexture(texture_t *tex, pixel_t pixel)
@@ -176,10 +178,10 @@ void drawCircle(texture_t *tex, xy_t p, unsigned int radius, pixel_t pixel)
 
 void drawRect(texture_t *tex, xy_t p, unsigned int width, unsigned int height, pixel_t pixel)
 {
-    unsigned int i;
-    for(i = p.y; i < p.y + height; i++){
-        hline(tex, i, p.x, p.x + width, pixel);
-    }
+	unsigned int i;
+	for(i = p.y; i < p.y + height; i++){
+		hline(tex, i, p.x, p.x + width, pixel);
+	}
 }
 
 void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, pixel_t pixel)
@@ -188,12 +190,12 @@ void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, p
 	if(todraw < 0 || todraw > font->letters){
 		return;
 	}
-	int drawpos = todraw * font->height;
+	int drawpos = todraw * font->size;
 
 	int i;
-	for(i = 0; i < font->width; i++){
+	for(i = 0; i < font->size; i++){
 		int j;
-		for(j = 0; j < font->height; j++){
+		for(j = 0; j < font->size; j++){
 			if(font->pixels[i + drawpos + j * font->totalwidth] == true){
 				drawPixel(tex, x + i, y + j, pixel);
 			}
@@ -206,12 +208,12 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 	int i;
 	for(i = 0; string[i] != '\0'; i++){
 		if(string[i] == '\n'){
-			y += font->height;
-			x -= (i + 1) * font->height;
+			y += font->size;
+			x -= (i + 1) * font->size;
 		}else if(string[i] == '\t'){
-			x += font->width * 2;
+			x += font->size * 2;
 		}else{
-			drawLetter(tex, font, string[i], x + i * font->width, y, pixel);
+			drawLetter(tex, font, string[i], x + i * font->size, y, pixel);
 		}
 	}
 }
@@ -260,4 +262,27 @@ void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width
 	for(i = y; i < height; i += gridheight){
 		hline(tex, i, y, width, pixel);
 	}
+}
+
+pixel_t strtopixel(const char *hexstr)
+{
+	if(hexstr == NULL){
+		return COLOR_NONE;
+	}
+	long int number = strtol(hexstr, NULL, 16);
+
+	pixel_t pixel;
+	if(strlen(hexstr) == 8){
+		pixel.r = (number & 0xFF000000) >> 24;
+		pixel.g = (number & 0x00FF0000) >> 16;
+		pixel.b = (number & 0x0000FF00) >> 8;
+		pixel.a = number & 0x000000FF;
+	}else{
+		pixel.r = (number & 0xFF0000) >> 16;
+		pixel.g = (number & 0x00FF00) >> 8;
+		pixel.b = number & 0x0000FF;
+		pixel.a = 255;
+	}
+
+	return pixel;
 }

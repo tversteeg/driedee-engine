@@ -1,5 +1,7 @@
 #include "l_level.h"
 
+#include "l_utils.h"
+
 #include <stdio.h>
 
 bool loadLevel(const char *filename)
@@ -16,9 +18,10 @@ bool loadLevel(const char *filename)
 	}
 
 	char *line = NULL;
-	size_t len = 0;
+	size_t len = 0, textures = 0;
 	bool firstedge = true;
 	sector_t *sect = NULL;
+	hash_t *hashes = NULL;
 	while(getline(&line, &len, fp) != -1){
 		switch(line[0]){
 			case 's':
@@ -47,15 +50,17 @@ bool loadLevel(const char *filename)
 				{
 					unsigned int id;
 					double walltop, wallbot, uvdiv;
-					unsigned int textureid;
+					unsigned long textureid;
 
-					sscanf(line + 3, "%u%lf%lf%lf%d", &id, &wallbot, &walltop, &uvdiv, &textureid);
+					sscanf(line + 3, "%u%lf%lf%lf%lu", &id, &wallbot, &walltop, &uvdiv, &textureid);
 
 					edge_t *edge = sect->edges + id;
 					edge->wallbot = wallbot;
 					edge->walltop = walltop;
 					edge->uvdiv = uvdiv;
-					edge->texture = textureid;
+
+					hashes = (hash_t*)realloc(hashes, sect->nedges * sizeof(hash_t));
+					hashes[sect->nedges - 1] = textureid;
 				}
 				break;
 			case 'p':
@@ -76,8 +81,25 @@ bool loadLevel(const char *filename)
 					edge2->neighbor = edge1;
 				}
 				break;
+			case 't':
+				{
+					char name[80];
+					sscanf(line + 2, "%s", name);
+					hash_t namehash = hash(name);
+
+					int i;
+					for(i = 0; i < sect->nedges; i++){
+						if(hashes[i] == namehash){
+							sect->edges[i].texture = textures;
+						}
+					}
+					textures++;
+				}
+				break;
 		}
 	}
+
+	free(hashes);
 
 	return true;
 }

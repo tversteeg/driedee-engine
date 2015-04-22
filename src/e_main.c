@@ -18,6 +18,7 @@
 #endif
 
 #include "PixelFont1.h"
+#include "IconFont1.h"
 #include "l_draw.h"
 #include "l_colors.h"
 #include "l_vector.h"
@@ -26,6 +27,7 @@
 #include "l_render.h"
 #include "l_png.h"
 #include "l_gui.h"
+#include "l_utils.h"
 
 #define EDITOR_WIDTH 600
 #define PREVIEW_WIDTH 600
@@ -39,8 +41,11 @@
 typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, SECTOR_DELETE_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
 
 GLuint texture;
-texture_t previewtex, editortex, tex, wall;
-font_t font;
+texture_t previewtex, editortex, tex;
+
+texture_t *gametextures;
+size_t ngametextures;
+font_t font, icons;
 
 bool snaptogrid = false;
 sector_t *sectorselected = NULL;
@@ -96,7 +101,7 @@ void save(button_t *button)
 		for(i = 0; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
 			if(edge.type == WALL){
-				fprintf(fp, "dw %u %.lf %.lf %.lf %d\n", i, edge.wallbot, edge.walltop, edge.uvdiv, edge.texture);
+				fprintf(fp, "dw %u %.lf %.lf %.lf %ld\n", i, edge.wallbot, edge.walltop, edge.uvdiv, gametextures[edge.texture].id);
 			}
 		}
 		fprintf(fp, "\n");
@@ -141,6 +146,7 @@ void renderBackground()
 
 void renderMenu()
 {
+	/*
 	char str[64];
 	int pos = sprintf(str, "(9&0) Grid size: (%dx%d)", gridsize, gridsize);
 	str[pos] = '\0';
@@ -148,6 +154,7 @@ void renderMenu()
 	textfield_t *gridtextfield = getTextfieldByName("gridsize");
 	gridtextfield->text = (char*)realloc(gridtextfield->text, strlen(str));
 	strcpy(gridtextfield->text, str);
+	*/
 
 	renderGui(&editortex);
 }
@@ -260,7 +267,7 @@ void renderMap()
 void render()
 {	
 	if(camsector != NULL && redrawpreview){
-		renderFromSector(&previewtex, &wall, camsector, &cam);
+		renderFromSector(&previewtex, gametextures, camsector, &cam);
 		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0);
 		clearTexture(&previewtex, COLOR_NONE);
 		redrawpreview = false;
@@ -503,12 +510,15 @@ int main(int argc, char **argv)
 {
 	sectorInitialize();
 
-	initTexture(&tex, EDITOR_WIDTH + PREVIEW_WIDTH, HEIGHT);
-	initTexture(&editortex, EDITOR_WIDTH, HEIGHT);
-	initTexture(&previewtex, PREVIEW_WIDTH, HEIGHT);
+	initTexture(&tex, "", EDITOR_WIDTH + PREVIEW_WIDTH, HEIGHT);
+	initTexture(&editortex, "", EDITOR_WIDTH, HEIGHT);
+	initTexture(&previewtex, "", PREVIEW_WIDTH, HEIGHT);
 
 	initFont(&font, fontwidth, fontheight);
-	loadFont(&font, '!', '~' - '!', 8, (bool*)fontdata);
+	initFont(&icons, iconfontwidth, iconfontheight);
+
+	loadFont(&font, '!', (bool*)fontdata);
+	loadFont(&icons, 'A', (bool*)iconfontdata);
 
 	mapoffset = XY_ZERO;
 
@@ -524,6 +534,7 @@ int main(int argc, char **argv)
 	}
 
 	bindFont(&font, "default");
+	bindFont(&icons, "icons");
 	loadGuiFromFile("gui.cfg");
 	bindButtonEvent(NULL, buttonEventOver, EVENT_ON_MOUSE_OVER);
 	bindButtonEvent(NULL, buttonEventOut, EVENT_ON_MOUSE_OUT);
@@ -531,10 +542,13 @@ int main(int argc, char **argv)
 	bindButtonEvent("gridmin", gridSizeMin, EVENT_ON_MOUSE_UP);
 	bindButtonEvent("save", save, EVENT_ON_MOUSE_UP);
 
+	ngametextures = 1;
+	gametextures = (texture_t*)malloc(sizeof(texture_t));
+
 	unsigned int width, height;
 	getSizePng("wall1.png", &width, &height);
-	initTexture(&wall, width, height);
-	loadPng(&wall, "wall1.png");
+	initTexture(gametextures, "wall", width, height);
+	loadPng(gametextures, "wall1.png");
 
 	cam.pos.y = cam.angle = 0;
 	cam.znear = 1;

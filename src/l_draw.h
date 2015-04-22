@@ -1,25 +1,28 @@
 #pragma once
 
 #include "l_vector.h"
+#include "l_utils.h"
 
 typedef struct {
 	unsigned char r, g, b, a;
 } pixel_t;
 
 typedef struct {
+	hash_t id;
 	int width, height;
 	pixel_t *pixels;
 } texture_t;
 
 typedef struct {
-	char letters, start, width, height;
+	char start;
+	unsigned char letters, size;
 	int totalwidth;
 	bool *pixels;
 } font_t;
 
-void initTexture(texture_t *tex, unsigned int width, unsigned int height);
+void initTexture(texture_t *tex, const char *name, unsigned int width, unsigned int height);
 void initFont(font_t *font, unsigned int width, unsigned int height);
-void loadFont(font_t *font, char start, char letters, char width, const bool *pixels);
+void loadFont(font_t *font, char start, const bool *pixels);
 
 void clearTexture(texture_t *tex, pixel_t pixel);
 
@@ -41,3 +44,5 @@ void drawTexture(texture_t *target, const texture_t *source, int x, int y);
 void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, int height, double uvx);
 
 void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int gridwidth, unsigned int gridheight, pixel_t pixel);
+
+pixel_t strtopixel(const char *hexstr);

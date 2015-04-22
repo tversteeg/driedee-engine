@@ -4,8 +4,6 @@
 
 #include <ccore/types.h>
 
-#include "l_draw.h"
-
 #define POOL_BLOCKS  1024
 
 typedef struct poolfree_t{
@@ -32,5 +30,3 @@ void poolFreeAll(pool_t *p);
 void *poolGetNext(pool_t *p, void *ptr);
 
 hash_t hash(const char *string);
-
-pixel_t strtopixel(const char *hexstr);
