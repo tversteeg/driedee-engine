@@ -63,7 +63,7 @@ xy_t mouse;
 camera_t cam;
 sector_t *camsector = NULL;
 
-void save()
+void save(button_t *button)
 {
 	if(saveto == NULL){
 		printf("No save file supplied.\n");
@@ -529,6 +529,7 @@ int main(int argc, char **argv)
 	bindButtonEvent(NULL, buttonEventOut, EVENT_ON_MOUSE_OUT);
 	bindButtonEvent("gridplus", gridSizePlus, EVENT_ON_MOUSE_UP);
 	bindButtonEvent("gridmin", gridSizeMin, EVENT_ON_MOUSE_UP);
+	bindButtonEvent("save", save, EVENT_ON_MOUSE_UP);
 
 	unsigned int width, height;
 	getSizePng("wall1.png", &width, &height);
@@ -611,7 +612,7 @@ int main(int argc, char **argv)
 						toolselected = SECTOR_DELETE_TOOL;
 						break;
 					case CC_KEY_S:
-						save();
+						save(NULL);
 						break;
 					case CC_KEY_W:
 						edgetypeselected = WALL;

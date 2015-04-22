@@ -89,6 +89,8 @@ bool loadGuiFromFile(const char *file)
 		const char *background;
 		config_setting_lookup_string(elem, "background", &background);
 		button->background = strtopixel(background);
+
+		button->state = BUTTON_STATE_OUT;
 	}
 
 	setting = config_lookup(&config, "textfields");
