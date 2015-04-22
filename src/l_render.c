@@ -207,7 +207,7 @@ static void renderSector(texture_t *texture, texture_t *wall, sector_t *sector, 
 
 			double leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
 			double rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
-			renderWall(texture, wall, cam, edge, camedge1, camedge2, leftuv, rightuv);
+			renderWall(texture, wall + edge->texture, cam, edge, camedge1, camedge2, leftuv, rightuv);
 		}
 	}
 }

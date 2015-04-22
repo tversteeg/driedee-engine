@@ -38,7 +38,7 @@
 
 #define NONE_SELECTED -1
 
-typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, SECTOR_DELETE_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL} tool_t;
+typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, SECTOR_DELETE_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL, WALL_CHANGE_TOOL} tool_t;
 
 GLuint texture;
 texture_t previewtex, editortex, tex;
@@ -82,11 +82,18 @@ void save(button_t *button)
 		exit(1);
 	}
 		
+	fprintf(fp, "// t (Texture:) name\n");
 	fprintf(fp, "// s (Sector:) id\n");
 	fprintf(fp, "// e (Edge:) type, vertex position\n");
 	fprintf(fp, "// dw (Edge wall data:) id, bottom, top, uv scale, texture hash\n");
-	fprintf(fp, "// p (Portal:) sector1, edge1, sector2, edge2\n");
-	fprintf(fp, "// t (Texture:) name\n\n");
+	fprintf(fp, "// p (Portal:) sector1, edge1, sector2, edge2\n\n");
+
+	int i;
+	for(i = 0; i < ngametextures; i++){
+		fprintf(fp, "t %s\n", gametexturenames[i]);
+	}
+	
+	fprintf(fp, "\n");
 
 	unsigned int totalsectors = 0;
 	sector_t *sect = getFirstSector();
@@ -130,13 +137,6 @@ void save(button_t *button)
 		}
 		sect = getNextSector(sect);
 		totalsectors++;
-	}
-
-	fprintf(fp, "\n");
-
-	int i;
-	for(i = 0; i < ngametextures; i++){
-		fprintf(fp, "t %s\n", gametexturenames[i]);
 	}
 
 	fclose(fp);
@@ -445,6 +445,27 @@ void handleMouseClick()
 				vertselected = NONE_SELECTED;
 			}
 			break;
+		case WALL_CHANGE_TOOL:
+			{
+				sector_t *sect = getFirstSector();
+				while(sect != NULL){
+					int i;
+					for(i = 0; i < sect->nedges; i++){
+						edge_t *edge = sect->edges + i;
+						if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
+							if(edge->type == WALL){
+								edge->texture++;
+								if(edge->texture >= ngametextures){
+									edge->texture = 0;
+								}
+								return;
+							}
+						}
+					}
+					sect = getNextSector(sect);
+				}
+			}
+			break;
 		default:
 			break;
 	}
@@ -551,7 +572,7 @@ int main(int argc, char **argv)
 	bindButtonEvent("gridmin", gridSizeMin, EVENT_ON_MOUSE_UP);
 	bindButtonEvent("save", save, EVENT_ON_MOUSE_UP);
 
-	ngametextures = 1;
+	ngametextures = 2;
 	gametextures = (texture_t*)malloc(sizeof(texture_t));
 
 	gametexturenames[0] = "wall";
@@ -559,6 +580,11 @@ int main(int argc, char **argv)
 	getSizePng("wall1.png", &width, &height);
 	initTexture(gametextures, width, height);
 	loadPng(gametextures, "wall1.png");
+	
+	gametexturenames[1] = "wall2";
+	getSizePng("wall2.png", &width, &height);
+	initTexture(gametextures + 1, width, height);
+	loadPng(gametextures + 1, "wall2.png");
 
 	cam.pos.y = cam.angle = 0;
 	cam.znear = 1;
@@ -634,6 +660,9 @@ int main(int argc, char **argv)
 						break;
 					case CC_KEY_7:
 						toolselected = SECTOR_DELETE_TOOL;
+						break;
+					case CC_KEY_8:
+						toolselected = WALL_CHANGE_TOOL;
 						break;
 					case CC_KEY_S:
 						save(NULL);
