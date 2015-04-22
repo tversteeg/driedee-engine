@@ -8,7 +8,6 @@ typedef struct {
 } pixel_t;
 
 typedef struct {
-	hash_t id;
 	int width, height;
 	pixel_t *pixels;
 } texture_t;
@@ -20,7 +19,7 @@ typedef struct {
 	bool *pixels;
 } font_t;
 
-void initTexture(texture_t *tex, const char *name, unsigned int width, unsigned int height);
+void initTexture(texture_t *tex, unsigned int width, unsigned int height);
 void initFont(font_t *font, unsigned int width, unsigned int height);
 void loadFont(font_t *font, char start, const bool *pixels);
 

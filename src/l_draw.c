@@ -56,9 +56,8 @@ static inline void hline(texture_t *tex, int y, int left, int right, pixel_t pix
 	}
 }
 
-void initTexture(texture_t *tex, const char *name, unsigned int width, unsigned int height)
+void initTexture(texture_t *tex, unsigned int width, unsigned int height)
 {
-	tex->id = hash(name);
 	tex->width = width;
 	tex->height = height;
 	tex->pixels = (pixel_t*)calloc(width * height, sizeof(pixel_t));

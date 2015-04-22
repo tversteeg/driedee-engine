@@ -44,6 +44,7 @@ GLuint texture;
 texture_t previewtex, editortex, tex;
 
 texture_t *gametextures;
+const char *gametexturenames[256];
 size_t ngametextures;
 font_t font, icons;
 
@@ -83,15 +84,16 @@ void save(button_t *button)
 		
 	fprintf(fp, "// s (Sector:) id\n");
 	fprintf(fp, "// e (Edge:) type, vertex position\n");
-	fprintf(fp, "// dw (Edge wall data:) id, bottom, top, uv scale, texture id\n");
-	fprintf(fp, "// p (Portal:) sector1, edge1, sector2, edge2\n\n");
+	fprintf(fp, "// dw (Edge wall data:) id, bottom, top, uv scale, texture hash\n");
+	fprintf(fp, "// p (Portal:) sector1, edge1, sector2, edge2\n");
+	fprintf(fp, "// t (Texture:) name\n\n");
 
 	unsigned int totalsectors = 0;
 	sector_t *sect = getFirstSector();
 	while(sect != NULL){
 		fprintf(fp, "s %u\n", totalsectors);
 
-		unsigned int i;
+		int i;
 		for(i = 0; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
 			xy_t v = sect->vertices[edge.vertex1];
@@ -101,7 +103,7 @@ void save(button_t *button)
 		for(i = 0; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
 			if(edge.type == WALL){
-				fprintf(fp, "dw %u %.lf %.lf %.lf %ld\n", i, edge.wallbot, edge.walltop, edge.uvdiv, gametextures[edge.texture].id);
+				fprintf(fp, "dw %u %.lf %.lf %.lf %ld\n", i, edge.wallbot, edge.walltop, edge.uvdiv, hash(gametexturenames[edge.texture]));
 			}
 		}
 		fprintf(fp, "\n");
@@ -112,7 +114,7 @@ void save(button_t *button)
 	totalsectors = 0;
 	sect = getFirstSector();
 	while(sect != NULL){
-		unsigned int i;
+		int i;
 		for(i = 0; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
 			if(edge.type != PORTAL || edge.neighbor == NULL){
@@ -128,6 +130,13 @@ void save(button_t *button)
 		}
 		sect = getNextSector(sect);
 		totalsectors++;
+	}
+
+	fprintf(fp, "\n");
+
+	int i;
+	for(i = 0; i < ngametextures; i++){
+		fprintf(fp, "t %s\n", gametexturenames[i]);
 	}
 
 	fclose(fp);
@@ -176,7 +185,7 @@ void renderMap()
 	sector_t *sect = getFirstSector();
 	while(sect != NULL){
 		// Draw edges
-		unsigned int i, start = 0;
+		int i, start = 0;
 		if(sectorselected == sect && toolselected == EDGE_ADD_TOOL){
 			start = 1;
 		}
@@ -323,7 +332,7 @@ void handleMouseClick()
 				sector_t *sect = getFirstSector();
 				while(sect != NULL){
 					if(sect != sectorselected){
-						unsigned int i;
+						int i;
 						for(i = 0; i < sect->nedges; i++){
 							edge_t *edge = sect->edges + i;
 							if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
@@ -340,7 +349,7 @@ void handleMouseClick()
 			{
 				sector_t *sect = getFirstSector();
 				while(sect != NULL){
-					unsigned int i;
+					int i;
 					for(i = 0; i < sect->nedges; i++){
 						edge_t *edge = sect->edges + i;
 						if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
@@ -379,7 +388,7 @@ void handleMouseClick()
 			{
 				sector_t *sect = getFirstSector();
 				while(sect != NULL){
-					unsigned int i;
+					int i;
 					for(i = 0; i < sect->nedges; i++){
 						edge_t *edge = sect->edges + i;
 						if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
@@ -398,7 +407,7 @@ void handleMouseClick()
 			{
 				sector_t *sect = getFirstSector();
 				while(sect != NULL){
-					unsigned int i;
+					int i;
 					for(i = 0; i < sect->nedges; i++){
 						edge_t *edge = sect->edges + i;
 						if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
@@ -421,7 +430,7 @@ void handleMouseClick()
 			break;
 		case VERTEX_MOVE_TOOL:
 			if(vertselected == NONE_SELECTED){
-				unsigned int i;
+				int i;
 				for(i = 0; i < sectorselected->nedges; i++){
 					xy_t v = sectorselected->vertices[i];
 					int dx = mousemap.x - v.x;
@@ -460,7 +469,7 @@ void moveCam(bool up, bool down, bool left, bool right)
 		cam.angle += 0.035f;
 	}
 
-	unsigned int i;
+	int i;
 	for(i = 0; i < camsector->nedges; i++){
 		edge_t *edge = camsector->edges + i;
 		if(edge->type != PORTAL || edge->neighbor == NULL){
@@ -510,9 +519,9 @@ int main(int argc, char **argv)
 {
 	sectorInitialize();
 
-	initTexture(&tex, "", EDITOR_WIDTH + PREVIEW_WIDTH, HEIGHT);
-	initTexture(&editortex, "", EDITOR_WIDTH, HEIGHT);
-	initTexture(&previewtex, "", PREVIEW_WIDTH, HEIGHT);
+	initTexture(&tex, EDITOR_WIDTH + PREVIEW_WIDTH, HEIGHT);
+	initTexture(&editortex, EDITOR_WIDTH, HEIGHT);
+	initTexture(&previewtex, PREVIEW_WIDTH, HEIGHT);
 
 	initFont(&font, fontwidth, fontheight);
 	initFont(&icons, iconfontwidth, iconfontheight);
@@ -545,9 +554,10 @@ int main(int argc, char **argv)
 	ngametextures = 1;
 	gametextures = (texture_t*)malloc(sizeof(texture_t));
 
+	gametexturenames[0] = "wall";
 	unsigned int width, height;
 	getSizePng("wall1.png", &width, &height);
-	initTexture(gametextures, "wall", width, height);
+	initTexture(gametextures, width, height);
 	loadPng(gametextures, "wall1.png");
 
 	cam.pos.y = cam.angle = 0;
