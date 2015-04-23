@@ -69,6 +69,7 @@ bool loadLevel(const char *filename)
 					edge->wallbot = wallbot;
 					edge->walltop = walltop;
 					edge->uvdiv = uvdiv;
+					edge->texture = 0;
 
 					int i;
 					for(i = 0; i < textures; i++){

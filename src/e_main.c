@@ -573,7 +573,7 @@ int main(int argc, char **argv)
 	bindButtonEvent("save", save, EVENT_ON_MOUSE_UP);
 
 	ngametextures = 2;
-	gametextures = (texture_t*)malloc(sizeof(texture_t));
+	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
 
 	gametexturenames[0] = "wall";
 	unsigned int width, height;
