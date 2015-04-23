@@ -1,6 +1,7 @@
 #pragma once
 
 #include "l_vector.h"
+#include "l_utils.h"
 
 typedef enum {PORTAL, WALL} edgetype_t;
 
@@ -24,6 +25,7 @@ struct _sector_t {
 	xy_t *vertices;
 	unsigned int nedges;
 	edge_t *edges;
+	pool_t sprites;
 };
 
 void sectorInitialize();

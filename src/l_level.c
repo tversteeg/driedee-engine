@@ -104,3 +104,22 @@ bool loadLevel(const char *filename)
 
 	return true;
 }
+
+/*
+sprite_t *createSprite(sector_t *sect, double x, double y, char texture)
+{
+	sprite_t *sprite = (sprite_t*)poolMalloc(&sect->sprites);
+	sprite->sect = sect;
+	sprite->x = x;
+	sprite->y = y;
+	sprite->texture = texture;
+	sprite->sect = sect;
+
+	return sprite;
+}
+
+void freeSprite(sprite_t *sprite)
+{
+	poolFree(&sprite->sect->sprites, sprite);
+}
+*/

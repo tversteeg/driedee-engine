@@ -1,5 +1,7 @@
 #include "l_sector.h"
+
 #include "l_utils.h"
+#include "l_level.h"
 
 static pool_t sectors;
 static sector_t *first = NULL;
@@ -29,6 +31,8 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	sector->vertices = (xy_t*)malloc(sizeof(xy_t));
 	sector->vertices[0] = start;
 	sector->nedges = 1;
+
+//	poolInitialize(&sector->sprites, sizeof(sprite_t), 8);
 
 	if(first == NULL){
 		first = sector;
