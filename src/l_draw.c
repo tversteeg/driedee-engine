@@ -94,7 +94,7 @@ inline bool samePixel(pixel_t p1, pixel_t p2)
 	return p1.r == p2.r && p1.g == p2.g && p1.b == p2.b && p1.a == p2.a;
 }
 
-inline bool getPixel(texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y)
+inline bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y)
 {
 	if(x < tex->width && y < tex->height){
 		pixel = &tex->pixels[x + y * tex->width];
@@ -245,6 +245,27 @@ void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, 
 		if(yscreen >= 0 && yscreen < target->height){
 			pixel_t pixel = source->pixels[uvcx + (int)(j / (double)height * source->height) * source->height];
 			setPixel(target, x, y + j, pixel);
+		}
+	}
+}
+
+void drawTextureScaled(texture_t *target, const texture_t *source, int x, int y, xy_t scale)
+{
+	unsigned int width = source->width * scale.x;
+	if(width + x > target->width){
+	}
+	unsigned int height = source->height * scale.y;
+	if(height + y > target->height){
+
+	}
+	xy_t reciscale = {1.0 / scale.x, 1.0 / scale.y};
+
+	unsigned int i;
+	for(i = 0; i < width; i++){
+		unsigned int j;
+		for(j = 0; j < height; j++){
+			pixel_t pixel = source->pixels[(int)(i * reciscale.x) + (int)(j * reciscale.y) * source->width];
+			setPixel(target, x + i, y + j, pixel);
 		}
 	}
 }

@@ -26,7 +26,7 @@ void loadFont(font_t *font, char start, const bool *pixels);
 void clearTexture(texture_t *tex, pixel_t pixel);
 
 inline bool samePixel(pixel_t p1, pixel_t p2);
-inline bool getPixel(texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y);
+inline bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y);
 // Force setting the pixel in a unsafe way
 inline void setPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel);
 // Set the pixel with a boundary check
@@ -41,6 +41,7 @@ void drawString(texture_t *tex, const font_t *font, const char *text, int x, int
 
 void drawTexture(texture_t *target, const texture_t *source, int x, int y);
 void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, int height, double uvx);
+void drawTextureScaled(texture_t *target, const texture_t *source, int x, int y, xy_t scale);
 
 void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned int gridwidth, unsigned int gridheight, pixel_t pixel);
 
