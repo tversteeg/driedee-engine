@@ -22,7 +22,7 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect(XY_ZERO, cam, *p1, p2, p1);
 }
 
-void renderWall(texture_t *target, texture_t *textures, camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
+void renderWall(texture_t *target, const texture_t *textures, const camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
 {
 	// Find x position on the near plane
 	//TODO change near plane from 1 to cam->znear
@@ -76,9 +76,17 @@ void renderWall(texture_t *target, texture_t *textures, camera_t *cam, edge_t *e
 	}
 }
 
-void renderSprite(texture_t *target, const texture_t *sheet, sprite_t *sprite)
+void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam, sprite_t *sprite, xy_t pos)
 {
-	drawTexture(target, sheet, 0, 0);
+	xy_t proj = {(pos.x / pos.y) * cam->fov, cam->pos.y / pos.y};
+
+	int halfwidth = target->width >> 1;
+	int halfheight = target->height >> 1;
+
+	int screenx = halfwidth + proj.x * halfwidth;
+	int screeny = halfheight - proj.y * halfheight;
+
+	drawTexture(target, sheet, screenx, screeny);
 }
 
 static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, xy_t camleft, xy_t camright, edge_t *previous)
@@ -174,8 +182,24 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 	// Render the sprites
 	sprite_t *sprite = (sprite_t*)sector->lastsprite;
 	while(sprite != NULL){
-		renderSprite(texture, textures + sprite->texture, sprite);
+		xy_t pos = {sprite->x, sprite->y};
 
+		xy_t relp = {cam->pos.x - pos.x, cam->pos.z - pos.y};
+		xy_t transp = {.y = anglesin * relp.x + anglecos * relp.y};
+
+		if(transp.y <= 0){
+			goto next_sprite;
+		}
+
+		transp.x = anglecos * relp.x - anglesin * relp.y;
+
+		if(vectorIsLeft(transp, XY_ZERO, camleftnorm) || !vectorIsLeft(transp, XY_ZERO, camrightnorm)){
+			goto next_sprite;
+		}
+
+		renderSprite(texture, textures + sprite->texture, cam, sprite, transp);
+
+next_sprite:
 		sprite = sprite->prev;
 	}
 }
