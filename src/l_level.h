@@ -13,3 +13,5 @@ bool loadLevel(const char *filename);
 
 sprite_t *spawnSprite(sector_t *sect, xyz_t pos, xy_t scale, char texture);
 void destroySprite(sector_t *sect, sprite_t *sprite);
+
+sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos);

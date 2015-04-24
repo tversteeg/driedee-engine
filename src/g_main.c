@@ -45,7 +45,10 @@ struct player {
 } player;
 
 typedef struct {
+	bool active;
 	sprite_t *sprite;
+	sector_t *sect;
+	xy_t vel;
 } bullet_t;
 
 GLuint texture;
@@ -57,12 +60,53 @@ size_t ngametextures;
 bool isshooting;
 
 bullet_t *bullets = NULL;
-int nbullets = 0;
+int nbullets = 0, bulletdelay = 0;
+
 void handleGame()
 {
-	if(isshooting){
-		bullets = (bullet_t*)realloc(bullets, ++nbullets * sizeof(bullet_t));
-		bullets[nbullets -1 ].sprite = spawnSprite(player.sector, player.pos, (xy_t){100, 100}, 4);
+	bulletdelay++;
+
+	if(isshooting && bulletdelay >= 10){
+		bullet_t *bullet = NULL;
+		int i;
+		for(i = 0; i < nbullets; i++){
+			if(!bullets[i].active){
+				bullet = bullets + i;
+				break;
+			}
+		}
+
+		if(bullet == NULL){
+			bullets = (bullet_t*)realloc(bullets, ++nbullets * sizeof(bullet_t));
+			bullet = bullets + nbullets - 1;
+		}
+
+		double playerangle = -player.cam.angle - M_PI / 2;
+		bullet->vel.x = cos(playerangle) * 5;
+		bullet->vel.y = sin(playerangle) * 5;
+
+		xyz_t bulletpos = (xyz_t){player.pos.x + bullet->vel.x * 5.0, -player.pos.y - 5, player.pos.z + bullet->vel.y * 5.0};
+		bullet->sprite = spawnSprite(player.sector, bulletpos, (xy_t){50, 50}, 4);
+		bullet->sect = player.sector;
+		bullet->active = true;
+
+		bulletdelay = 0;
+	}
+
+	int i;
+	for(i = 0; i < nbullets; i++){
+		bullet_t *bullet = bullets + i;
+		if(!bullet->active){
+			continue;
+		}
+		xy_t newpos;
+		newpos.x = bullet->sprite->pos.x + bullet->vel.x;
+		newpos.y = bullet->sprite->pos.z + bullet->vel.y;
+		
+		if(tryMoveSprite(bullet->sect, bullet->sprite, newpos) == NULL){
+			destroySprite(bullet->sect, bullet->sprite);
+			bullet->active = false;
+		}
 	}
 }
 

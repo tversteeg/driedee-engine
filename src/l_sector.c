@@ -126,3 +126,20 @@ edge_t *createEdge(sector_t *sector, xy_t next, edge_t *edge)
 
 	return edge2;
 }
+
+/* http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html#Convex%20Polygons */
+bool pointInSector(sector_t *sector, xy_t point)
+{
+	bool in = false;
+	int i, j;
+	for(i = 0, j = sector->nedges - 1; i < sector->nedges; j = i++){
+		xy_t pi = sector->vertices[i];
+		xy_t pj = sector->vertices[j];
+		if(((pi.y > point.y) != (pj.y > point.y)) &&
+				(point.x < (pj.x - pi.x) * (point.y - pi.y) / (pj.y - pi.y) + pi.x)){
+			in = !in;
+		}
+	}
+
+	return in;
+}
