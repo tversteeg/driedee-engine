@@ -127,19 +127,19 @@ sprite_t *spawnSprite(sector_t *sect, xyz_t pos, xy_t scale, char texture)
 void destroySprite(sector_t *sect, sprite_t *sprite)
 {
 	if(sprite->next != NULL){
-		sprite->next->prev = sprite->prev;
-	}
-	if(sprite->prev != NULL){
 		if(sect->lastsprite == sprite){
-			sect->lastsprite = sprite->prev;
+			sect->lastsprite = sprite->next;
 		}
-		sprite->prev->next = sprite->next;
+		sprite->next->prev = sprite->prev;
 	}else if(sect->lastsprite == sprite){
 		sect->lastsprite = NULL;
 	}
 
-	//TODO figure out why this doesn't work
-	//free(sprite);
+	if(sprite->prev != NULL){
+		sprite->prev->next = sprite->next;
+	}
+
+	free(sprite);
 }
 
 sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos)

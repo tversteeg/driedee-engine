@@ -82,10 +82,10 @@ void handleGame()
 		}
 
 		double playerangle = -player.cam.angle - M_PI / 2;
-		bullet->vel.x = cos(playerangle) * 5;
-		bullet->vel.y = sin(playerangle) * 5;
+		bullet->vel.x = cos(playerangle) * 10;
+		bullet->vel.y = sin(playerangle) * 10;
 
-		xyz_t bulletpos = (xyz_t){player.pos.x + bullet->vel.x * 5.0, -player.pos.y - 5, player.pos.z + bullet->vel.y * 5.0};
+		xyz_t bulletpos = (xyz_t){player.pos.x + bullet->vel.x * 0.5, -player.pos.y - 5, player.pos.z + bullet->vel.y * 0.5};
 		bullet->sprite = spawnSprite(player.sector, bulletpos, (xy_t){50, 50}, 4);
 		bullet->sect = player.sector;
 		bullet->active = true;
@@ -115,7 +115,7 @@ void render()
 	renderFromSector(&tex, gametextures, player.sector, &player.cam);
 
 	texture_t *gun = gametextures + 3;
-	drawTextureScaled(&tex, gun, HWIDTH - gun->width * 1.5 - 40, HEIGHT - gun->height * 3, (xy_t){3, 3});
+	drawTextureScaled(&tex, gun, HWIDTH - gun->width * 1.5 - 45, HEIGHT - gun->height * 3, (xy_t){3, 3});
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
