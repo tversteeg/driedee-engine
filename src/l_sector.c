@@ -32,7 +32,7 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	sector->vertices[0] = start;
 	sector->nedges = 1;
 
-//	poolInitialize(&sector->sprites, sizeof(sprite_t), 8);
+	sector->lastsprite = NULL;
 
 	if(first == NULL){
 		first = sector;

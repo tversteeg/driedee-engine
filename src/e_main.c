@@ -38,7 +38,7 @@
 
 #define NONE_SELECTED -1
 
-typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, SECTOR_DELETE_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL, WALL_CHANGE_TOOL} tool_t;
+typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, SECTOR_DELETE_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL, WALL_CHANGE_TOOL, SPRITE_ADD_TOOL} tool_t;
 
 GLuint texture;
 texture_t previewtex, editortex, tex;
@@ -466,6 +466,9 @@ void handleMouseClick()
 				}
 			}
 			break;
+		case SPRITE_ADD_TOOL:
+			spawnSprite(sectorselected, mousemap.x, mousemap.y, 0);
+			break;
 		default:
 			break;
 	}
@@ -664,6 +667,9 @@ int main(int argc, char **argv)
 					case CC_KEY_8:
 						toolselected = WALL_CHANGE_TOOL;
 						break;
+					case CC_KEY_9:
+						toolselected = SPRITE_ADD_TOOL;
+						break;
 					case CC_KEY_S:
 						save(NULL);
 						break;
@@ -684,14 +690,6 @@ int main(int argc, char **argv)
 						break;
 					case CC_KEY_RIGHT:
 						rightpressed = false;
-						break;
-					case CC_KEY_9:
-						if(gridsize > 0){
-							gridsize--;
-						}
-						break;
-					case CC_KEY_0:
-						gridsize++;
 						break;
 				}
 				redraweditor = true;
