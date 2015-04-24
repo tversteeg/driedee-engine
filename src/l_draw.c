@@ -269,7 +269,7 @@ void drawTextureScaled(texture_t *target, const texture_t *source, int x, int y,
 		unsigned int j;
 		for(j = 0; j < height; j++){
 			pixel_t pixel = source->pixels[(int)(i * reciscale.x) + (int)(j * reciscale.y) * source->width];
-			if(samePixel(pixel, COLOR_NONE)){
+			if(pixel.a == 0){
 				continue;
 			}
 			drawPixel(target, x + i, y + j, pixel);

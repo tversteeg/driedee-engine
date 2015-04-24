@@ -24,8 +24,10 @@
 #include "l_colors.h"
 #include "l_png.h"
 
-#define WIDTH 800
-#define HEIGHT 600
+#define WIDTH 1280
+#define HWIDTH (WIDTH / 2)
+#define HEIGHT 800
+#define HHEIGHT (HEIGHT / 2)
 
 #define PLAYER_SPEED 0.2
 #define PLAYER_JUMP -0.5
@@ -33,7 +35,7 @@
 #define PLAYER_FRICTION 0.8
 #define PLAYER_GRAVITY 0.02
 
-//#define USE_MOUSE
+#define USE_MOUSE
 
 struct player {
 	camera_t cam;
@@ -43,11 +45,27 @@ struct player {
 } player;
 
 GLuint texture;
-texture_t tex, wall;
+texture_t tex;
+
+texture_t *gametextures;
+const char *gametexturenames[256];
+size_t ngametextures;
+
+bool isshooting;
+
+void handleGame()
+{
+	if(isshooting){
+		spawnSprite(player.sector, player.pos, (xy_t){10, 10}, 4);
+	}
+}
 
 void render()
 {
-	renderFromSector(&tex, &wall, player.sector, &player.cam);
+	renderFromSector(&tex, gametextures, player.sector, &player.cam);
+
+	texture_t *gun = gametextures + 3;
+	drawTextureScaled(&tex, gun, HWIDTH - gun->width * 1.5 - 40, HEIGHT - gun->height * 3, (xy_t){3, 3});
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -160,10 +178,29 @@ int main(int argc, char **argv)
 
 	initTexture(&tex, WIDTH, HEIGHT);
 
+	ngametextures = 3;
+	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
+
 	unsigned int width, height;
-	getSizePng(argv[2], &width, &height);
-	initTexture(&wall, width, height);
-	loadPng(&wall, argv[2]);
+	getSizePng("wall1.png", &width, &height);
+	initTexture(gametextures, width, height);
+	loadPng(gametextures, "wall1.png");
+	
+	getSizePng("wall2.png", &width, &height);
+	initTexture(gametextures + 1, width, height);
+	loadPng(gametextures + 1, "wall2.png");
+
+	getSizePng("skeleton.png", &width, &height);
+	initTexture(gametextures + 2, width, height);
+	loadPng(gametextures + 2, "skeleton.png");
+	
+	getSizePng("gun2.png", &width, &height);
+	initTexture(gametextures + 3, width, height);
+	loadPng(gametextures + 3, "gun2.png");
+
+	getSizePng("bullet.png", &width, &height);
+	initTexture(gametextures + 4, width, height);
+	loadPng(gametextures + 4, "bullet.png");
 
 	loadLevel(argv[1]);
 	player.sector = getSector(0);
@@ -195,7 +232,7 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	loop = true;
-	spacePressed = leftPressed = rightPressed = upPressed = downPressed = false;
+	isshooting = spacePressed = leftPressed = rightPressed = upPressed = downPressed = false;
 	while(loop){
 		while(ccWindowEventPoll()){
 			if(ccWindowEventGet().type == CC_EVENT_WINDOW_QUIT){
@@ -247,10 +284,16 @@ int main(int argc, char **argv)
 						spacePressed = false;
 						break;
 				}
+			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_DOWN){
+				isshooting = true;
+			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
+				isshooting = false;
 			}
 		}
 
 		movePlayer(upPressed, downPressed, leftPressed, rightPressed, spacePressed);
+
+		handleGame();
 
 		render();
 		ccGLBuffersSwap();

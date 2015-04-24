@@ -122,7 +122,7 @@ bool loadPng(texture_t *tex, const char *file)
 			unsigned int x;
 			for(x = 0; x < width; x++){
 				png_byte *color = row + x * 3;
-				drawPixel(tex, x, y, (pixel_t){color[0], color[1], color[2], 255});
+				setPixel(tex, x, y, (pixel_t){color[0], color[1], color[2], 255});
 			}
 		}
 	}else if(colortype == PNG_COLOR_TYPE_RGBA){
@@ -131,7 +131,7 @@ bool loadPng(texture_t *tex, const char *file)
 			unsigned int x;
 			for(x = 0; x < width; x++){
 				png_byte *color = row + (x << 2);
-				drawPixel(tex, x, y, (pixel_t){color[0], color[1], color[2], color[3]});
+				setPixel(tex, x, y, (pixel_t){color[0], color[1], color[2], color[3]});
 			}
 		}
 	}
