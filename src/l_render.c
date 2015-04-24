@@ -83,14 +83,16 @@ void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam
 	int halfwidth = target->width >> 1;
 	int halfheight = target->height >> 1;
 
-	xy_t scale = {proj.y, proj.y};
-	if(scale.x < 0 || scale.y < 0){
-		scale.x = scale.y = -proj.y;
+	xy_t scale = {sprite->scale.x * proj.y, sprite->scale.y * proj.y};
+	if(scale.x < 0){
+		scale.x = -scale.x;
+	}
+	if(scale.y < 0){
+		scale.y = -scale.y;
 	}
 
 	int screenx = halfwidth + proj.x * halfwidth - (sheet->width >> 1) * scale.x;
-	//int screeny = halfheight - proj.y * halfheight + (sheet->height >> 1) * scale.y;
-	int screeny = halfheight - proj.y * halfheight;
+	int screeny = halfheight - proj.y * halfheight - sheet->height * scale.y;
 
 	drawTextureScaled(target, sheet, screenx, screeny, scale);
 }

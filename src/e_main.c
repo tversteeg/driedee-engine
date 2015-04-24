@@ -469,7 +469,7 @@ void handleMouseClick()
 		case SPRITE_ADD_TOOL:
 			{
 				xyz_t pos = {mousemap.x, -5, mousemap.y};
-				spawnSprite(sectorselected, pos, 0);
+				spawnSprite(sectorselected, pos, (xy_t){10, 10}, 0);
 			}
 			break;
 		default:
