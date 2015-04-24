@@ -78,15 +78,21 @@ void renderWall(texture_t *target, const texture_t *textures, const camera_t *ca
 
 void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam, sprite_t *sprite, xy_t pos)
 {
-	xy_t proj = {(pos.x / pos.y) * cam->fov, cam->pos.y / pos.y};
+	xy_t proj = {(pos.x / pos.y) * cam->fov, (sprite->pos.y + cam->pos.y) / pos.y};
 
 	int halfwidth = target->width >> 1;
 	int halfheight = target->height >> 1;
 
-	int screenx = halfwidth + proj.x * halfwidth;
+	xy_t scale = {proj.y, proj.y};
+	if(scale.x < 0 || scale.y < 0){
+		scale.x = scale.y = -proj.y;
+	}
+
+	int screenx = halfwidth + proj.x * halfwidth - (sheet->width >> 1) * scale.x;
+	//int screeny = halfheight - proj.y * halfheight + (sheet->height >> 1) * scale.y;
 	int screeny = halfheight - proj.y * halfheight;
 
-	drawTexture(target, sheet, screenx, screeny);
+	drawTextureScaled(target, sheet, screenx, screeny, scale);
 }
 
 static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, xy_t camleft, xy_t camright, edge_t *previous)
@@ -182,7 +188,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 	// Render the sprites
 	sprite_t *sprite = (sprite_t*)sector->lastsprite;
 	while(sprite != NULL){
-		xy_t pos = {sprite->x, sprite->y};
+		xy_t pos = {sprite->pos.x, sprite->pos.z};
 
 		xy_t relp = {cam->pos.x - pos.x, cam->pos.z - pos.y};
 		xy_t transp = {.y = anglesin * relp.x + anglecos * relp.y};

@@ -105,7 +105,7 @@ bool loadLevel(const char *filename)
 	return true;
 }
 
-sprite_t *spawnSprite(sector_t *sect, double x, double y, char texture)
+sprite_t *spawnSprite(sector_t *sect, xyz_t pos, char texture)
 {
 	if(sect == NULL){
 		fprintf(stderr, "Sprites can only be added to sectors.\n");
@@ -113,8 +113,7 @@ sprite_t *spawnSprite(sector_t *sect, double x, double y, char texture)
 	}
 
 	sprite_t *sprite = (sprite_t*)malloc(sizeof(sprite_t));
-	sprite->x = x;
-	sprite->y = y;
+	sprite->pos = pos;
 	sprite->texture = texture;
 	
 	sprite->next = NULL;
