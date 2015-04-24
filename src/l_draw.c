@@ -251,16 +251,16 @@ void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, 
 
 void drawTextureScaled(texture_t *target, const texture_t *source, int x, int y, xy_t scale)
 {
-	if(x > target->width || y > target->height){
+	if(x >= target->width || y >= target->height){
 		return;
 	}
 	unsigned int width = source->width * scale.x;
 	if(width + x >= target->width){
-		width = target->width - x - 1;
+		width = target->width - x;
 	}
 	unsigned int height = source->height * scale.y;
 	if(height + y >= target->height){
-		height = target->height - y - 1;
+		height = target->height - y;
 	}
 	xy_t reciscale = {1.0 / scale.x, 1.0 / scale.y};
 

@@ -83,13 +83,7 @@ void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam
 	int halfwidth = target->width >> 1;
 	int halfheight = target->height >> 1;
 
-	xy_t scale = {sprite->scale.x * proj.y, sprite->scale.y * proj.y};
-	if(scale.x < 0){
-		scale.x = -scale.x;
-	}
-	if(scale.y < 0){
-		scale.y = -scale.y;
-	}
+	xy_t scale = {sprite->scale.x * (1.0 / pos.y), sprite->scale.y * (1.0 / pos.y)};
 
 	int screenx = halfwidth + proj.x * halfwidth - (sheet->width >> 1) * scale.x;
 	int screeny = halfheight - proj.y * halfheight - sheet->height * scale.y;
@@ -190,15 +184,11 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 	// Render the sprites
 	sprite_t *sprite = (sprite_t*)sector->lastsprite;
 	while(sprite != NULL){
-		xy_t pos = {sprite->pos.x, sprite->pos.z};
-
-		xy_t relp = {cam->pos.x - pos.x, cam->pos.z - pos.y};
+		xy_t relp = {cam->pos.x - sprite->pos.x, cam->pos.z - sprite->pos.z};
 		xy_t transp = {.y = anglesin * relp.x + anglecos * relp.y};
-
-		if(transp.y <= 0){
+		if(transp.y <= cam->znear){
 			goto next_sprite;
 		}
-
 		transp.x = anglecos * relp.x - anglesin * relp.y;
 
 		if(vectorIsLeft(transp, XY_ZERO, camleftnorm) || !vectorIsLeft(transp, XY_ZERO, camrightnorm)){

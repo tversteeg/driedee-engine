@@ -44,19 +44,25 @@ struct player {
 	sector_t *sector;
 } player;
 
+typedef struct {
+	sprite_t *sprite;
+} bullet_t;
+
 GLuint texture;
 texture_t tex;
 
 texture_t *gametextures;
-const char *gametexturenames[256];
 size_t ngametextures;
 
 bool isshooting;
 
+bullet_t *bullets = NULL;
+int nbullets = 0;
 void handleGame()
 {
 	if(isshooting){
-		spawnSprite(player.sector, player.pos, (xy_t){10, 10}, 4);
+		bullets = (bullet_t*)realloc(bullets, ++nbullets * sizeof(bullet_t));
+		bullets[nbullets -1 ].sprite = spawnSprite(player.sector, player.pos, (xy_t){100, 100}, 4);
 	}
 }
 
@@ -178,7 +184,7 @@ int main(int argc, char **argv)
 
 	initTexture(&tex, WIDTH, HEIGHT);
 
-	ngametextures = 3;
+	ngametextures = 5;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
 
 	unsigned int width, height;
