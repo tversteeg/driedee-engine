@@ -105,21 +105,30 @@ bool loadLevel(const char *filename)
 	return true;
 }
 
-/*
 sprite_t *createSprite(sector_t *sect, double x, double y, char texture)
 {
-	sprite_t *sprite = (sprite_t*)poolMalloc(&sect->sprites);
-	sprite->sect = sect;
+	sprite_t *sprite = (sprite_t*)malloc(sizeof(sprite_t));
 	sprite->x = x;
 	sprite->y = y;
 	sprite->texture = texture;
-	sprite->sect = sect;
+	
+	sprite->next = NULL;
+	sprite->prev = (sprite_t*)sect->lastsprite;
+	sect->lastsprite = sprite;
 
 	return sprite;
 }
 
-void freeSprite(sprite_t *sprite)
+void destroySprite(sector_t *sect, sprite_t *sprite)
 {
-	poolFree(&sprite->sect->sprites, sprite);
+	if(sect->lastsprite == sprite){
+		sect->lastsprite = sprite->prev;
+	}
+	if(sprite->next != NULL){
+		sprite->next->prev = sprite->prev;
+	}
+	if(sprite->prev != NULL){
+		sprite->prev->next = sprite->next;
+	}
+	free(sprite);
 }
-*/

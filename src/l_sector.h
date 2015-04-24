@@ -25,7 +25,7 @@ struct _sector_t {
 	xy_t *vertices;
 	unsigned int nedges;
 	edge_t *edges;
-	pool_t sprites;
+	void *lastsprite;
 };
 
 void sectorInitialize();
