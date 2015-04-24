@@ -469,7 +469,7 @@ void handleMouseClick()
 		case SPRITE_ADD_TOOL:
 			{
 				xyz_t pos = {mousemap.x, -5, mousemap.y};
-				spawnSprite(sectorselected, pos, (xy_t){10, 10}, 0);
+				spawnSprite(sectorselected, pos, (xy_t){10, 10}, 2);
 			}
 			break;
 		default:
@@ -578,7 +578,7 @@ int main(int argc, char **argv)
 	bindButtonEvent("gridmin", gridSizeMin, EVENT_ON_MOUSE_UP);
 	bindButtonEvent("save", save, EVENT_ON_MOUSE_UP);
 
-	ngametextures = 2;
+	ngametextures = 3;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
 
 	gametexturenames[0] = "wall";
@@ -591,6 +591,11 @@ int main(int argc, char **argv)
 	getSizePng("wall2.png", &width, &height);
 	initTexture(gametextures + 1, width, height);
 	loadPng(gametextures + 1, "wall2.png");
+
+	gametexturenames[2] = "skeleton";
+	getSizePng("skeleton.png", &width, &height);
+	initTexture(gametextures + 2, width, height);
+	loadPng(gametextures + 2, "skeleton.png");
 
 	cam.pos.y = cam.angle = 0;
 	cam.znear = 1;
