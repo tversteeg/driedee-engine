@@ -30,7 +30,7 @@ bool loadLevel(const char *filename)
 					char name[80];
 					sscanf(line + 2, "%s", name);
 					hash_t namehash = hash(name);
-					
+
 					hashes = (hash_t*)realloc(hashes, ++textures * sizeof(hash_t));
 					hashes[textures - 1] = namehash;
 				}
@@ -105,6 +105,28 @@ bool loadLevel(const char *filename)
 	return true;
 }
 
+void moveSprite(sector_t *to, sector_t *from, sprite_t *sprite)
+{
+	if(from->lastsprite == sprite){
+		from->lastsprite = sprite->next;
+	}
+	
+	if(sprite->next != NULL){
+		sprite->next->prev = sprite->prev;
+	}		
+
+	if(sprite->prev != NULL){
+		sprite->prev->next = sprite->next;
+	}
+
+	sprite->next = NULL;
+	sprite->prev = (sprite_t*)to->lastsprite;
+	if(sprite->prev != NULL){
+		sprite->prev->next = sprite;
+	}
+	to->lastsprite = (void*)sprite;
+}
+
 sprite_t *spawnSprite(sector_t *sect, xyz_t pos, xy_t scale, char texture)
 {
 	if(sect == NULL){
@@ -116,9 +138,12 @@ sprite_t *spawnSprite(sector_t *sect, xyz_t pos, xy_t scale, char texture)
 	sprite->pos = pos;
 	sprite->scale = scale;
 	sprite->texture = texture;
-	
+
 	sprite->next = NULL;
 	sprite->prev = (sprite_t*)sect->lastsprite;
+	if(sprite->prev != NULL){
+		sprite->prev->next = sprite;
+	}
 	sect->lastsprite = (void*)sprite;
 
 	return sprite;
@@ -126,14 +151,13 @@ sprite_t *spawnSprite(sector_t *sect, xyz_t pos, xy_t scale, char texture)
 
 void destroySprite(sector_t *sect, sprite_t *sprite)
 {
-	if(sprite->next != NULL){
-		if(sect->lastsprite == sprite){
-			sect->lastsprite = sprite->next;
-		}
-		sprite->next->prev = sprite->prev;
-	}else if(sect->lastsprite == sprite){
-		sect->lastsprite = NULL;
+	if(sect->lastsprite == sprite){
+		sect->lastsprite = sprite->next;
 	}
+	
+	if(sprite->next != NULL){
+		sprite->next->prev = sprite->prev;
+	}		
 
 	if(sprite->prev != NULL){
 		sprite->prev->next = sprite->next;
@@ -148,7 +172,22 @@ sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos)
 		sprite->pos.x = pos.x;
 		sprite->pos.z = pos.y;
 		return sect;
-	}else{
-		return NULL;
 	}
+
+	xy_t oldpos = {sprite->pos.x, sprite->pos.z};
+	int i;
+	for(i = 0; i < sect->nedges; i++){
+		edge_t *edge = sect->edges + i;
+		if(edge->type != PORTAL){
+			continue;
+		}
+		xy_t edge1 = sect->vertices[edge->vertex1];
+		xy_t edge2 = sect->vertices[edge->vertex2];
+		xy_t result;
+		if(segmentSegmentIntersect(pos, oldpos, edge1, edge2, &result)){
+			moveSprite(edge->neighbor->sector, sect, sprite);
+			return edge->neighbor->sector;
+		}
+	}
+	return NULL;
 }

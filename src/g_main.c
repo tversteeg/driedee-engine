@@ -103,10 +103,12 @@ void handleGame()
 		newpos.x = bullet->sprite->pos.x + bullet->vel.x;
 		newpos.y = bullet->sprite->pos.z + bullet->vel.y;
 		
-		if(tryMoveSprite(bullet->sect, bullet->sprite, newpos) == NULL){
+		sector_t *result = tryMoveSprite(bullet->sect, bullet->sprite, newpos);
+		if(result == NULL){
 			destroySprite(bullet->sect, bullet->sprite);
 			bullet->active = false;
 		}
+		bullet->sect = result;
 	}
 }
 
@@ -192,6 +194,7 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 			xy_t result;
 			if(segmentSegmentIntersect(playerpos, playerposnext, edge1, edge2, &result)){
 				next = edge->neighbor->sector;
+				break;
 			}
 		}
 
