@@ -24,9 +24,9 @@
 #include "l_colors.h"
 #include "l_png.h"
 
-#define WIDTH 1280
+#define WIDTH 800
 #define HWIDTH (WIDTH / 2)
-#define HEIGHT 800
+#define HEIGHT 600
 #define HHEIGHT (HEIGHT / 2)
 
 #define PLAYER_SPEED 0.2
@@ -35,7 +35,7 @@
 #define PLAYER_FRICTION 0.8
 #define PLAYER_GRAVITY 0.02
 
-#define USE_MOUSE
+//#define USE_MOUSE
 
 struct player {
 	camera_t cam;
@@ -82,11 +82,11 @@ void handleGame()
 		}
 
 		double playerangle = -player.cam.angle - M_PI / 2;
-		bullet->vel.x = cos(playerangle) * 10;
-		bullet->vel.y = sin(playerangle) * 10;
+		bullet->vel.x = cos(playerangle) * 5;
+		bullet->vel.y = sin(playerangle) * 5;
 
-		xyz_t bulletpos = (xyz_t){player.pos.x + bullet->vel.x * 0.5, -player.pos.y - 5, player.pos.z + bullet->vel.y * 0.5};
-		bullet->sprite = spawnSprite(player.sector, bulletpos, (xy_t){50, 50}, 4);
+		xyz_t bulletpos = (xyz_t){player.pos.x + bullet->vel.x * 0.5, -player.pos.y - 4, player.pos.z + bullet->vel.y * 0.5};
+		bullet->sprite = spawnSprite(player.sector, bulletpos, (xy_t){20, 20}, 5);
 		bullet->sect = player.sector;
 		bullet->active = true;
 
@@ -116,8 +116,14 @@ void render()
 {
 	renderFromSector(&tex, gametextures, player.sector, &player.cam);
 
-	texture_t *gun = gametextures + 3;
-	drawTextureScaled(&tex, gun, HWIDTH - gun->width * 1.5 - 45, HEIGHT - gun->height * 3, (xy_t){3, 3});
+	texture_t *gun;
+	if(bulletdelay <= 4){
+		gun = gametextures + 4;
+	}else{
+		gun = gametextures + 3;
+	}
+
+	drawTextureScaled(&tex, gun, HWIDTH - gun->width - 30, HEIGHT - gun->height * 2, (xy_t){2, 2});
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -231,7 +237,7 @@ int main(int argc, char **argv)
 
 	initTexture(&tex, WIDTH, HEIGHT);
 
-	ngametextures = 5;
+	ngametextures = 7;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
 
 	unsigned int width, height;
@@ -251,9 +257,17 @@ int main(int argc, char **argv)
 	initTexture(gametextures + 3, width, height);
 	loadPng(gametextures + 3, "gun2.png");
 
-	getSizePng("bullet.png", &width, &height);
+	getSizePng("gun2shooting.png", &width, &height);
 	initTexture(gametextures + 4, width, height);
-	loadPng(gametextures + 4, "bullet.png");
+	loadPng(gametextures + 4, "gun2shooting.png");
+
+	getSizePng("bullet.png", &width, &height);
+	initTexture(gametextures + 5, width, height);
+	loadPng(gametextures + 5, "bullet.png");
+
+	getSizePng("skeleton.png", &width, &height);
+	initTexture(gametextures + 6, width, height);
+	loadPng(gametextures + 6, "skeleton.png");
 
 	loadLevel(argv[1]);
 	player.sector = getSector(0);
@@ -264,6 +278,9 @@ int main(int argc, char **argv)
 	player.cam.zfar = 200;
 	calculateViewport(&player.cam, (xy_t){1, 1});
 	player.cam.pos = player.pos;
+	
+	xyz_t spritepos = {getSector(2)->vertices[0].x + 20, -8, getSector(2)->vertices[0].y + 20};
+	spawnSprite(player.sector, spritepos, (xy_t){100, 100}, 6);
 
 	ccDisplayInitialize();
 
