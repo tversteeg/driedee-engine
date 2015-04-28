@@ -123,7 +123,8 @@ void render()
 		gun = gametextures + 3;
 	}
 
-	drawTextureScaled(&tex, gun, HWIDTH - gun->width - 30, HEIGHT - gun->height * 2, (xy_t){2, 2});
+	//drawTextureScaled(&tex, gun, HWIDTH - gun->width - 30, HEIGHT - gun->height * 2, (xy_t){2, 2});
+	drawTextureScaled(&tex, gun, (HWIDTH / 2) - gun->width + 50, HHEIGHT - gun->height, (xy_t){1, 1});
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -235,7 +236,7 @@ int main(int argc, char **argv)
 
 	sectorInitialize();
 
-	initTexture(&tex, WIDTH, HEIGHT);
+	initTexture(&tex, HWIDTH, HHEIGHT);
 
 	ngametextures = 7;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
