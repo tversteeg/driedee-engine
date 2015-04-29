@@ -87,14 +87,17 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 		if(top > 0){
 			int y;
 			for(y = 0; y < top; y++){
-				double relscreenx = (screenx - halfwidth) / (double)halfwidth;
-				double relscreeny = (y - halfheight) / (double)halfheight / cam->fov;
+				double relscreenx = (screenx - halfwidth) / (double)halfwidth * 10;
+				double relscreeny = (y - halfheight) / (double)halfheight * 10;
 				double mapx = relscreeny * anglecos + relscreenx * anglesin + cam->pos.x;
 				double mapy = relscreeny * anglesin - relscreenx * anglecos + cam->pos.z;
+				setPixel(target, mapx, mapy, (pixel_t){255, 255, 255, 255});
+				/*
 				int mapposx = (int)(mapx * ceiltex->width) % ceiltex->width;
 				int mapposy = (int)(mapy * ceiltex->height) % ceiltex->height;
 				pixel_t pixel = ceiltex->pixels[mapposx + mapposy * ceiltex->width];
 				setPixel(target, screenx, y, pixel);
+				*/
 			}
 		}
 		if(bot < target->height){
