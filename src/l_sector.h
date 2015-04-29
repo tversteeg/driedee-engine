@@ -15,7 +15,7 @@ struct _edge_t {
 	union {
 		edge_t *neighbor;
 		struct {
-			double uvdiv, walltop, wallbot;
+			double uvdiv;
 			unsigned char texture;
 		};
 	};
@@ -26,6 +26,9 @@ struct _sector_t {
 	unsigned int nedges;
 	edge_t *edges;
 	void *lastsprite;
+
+	double floor, ceil;
+	unsigned char floortex, ceiltex;
 };
 
 void sectorInitialize();

@@ -22,6 +22,7 @@ bool loadLevel(const char *filename)
 	bool firstedge = true;
 	sector_t *sect = NULL;
 	hash_t *hashes = NULL;
+	sector_t tempsect;
 
 	while(getline(&line, &len, fp) != -1){
 		switch(line[0]){
@@ -36,7 +37,20 @@ bool loadLevel(const char *filename)
 				}
 				break;
 			case 's':
-				firstedge = true;
+				{
+					unsigned long ceiltexhash, floortexhash;
+					sscanf(line + 2, "%lf%lf%lu%lu", &tempsect.ceil, &tempsect.floor, &ceiltexhash, &floortexhash);
+					firstedge = true;
+
+					int i;
+					for(i = 0; i < textures; i++){
+						if(hashes[i] == ceiltexhash){
+							tempsect.ceiltex = i;
+						}else if(hashes[i] == floortexhash){
+							tempsect.floortex = i;
+						}
+					}
+				}
 				break;
 			case 'e':
 				{
@@ -44,13 +58,12 @@ bool loadLevel(const char *filename)
 					xy_t vert;
 					sscanf(line + 2, "%d (%lf,%lf)", (int*)&edge.type, &vert.x, &vert.y);
 
-					if(edge.type == WALL){
-						edge.walltop = 20;
-						edge.wallbot = -5;
-					}
-
 					if(firstedge){
 						sect = createSector(vert, &edge);
+						sect->ceil = tempsect.ceil;
+						sect->floor = tempsect.floor;
+						sect->ceiltex = tempsect.ceiltex;
+						sect->floortex = tempsect.floortex;
 						firstedge = false;
 					}else{
 						createEdge(sect, vert, &edge);
@@ -60,14 +73,12 @@ bool loadLevel(const char *filename)
 			case 'd':
 				{
 					unsigned int id;
-					double walltop, wallbot, uvdiv;
+					double uvdiv;
 					unsigned long texturehash;
 
-					sscanf(line + 3, "%u%lf%lf%lf%lu", &id, &wallbot, &walltop, &uvdiv, &texturehash);
+					sscanf(line + 3, "%u%lf%lu", &id, &uvdiv, &texturehash);
 
 					edge_t *edge = sect->edges + id;
-					edge->wallbot = wallbot;
-					edge->walltop = walltop;
 					edge->uvdiv = uvdiv;
 					edge->texture = 0;
 
@@ -75,6 +86,7 @@ bool loadLevel(const char *filename)
 					for(i = 0; i < textures; i++){
 						if(hashes[i] == texturehash){
 							edge->texture = i;
+							break;
 						}
 					}
 				}
@@ -110,7 +122,7 @@ void moveSprite(sector_t *to, sector_t *from, sprite_t *sprite)
 	if(from->lastsprite == sprite){
 		from->lastsprite = sprite->next;
 	}
-	
+
 	if(sprite->next != NULL){
 		sprite->next->prev = sprite->prev;
 	}		
@@ -154,7 +166,7 @@ void destroySprite(sector_t *sect, sprite_t *sprite)
 	if(sect->lastsprite == sprite){
 		sect->lastsprite = sprite->next;
 	}
-	
+
 	if(sprite->next != NULL){
 		sprite->next->prev = sprite->prev;
 	}		

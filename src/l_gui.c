@@ -184,7 +184,7 @@ void bindFont(const font_t *font, const char *name)
 	boundfont_t *bound = boundfonts + nboundfonts - 1;
 
 	bound->font = font;
-	bound->name = (char*)malloc(strlen(name));
+	bound->name = (char*)malloc(strlen(name) + 1);
 	strcpy(bound->name, name);
 }
 

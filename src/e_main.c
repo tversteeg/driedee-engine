@@ -83,9 +83,9 @@ void save(button_t *button)
 	}
 		
 	fprintf(fp, "// t (Texture:) name\n");
-	fprintf(fp, "// s (Sector:) id\n");
+	fprintf(fp, "// s (Sector:) ceiling height, floor height, ceiling texture, floor texture, id\n");
 	fprintf(fp, "// e (Edge:) type, vertex position\n");
-	fprintf(fp, "// dw (Edge wall data:) id, bottom, top, uv scale, texture hash\n");
+	fprintf(fp, "// dw (Edge wall data:) id, uv scale, texture hash\n");
 	fprintf(fp, "// p (Portal:) sector1, edge1, sector2, edge2\n\n");
 
 	int i;
@@ -98,7 +98,7 @@ void save(button_t *button)
 	unsigned int totalsectors = 0;
 	sector_t *sect = getFirstSector();
 	while(sect != NULL){
-		fprintf(fp, "s %u\n", totalsectors);
+		fprintf(fp, "s %.lf %.lf %ld %ld %u\n", sect->ceil, sect->floor, hash(gametexturenames[sect->ceiltex]), hash(gametexturenames[sect->floortex]), totalsectors);
 
 		int i;
 		for(i = 0; i < sect->nedges; i++){
@@ -110,7 +110,7 @@ void save(button_t *button)
 		for(i = 0; i < sect->nedges; i++){
 			edge_t edge = sect->edges[i];
 			if(edge.type == WALL){
-				fprintf(fp, "dw %u %.lf %.lf %.lf %ld\n", i, edge.wallbot, edge.walltop, edge.uvdiv, hash(gametexturenames[edge.texture]));
+				fprintf(fp, "dw %u %.lf %ld\n", i, edge.uvdiv, hash(gametexturenames[edge.texture]));
 			}
 		}
 		fprintf(fp, "\n");
@@ -319,10 +319,6 @@ void handleMouseClick()
 			{
 				edge_t edge;
 				edge.type = edgetypeselected;
-				if(edge.type == WALL){
-					edge.wallbot = -5;
-					edge.walltop = 10;
-				}
 				sectorselected = createSector(mousemap, &edge);
 				toolselected = EDGE_ADD_TOOL;
 			}
@@ -371,10 +367,6 @@ void handleMouseClick()
 			{
 				edge_t edge;
 				edge.type = edgetypeselected;
-				if(edge.type == WALL){
-					edge.wallbot = -5;
-					edge.walltop = 10;
-				}
 				createEdge(sectorselected, mousemap, &edge);
 
 				if(camsector == NULL && sectorselected->nedges > 3){

@@ -21,8 +21,6 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	edge2->sector = sector;
 	edge2->vertex1 = edge2->vertex2 = 0;
 	if(edge2->type == WALL){
-		edge2->wallbot = edge->wallbot;
-		edge2->walltop = edge->walltop;
 		edge2->uvdiv = 0;
 	}else{
 		edge2->neighbor = NULL;
@@ -31,6 +29,10 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	sector->vertices = (xy_t*)malloc(sizeof(xy_t));
 	sector->vertices[0] = start;
 	sector->nedges = 1;
+
+	sector->ceil = 10;
+	sector->floor = 0;
+	sector->ceiltex = sector->floortex = 0;
 
 	sector->lastsprite = NULL;
 
@@ -110,9 +112,6 @@ edge_t *createEdge(sector_t *sector, xy_t next, edge_t *edge)
 		xy_t v1 = sector->vertices[edge2->vertex1];
 		xy_t v2 = sector->vertices[edge2->vertex2];
 		edge2->uvdiv = vectorDistance(v1, v2);
-
-		edge2->wallbot = edge->wallbot;
-		edge2->walltop = edge->walltop;
 	}else{
 		edge2->neighbor = NULL;
 	}
