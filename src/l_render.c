@@ -61,8 +61,8 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 	const texture_t *ceiltex = tex + sect->ceiltex;
 	const texture_t *floortex = tex + sect->floortex;
 
-	double anglesin = sin(cam->angle);
-	double anglecos = cos(cam->angle);
+	double invanglesin = sin(-cam->angle);
+	double invanglecos = cos(-cam->angle);
 
 	int x;
 	for(x = 0; x < screenwidth; x++){
@@ -87,11 +87,11 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 		if(top > 0){
 			int y;
 			for(y = 0; y < top; y++){
-				double relscreenx = (screenx - halfwidth) / (double)halfwidth * 10;
-				double relscreeny = (y - halfheight) / (double)halfheight * 10;
-				double mapx = relscreeny * anglecos + relscreenx * anglesin + cam->pos.x;
-				double mapy = relscreeny * anglesin - relscreenx * anglecos + cam->pos.z;
-				setPixel(target, mapx, mapy, (pixel_t){255, 255, 255, 255});
+				double relscreenx = (screenx - halfwidth) / (double)halfwidth;
+				double relscreeny = (y - halfheight) / (double)halfheight;
+				double mapx = invanglecos * relscreenx - invanglesin * relscreeny + cam->pos.x;
+				double mapy = invanglesin * relscreenx + invanglecos * relscreeny + cam->pos.z;
+				setPixel(target, mapx, mapy, (pixel_t){(int)uvx % 255, 255, 255, 255});
 				/*
 				int mapposx = (int)(mapx * ceiltex->width) % ceiltex->width;
 				int mapposy = (int)(mapy * ceiltex->height) % ceiltex->height;
