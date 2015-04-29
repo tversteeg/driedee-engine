@@ -64,7 +64,7 @@ bool loadGuiFromFile(const char *file)
 
 		const char *text;
 		config_setting_lookup_string(elem, "text", &text);
-		button->text = (char*)malloc(strlen(text));
+		button->text = (char*)malloc(strlen(text) + 1);
 		strcpy(button->text, text);
 
 		const char *fontname;
@@ -105,7 +105,7 @@ bool loadGuiFromFile(const char *file)
 
 		const char *text;
 		config_setting_lookup_string(elem, "text", &text);
-		textfield->text = (char*)malloc(strlen(text));
+		textfield->text = (char*)malloc(strlen(text) + 1);
 		strcpy(textfield->text, text);
 
 		const char *fontname;

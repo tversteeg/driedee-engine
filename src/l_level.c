@@ -42,6 +42,8 @@ bool loadLevel(const char *filename)
 					sscanf(line + 2, "%lf%lf%lu%lu", &tempsect.ceil, &tempsect.floor, &ceiltexhash, &floortexhash);
 					firstedge = true;
 
+					tempsect.ceiltex = tempsect.floortex  =  0;
+
 					int i;
 					for(i = 0; i < textures; i++){
 						if(hashes[i] == ceiltexhash){
@@ -50,6 +52,8 @@ bool loadLevel(const char *filename)
 							tempsect.floortex = i;
 						}
 					}
+
+					//TODO fix hashes not loading correctly
 				}
 				break;
 			case 'e':

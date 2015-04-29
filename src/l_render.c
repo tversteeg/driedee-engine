@@ -22,7 +22,7 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect(XY_ZERO, cam, *p1, p2, p1);
 }
 
-void renderWall(texture_t *target, const texture_t *textures, const sector_t *sect, const camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
+void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
 {
 	// Find x position on the near plane
 	//TODO change near plane from 1 to cam->znear
@@ -39,11 +39,14 @@ void renderWall(texture_t *target, const texture_t *textures, const sector_t *se
 		return;
 	}
 
+	double ceilheight = sect->ceil + cam->pos.y;
+	double floorheight = sect->floor + cam->pos.y;
+
 	// Divide by the z value to get the distance and calculate the height with that
-	double projtoplefty = (sect->ceil + cam->pos.y) / left.y;
-	double projbotlefty = (sect->floor + cam->pos.y) / left.y;
-	double projtoprighty = (sect->ceil + cam->pos.y) / right.y;
-	double projbotrighty = (sect->floor + cam->pos.y) / right.y;
+	double projtoplefty = ceilheight / left.y;
+	double projbotlefty = floorheight / left.y;
+	double projtoprighty = ceilheight / right.y;
+	double projbotrighty = floorheight / right.y;
 
 	int screentoplefty = halfheight - projtoplefty * halfheight;
 	int screenbotlefty = halfheight - projbotlefty * halfheight;
@@ -54,8 +57,16 @@ void renderWall(texture_t *target, const texture_t *textures, const sector_t *se
 	double slopetop = (screentoprighty - screentoplefty) / (double)screenwidth;
 	double slopebot = (screenbotrighty - screenbotlefty) / (double)screenwidth;
 
+	const texture_t *walltex = tex + edge->texture;
+	const texture_t *ceiltex = tex + sect->ceiltex;
+	const texture_t *floortex = tex + sect->floortex;
+
+	double anglesin = sin(cam->angle);
+	double anglecos = cos(cam->angle);
+
 	int x;
 	for(x = 0; x < screenwidth; x++){
+		int screenx = screenleftx + x;
 		int top = screentoplefty + x * slopetop;
 		int bot = screenbotlefty + x * slopebot;
 		// Affine transformation
@@ -72,7 +83,23 @@ void renderWall(texture_t *target, const texture_t *textures, const sector_t *se
 		double xt1 = (screenwidth - x) * right.y;
 		double xt2 = x * left.y;
 		double uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
-		drawTextureSlice(target, textures, screenleftx + x, top, bot - top, uvx);
+		drawTextureSlice(target, walltex, screenx, top, bot - top, uvx);
+		if(top > 0){
+			int y;
+			for(y = 0; y < top; y++){
+				double relscreenx = (screenx - halfwidth) / (double)halfwidth;
+				double relscreeny = (y - halfheight) / (double)halfheight / cam->fov;
+				double mapx = relscreeny * anglecos + relscreenx * anglesin + cam->pos.x;
+				double mapy = relscreeny * anglesin - relscreenx * anglecos + cam->pos.z;
+				int mapposx = (int)(mapx * ceiltex->width) % ceiltex->width;
+				int mapposy = (int)(mapy * ceiltex->height) % ceiltex->height;
+				pixel_t pixel = ceiltex->pixels[mapposx + mapposy * ceiltex->width];
+				setPixel(target, screenx, y, pixel);
+			}
+		}
+		if(bot < target->height){
+			drawLine(target, (xy_t){(double)(screenleftx + x), (double)bot}, (xy_t){(double)(screenleftx + x), (double)target->height}, (pixel_t){255, 0, 0, 255});
+		}
 	}
 }
 
@@ -177,7 +204,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 
 			double leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
 			double rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
-			renderWall(texture, textures + edge->texture, sector, cam, edge, camedge1, camedge2, leftuv, rightuv);
+			renderWall(texture, textures, sector, cam, edge, camedge1, camedge2, leftuv, rightuv);
 		}
 	}
 

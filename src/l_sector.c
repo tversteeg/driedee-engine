@@ -21,6 +21,7 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	edge2->sector = sector;
 	edge2->vertex1 = edge2->vertex2 = 0;
 	if(edge2->type == WALL){
+		edge2->texture = 0;
 		edge2->uvdiv = 0;
 	}else{
 		edge2->neighbor = NULL;
@@ -112,6 +113,7 @@ edge_t *createEdge(sector_t *sector, xy_t next, edge_t *edge)
 		xy_t v1 = sector->vertices[edge2->vertex1];
 		xy_t v2 = sector->vertices[edge2->vertex2];
 		edge2->uvdiv = vectorDistance(v1, v2);
+		edge2->texture = 0;
 	}else{
 		edge2->neighbor = NULL;
 	}

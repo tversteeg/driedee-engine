@@ -1,0 +1,20 @@
+// t (Texture:) name
+// s (Sector:) ceiling height, floor height, ceiling texture, floor texture, id
+// e (Edge:) type, vertex position
+// dw (Edge wall data:) id, uv scale, texture hash
+// p (Portal:) sector1, edge1, sector2, edge2
+
+t wall
+t wall2
+t skeleton
+
+s 10 0 642411306 642411306 0
+e 1 (144,120)
+e 1 (192,120)
+e 1 (192,168)
+e 1 (144,168)
+dw 0 48 642411306
+dw 1 48 21199573148
+dw 2 48 642411306
+dw 3 48 21199573148
+

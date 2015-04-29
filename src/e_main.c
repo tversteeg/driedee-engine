@@ -589,7 +589,8 @@ int main(int argc, char **argv)
 	initTexture(gametextures + 2, width, height);
 	loadPng(gametextures + 2, "skeleton.png");
 
-	cam.pos.y = cam.angle = 0;
+	cam.pos.y = -5;
+	cam.angle = 0;
 	cam.znear = 1;
 	cam.zfar = 200;
 	calculateViewport(&cam, (xy_t){1, 1});
