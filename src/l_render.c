@@ -82,8 +82,16 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 			 */
 		double xt1 = (screenwidth - x) * right.y;
 		double xt2 = x * left.y;
+		/*
 		double uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
 		drawTextureSlice(target, walltex, screenx, top, bot - top, uvx);
+		*/
+		
+		double dis = (left.y * xt1 + right.y * xt2) / (xt1 + xt2);
+		pixel_t color;
+		color.a = 255;
+		color.r = color.g = color.b = 255 - dis;
+		drawLine(target, (xy_t){(double)screenx, (double)top}, (xy_t){(double)screenx, (double)bot}, color);
 		if(top > 0){
 			int y;
 			for(y = 0; y < top; y++){
