@@ -95,11 +95,11 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 		if(top > 0){
 			int y;
 			for(y = 0; y < top; y++){
-				double relscreenx = (screenx - halfwidth) / (double)halfwidth;
 				double relscreeny = (y - halfheight) / (double)halfheight;
+				double relscreenx = relscreeny * (screenx - halfwidth) / (double)halfwidth;
 				double mapx = invanglecos * relscreenx - invanglesin * relscreeny + cam->pos.x;
 				double mapy = invanglesin * relscreenx + invanglecos * relscreeny + cam->pos.z;
-				setPixel(target, mapx, mapy, (pixel_t){(int)uvx % 255, 255, 255, 255});
+				setPixel(target, mapx, mapy, (pixel_t){255, 255, 255, 255});
 				/*
 				int mapposx = (int)(mapx * ceiltex->width) % ceiltex->width;
 				int mapposy = (int)(mapy * ceiltex->height) % ceiltex->height;
