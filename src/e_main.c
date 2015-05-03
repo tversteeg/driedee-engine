@@ -570,7 +570,7 @@ int main(int argc, char **argv)
 	bindButtonEvent("gridmin", gridSizeMin, EVENT_ON_MOUSE_UP);
 	bindButtonEvent("save", save, EVENT_ON_MOUSE_UP);
 
-	ngametextures = 3;
+	ngametextures = 3 + 1;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
 
 	gametexturenames[0] = "wall";
@@ -589,7 +589,9 @@ int main(int argc, char **argv)
 	initTexture(gametextures + 2, width, height);
 	loadPng(gametextures + 2, "skeleton.png");
 
-	cam.pos.y = 0;
+	gametextures[3] = editortex;
+
+	cam.pos.y = -1;
 	cam.angle = 0;
 	cam.znear = 1;
 	cam.zfar = 200;
