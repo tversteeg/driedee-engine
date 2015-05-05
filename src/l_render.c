@@ -114,9 +114,9 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 
 				double mapx = invanglecos * relscreenx - invanglesin * relscreeny + cam->pos.x;
 				double mapy = invanglesin * relscreenx + invanglecos * relscreeny + cam->pos.z;
-				setPixel(tex + 3, mapx, mapy, (pixel_t){255, 0, 0, 255});
 
 				pixel_t pixel = floortex->pixels[((int)mapx % floortex->width) + ((int)mapy % floortex->height) * floortex->width];
+				setPixel(tex + 3, mapx, mapy, pixel);
 				setPixel(target, screenx, y, pixel);
 			}
 			//drawLine(target, (xy_t){(double)(screenleftx + x), (double)bot}, (xy_t){(double)(screenleftx + x), (double)target->height}, (pixel_t){255, 0, 0, 255});
