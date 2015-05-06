@@ -69,7 +69,7 @@ xy_t mouse;
 camera_t cam;
 sector_t *camsector = NULL;
 
-void save(button_t *button)
+void save()
 {
 	if(saveto == NULL){
 		printf("No save file supplied.\n");
@@ -524,14 +524,35 @@ void buttonEventOver(button_t *button)
 	button->background = strtopixel("AAAAAA");
 }
 
-void gridSizePlus(button_t *button)
+void buttonEventUp(button_t *button)
 {
-	gridsize += 1;
-}
+	button->background = strtopixel("BBBBBB");
 
-void gridSizeMin(button_t *button)
-{
-	gridsize -= 1;
+	if(hash("grid plus") == button->id){
+		gridsize += 1;
+	} else if(hash("grid min") == button->id){
+		gridsize -= 1;
+	} else if(hash("grid reset") == button->id){
+		gridsize = 24;
+	} else if(hash("save") == button->id){
+		save();
+	} else if(hash("sector add") == button->id){
+		toolselected = SECTOR_ADD_TOOL;
+	} else if(hash("sector remove") == button->id){
+		toolselected = SECTOR_DELETE_TOOL;
+	} else if(hash("sector select") == button->id){
+		toolselected = SECTOR_SELECT_TOOL;
+	} else if(hash("vertex move") == button->id){
+		toolselected = VERTEX_MOVE_TOOL;
+	} else if(hash("edge add") == button->id){
+		toolselected = EDGE_ADD_TOOL;
+	} else if(hash("edge change") == button->id){
+		toolselected = EDGE_CHANGE_TOOL;
+	} else if(hash("edge connect") == button->id){
+		toolselected = EDGE_CONNECT_TOOL;
+	} else if(hash("texture change") == button->id){
+		toolselected = WALL_CHANGE_TOOL;
+	}
 }
 
 int main(int argc, char **argv)
@@ -566,9 +587,7 @@ int main(int argc, char **argv)
 	loadGuiFromFile("gui.cfg");
 	bindButtonEvent(NULL, buttonEventOver, EVENT_ON_MOUSE_OVER);
 	bindButtonEvent(NULL, buttonEventOut, EVENT_ON_MOUSE_OUT);
-	bindButtonEvent("gridplus", gridSizePlus, EVENT_ON_MOUSE_UP);
-	bindButtonEvent("gridmin", gridSizeMin, EVENT_ON_MOUSE_UP);
-	bindButtonEvent("save", save, EVENT_ON_MOUSE_UP);
+	bindButtonEvent(NULL, buttonEventUp, EVENT_ON_MOUSE_UP);
 
 	ngametextures = 3 + 1;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
@@ -588,8 +607,6 @@ int main(int argc, char **argv)
 	getSizePng("skeleton.png", &width, &height);
 	initTexture(gametextures + 2, width, height);
 	loadPng(gametextures + 2, "skeleton.png");
-
-	gametextures[3] = editortex;
 
 	cam.pos.y = -1;
 	cam.angle = 0;

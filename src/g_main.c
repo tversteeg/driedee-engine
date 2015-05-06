@@ -33,7 +33,7 @@
 #define PLAYER_JUMP -0.5
 #define PLAYER_JUMP_WOBBLE -0.2
 #define PLAYER_FRICTION 0.8
-#define PLAYER_GRAVITY 0.02
+#define PLAYER_GRAVITY 0.03
 
 //#define USE_MOUSE
 
@@ -273,15 +273,15 @@ int main(int argc, char **argv)
 	loadLevel(argv[1]);
 	player.sector = getSector(0);
 	player.pos.x = player.sector->vertices[0].x + 5;
-	player.pos.z = player.sector->vertices[0].y;
+	player.pos.z = player.sector->vertices[0].y + 5;
 	player.pos.y = player.vel.x = player.vel.y = player.vel.z = player.cam.angle = 0;
 	player.cam.znear = 1;
 	player.cam.zfar = 200;
 	calculateViewport(&player.cam, (xy_t){1, 1});
 	player.cam.pos = player.pos;
 	
-	xyz_t spritepos = {getSector(2)->vertices[0].x + 20, -8, getSector(2)->vertices[0].y + 20};
-	spawnSprite(player.sector, spritepos, (xy_t){100, 100}, 6);
+	//xyz_t spritepos = {getSector(1)->vertices[0].x + 20, -8, getSector(1)->vertices[0].y + 20};
+	//spawnSprite(player.sector, spritepos, (xy_t){100, 100}, 6);
 
 	ccDisplayInitialize();
 
