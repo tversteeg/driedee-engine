@@ -85,16 +85,11 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 		double uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
 		drawTextureSlice(target, walltex, screenx, top, bot - top, uvx);
 
-		/*
-		pixel_t color;
-		color.a = 255;
-		color.r = color.g = color.b = 255 - dis;
-		drawLine(target, (xy_t){(double)screenx, (double)top}, (xy_t){(double)screenx, (double)bot}, color);
-		*/
+		// Draw ceiling
 		if(top > 0){
 			int y;
 			for(y = 0; y < top; y++){
-				double relscreeny = (target->height * ceilheight) / (double)(halfheight - y);
+				double relscreeny = (halfheight * ceilheight) / (double)(halfheight - y);
 				double relscreenx = ((screenx - halfwidth) / (double)halfwidth) * relscreeny;
 
 				double mapx = cam->pos.x + anglecos * relscreeny + anglesin * relscreenx;
@@ -104,11 +99,12 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 				setPixel(target, screenx, y, pixel);
 			}
 		}
+		// Draw floor
 		if(bot < target->height){
 			int y;
 			for(y = bot; y < target->height; y++){
 				//double relscreeny = ((y - halfheight) / (double)halfheight + floorheight) * dis;
-				double relscreeny = (target->height * floorheight) / (double)(halfheight - y);
+				double relscreeny = (halfheight * floorheight) / (double)(halfheight - y);
 				double relscreenx = ((screenx - halfwidth) / (double)halfwidth) * relscreeny;
 
 				double mapx = cam->pos.x + anglecos * relscreeny + anglesin * relscreenx;
