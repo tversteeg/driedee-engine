@@ -178,8 +178,9 @@ void renderMouse()
 	if(realmouse.y < HEIGHT - MENU_HEIGHT){
 		drawLine(&editortex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
 		drawLine(&editortex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
+		ccWindowMouseSetCursor(CC_CURSOR_NONE);
 	}else{
-
+		ccWindowMouseSetCursor(CC_CURSOR_ARROW);
 	}
 }
 
