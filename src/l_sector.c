@@ -32,7 +32,7 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	sector->nedges = 1;
 
 	sector->ceil = 10;
-	sector->floor = 0;
+	sector->floor = -10;
 	sector->ceiltex = sector->floortex = 0;
 
 	sector->lastsprite = NULL;

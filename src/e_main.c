@@ -65,7 +65,7 @@ int gridsize = 24;
 int snapsize = 10;
 
 xy_t mapoffset;
-xy_t mouse;
+xy_t mouse, realmouse;
 camera_t cam;
 sector_t *camsector = NULL;
 
@@ -175,8 +175,12 @@ void renderMouse()
 	buffer[pos] = '\0';
 	drawString(&editortex, &font, buffer, 8, 8, COLOR_YELLOW);
 
-	drawLine(&editortex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
-	drawLine(&editortex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
+	if(realmouse.y < HEIGHT - MENU_HEIGHT){
+		drawLine(&editortex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
+		drawLine(&editortex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
+	}else{
+
+	}
 }
 
 void renderMap()
@@ -691,7 +695,7 @@ int main(int argc, char **argv)
 						toolselected = SPRITE_ADD_TOOL;
 						break;
 					case CC_KEY_S:
-						save(NULL);
+						save();
 						break;
 					case CC_KEY_W:
 						edgetypeselected = WALL;
@@ -714,7 +718,7 @@ int main(int argc, char **argv)
 				}
 				redraweditor = true;
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
-				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT && ccWindowGetMouse().x <= EDITOR_WIDTH){
+				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT && ccWindowGetMouse().x <= EDITOR_WIDTH && ccWindowGetMouse().y <= HEIGHT - MENU_HEIGHT){
 					handleMouseClick();
 					redrawpreview = true;
 					redraweditor = true;
