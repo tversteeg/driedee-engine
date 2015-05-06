@@ -178,7 +178,7 @@ void renderMouse()
 	if(realmouse.y < HEIGHT - MENU_HEIGHT){
 		drawLine(&editortex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
 		drawLine(&editortex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
-		ccWindowMouseSetCursor(CC_CURSOR_NONE);
+		//ccWindowMouseSetCursor(CC_CURSOR_NONE);
 	}else{
 		ccWindowMouseSetCursor(CC_CURSOR_ARROW);
 	}
@@ -746,14 +746,14 @@ int main(int argc, char **argv)
 
 		xy_t oldmouse = mouse;
 
-		mouse.x = ccWindowGetMouse().x;
-		mouse.y = ccWindowGetMouse().y;
+		realmouse.x = ccWindowGetMouse().x;
+		realmouse.y = ccWindowGetMouse().y;
 
-		updateGui((int)mouse.x, (int)mouse.y, leftmousepressed);
+		updateGui((int)realmouse.x, (int)realmouse.y, leftmousepressed);
 
 		if(snaptogrid){
-			mouse.x = round(mouse.x / gridsize) * gridsize;
-			mouse.y = round(mouse.y / gridsize) * gridsize;
+			mouse.x = round(realmouse.x / gridsize) * gridsize;
+			mouse.y = round(realmouse.y / gridsize) * gridsize;
 		}
 
 		if(!vectorIsEqual(oldmouse, mouse)){
