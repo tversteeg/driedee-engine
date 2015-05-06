@@ -61,8 +61,8 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 	const texture_t *ceiltex = tex + sect->ceiltex;
 	const texture_t *floortex = tex + sect->floortex;
 
-	double invanglesin = sin(-cam->angle);
-	double invanglecos = cos(-cam->angle);
+	double anglesin = sin(-cam->angle - M_PI / 2.0);
+	double anglecos = cos(-cam->angle - M_PI / 2.0);
 
 	int x;
 	for(x = 0; x < screenwidth; x++){
@@ -84,23 +84,21 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 		double xt2 = x * left.y;
 		double uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
 		drawTextureSlice(target, walltex, screenx, top, bot - top, uvx);
-		
-		double dis = (left.y * xt1 + right.y * xt2) / (xt1 + xt2);
+
 		/*
 		pixel_t color;
 		color.a = 255;
 		color.r = color.g = color.b = 255 - dis;
 		drawLine(target, (xy_t){(double)screenx, (double)top}, (xy_t){(double)screenx, (double)bot}, color);
 		*/
-		double projceildis = (projtoplefty * xt1 + projtoprighty * xt2) / (xt1 + xt2);
 		if(top > 0){
 			int y;
 			for(y = 0; y < top; y++){
-				double relscreeny = ((halfheight - y) / (double)halfheight - projceildis) * dis;
+				double relscreeny = (target->height * ceilheight) / (double)(halfheight - y);
 				double relscreenx = ((screenx - halfwidth) / (double)halfwidth) * relscreeny;
 
-				double mapx = invanglecos * relscreenx - invanglesin * relscreeny + cam->pos.x;
-				double mapy = invanglesin * relscreenx + invanglecos * relscreeny + cam->pos.z;
+				double mapx = cam->pos.x + anglecos * relscreeny + anglesin * relscreenx;
+				double mapy = cam->pos.z + anglesin * relscreeny - anglecos * relscreenx;
 
 				pixel_t pixel = ceiltex->pixels[((int)mapx % ceiltex->width) + ((int)mapy % ceiltex->height) * ceiltex->width];
 				setPixel(target, screenx, y, pixel);
@@ -109,14 +107,14 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 		if(bot < target->height){
 			int y;
 			for(y = bot; y < target->height; y++){
-				double relscreeny = ((y - halfheight) / (double)halfheight + floorheight) * dis;
+				//double relscreeny = ((y - halfheight) / (double)halfheight + floorheight) * dis;
+				double relscreeny = (target->height * floorheight) / (double)(halfheight - y);
 				double relscreenx = ((screenx - halfwidth) / (double)halfwidth) * relscreeny;
 
-				double mapx = invanglecos * relscreenx - invanglesin * relscreeny + cam->pos.x;
-				double mapy = invanglesin * relscreenx + invanglecos * relscreeny + cam->pos.z;
+				double mapx = cam->pos.x + anglecos * relscreeny + anglesin * relscreenx;
+				double mapy = cam->pos.z + anglesin * relscreeny - anglecos * relscreenx;
 
 				pixel_t pixel = floortex->pixels[((int)mapx % floortex->width) + ((int)mapy % floortex->height) * floortex->width];
-				setPixel(tex + 3, mapx, mapy, pixel);
 				setPixel(target, screenx, y, pixel);
 			}
 			//drawLine(target, (xy_t){(double)(screenleftx + x), (double)bot}, (xy_t){(double)(screenleftx + x), (double)target->height}, (pixel_t){255, 0, 0, 255});
