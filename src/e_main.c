@@ -178,7 +178,7 @@ void renderMouse()
 	if(realmouse.y < HEIGHT - MENU_HEIGHT){
 		drawLine(&editortex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
 		drawLine(&editortex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
-		//ccWindowMouseSetCursor(CC_CURSOR_NONE);
+		ccWindowMouseSetCursor(CC_CURSOR_NONE);
 	}else{
 		ccWindowMouseSetCursor(CC_CURSOR_ARROW);
 	}
@@ -594,7 +594,7 @@ int main(int argc, char **argv)
 	bindButtonEvent(NULL, buttonEventOut, EVENT_ON_MOUSE_OUT);
 	bindButtonEvent(NULL, buttonEventUp, EVENT_ON_MOUSE_UP);
 
-	ngametextures = 3 + 1;
+	ngametextures = 3;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
 
 	gametexturenames[0] = "wall";
@@ -754,6 +754,8 @@ int main(int argc, char **argv)
 		if(snaptogrid){
 			mouse.x = round(realmouse.x / gridsize) * gridsize;
 			mouse.y = round(realmouse.y / gridsize) * gridsize;
+		}else{
+			mouse = realmouse;
 		}
 
 		if(!vectorIsEqual(oldmouse, mouse)){
