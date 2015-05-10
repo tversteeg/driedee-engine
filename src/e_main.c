@@ -81,7 +81,7 @@ void save()
 		printf("Couldn't open file for writing: %s\n", saveto);
 		exit(1);
 	}
-		
+
 	fprintf(fp, "// t (Texture:) name\n");
 	fprintf(fp, "// s (Sector:) ceiling height, floor height, ceiling texture, floor texture, id\n");
 	fprintf(fp, "// e (Edge:) type, vertex position\n");
@@ -92,7 +92,7 @@ void save()
 	for(i = 0; i < ngametextures; i++){
 		fprintf(fp, "t %s\n", gametexturenames[i]);
 	}
-	
+
 	fprintf(fp, "\n");
 
 	unsigned int totalsectors = 0;
@@ -147,7 +147,7 @@ void save()
 void renderBackground()
 {
 	drawGrid(&editortex, 0, 0, EDITOR_WIDTH, HEIGHT - MENU_HEIGHT, gridsize, gridsize, (pixel_t){32, 32, 32, 255});
-	
+
 	drawLine(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT}, (xy_t){EDITOR_WIDTH, HEIGHT - MENU_HEIGHT}, (pixel_t){255, 255, 0, 255});
 
 	drawRect(&editortex, (xy_t){0, HEIGHT - MENU_HEIGHT + 1}, EDITOR_WIDTH, MENU_HEIGHT, (pixel_t){16, 16, 16, 255});
@@ -156,14 +156,14 @@ void renderBackground()
 void renderMenu()
 {
 	/*
-	char str[64];
-	int pos = sprintf(str, "(9&0) Grid size: (%dx%d)", gridsize, gridsize);
-	str[pos] = '\0';
+		 char str[64];
+		 int pos = sprintf(str, "(9&0) Grid size: (%dx%d)", gridsize, gridsize);
+		 str[pos] = '\0';
 
-	textfield_t *gridtextfield = getTextfieldByName("gridsize");
-	gridtextfield->text = (char*)realloc(gridtextfield->text, strlen(str));
-	strcpy(gridtextfield->text, str);
-	*/
+		 textfield_t *gridtextfield = getTextfieldByName("gridsize");
+		 gridtextfield->text = (char*)realloc(gridtextfield->text, strlen(str));
+		 strcpy(gridtextfield->text, str);
+		 */
 
 	renderGui(&editortex);
 }
@@ -178,10 +178,17 @@ void renderMouse()
 	if(realmouse.y < HEIGHT - MENU_HEIGHT){
 		drawLine(&editortex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
 		drawLine(&editortex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
+
 		ccWindowMouseSetCursor(CC_CURSOR_NONE);
 	}else{
 		ccWindowMouseSetCursor(CC_CURSOR_ARROW);
 	}
+}
+
+void renderMousePreview()
+{
+	drawLine(&previewtex, (xy_t){mouse.x - 5 - EDITOR_WIDTH, mouse.y}, (xy_t){mouse.x + 5 - EDITOR_WIDTH, mouse.y}, COLOR_YELLOW);
+	drawLine(&previewtex, (xy_t){mouse.x - EDITOR_WIDTH, mouse.y - 5}, (xy_t){mouse.x - EDITOR_WIDTH, mouse.y + 5}, COLOR_YELLOW);
 }
 
 void renderMap()
@@ -247,7 +254,7 @@ void renderMap()
 			vert.x += mapoffset.x;
 			vert.y += mapoffset.y;
 			drawLine(&editortex, vert, mouse, sectorselected->edges[0].type == WALL ? COLOR_YELLOW : COLOR_BLUE);
-			
+
 			vert = sectorselected->vertices[sectorselected->nedges - 1];
 			vert.x += mapoffset.x;
 			vert.y += mapoffset.y;
@@ -260,7 +267,7 @@ void renderMap()
 			vert.x += mapoffset.x;
 			vert.y += mapoffset.y;
 			drawLine(&editortex, vert, mouse, COLOR_GREEN);
-			
+
 			vert = sectorselected->vertices[vertselected == 0 ? sectorselected->nedges - 1 : vertselected - 1];
 			vert.x += mapoffset.x;
 			vert.y += mapoffset.y;
@@ -282,8 +289,11 @@ void render()
 {	
 	if(camsector != NULL && redrawpreview){
 		renderFromSector(&previewtex, gametextures, camsector, &cam);
+		renderMousePreview();
+
 		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0);
 		clearTexture(&previewtex, COLOR_NONE);
+
 		redrawpreview = false;
 	}
 
@@ -291,6 +301,7 @@ void render()
 		renderBackground();
 		renderMap();
 		renderMenu();
+
 		renderMouse();
 
 		drawTexture(&tex, &editortex, 0, 0);
@@ -318,7 +329,7 @@ void render()
 void handleMouseClick()
 {
 	xy_t mousemap = {mouse.x - mapoffset.x, mouse.y - mapoffset.y};
-	
+
 	switch(toolselected){
 		case SECTOR_ADD_TOOL:
 			{
@@ -602,7 +613,7 @@ int main(int argc, char **argv)
 	getSizePng("wall1.png", &width, &height);
 	initTexture(gametextures, width, height);
 	loadPng(gametextures, "wall1.png");
-	
+
 	gametexturenames[1] = "wall2";
 	getSizePng("wall2.png", &width, &height);
 	initTexture(gametextures + 1, width, height);
@@ -759,7 +770,15 @@ int main(int argc, char **argv)
 		}
 
 		if(!vectorIsEqual(oldmouse, mouse)){
-			redraweditor = true;
+			if(mouse.x <= EDITOR_WIDTH - 10){
+				redraweditor = true;
+			}else if(mouse.x >= EDITOR_WIDTH + 10){
+				redrawpreview = true;
+			}else{
+				redraweditor = true;
+				redrawpreview = true;
+			}
+
 			if(rightmousepressed){
 				mapoffset.x += mouse.x - oldmouse.x;
 				mapoffset.y += mouse.y - oldmouse.y;
