@@ -129,7 +129,7 @@ edge_t *createEdge(sector_t *sector, xy_t next, edge_t *edge)
 }
 
 /* http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html#Convex%20Polygons */
-bool pointInSector(sector_t *sector, xy_t point)
+bool pointInSector(const sector_t *sector, xy_t point)
 {
 	bool in = false;
 	int i, j;

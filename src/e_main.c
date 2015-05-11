@@ -326,7 +326,7 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void handleMouseClick()
+void handleEditorMouseClick()
 {
 	xy_t mousemap = {mouse.x - mapoffset.x, mouse.y - mapoffset.y};
 
@@ -478,6 +478,29 @@ void handleMouseClick()
 			{
 				xyz_t pos = {mousemap.x, -5, mousemap.y};
 				spawnSprite(sectorselected, pos, (xy_t){10, 10}, 2);
+			}
+			break;
+		default:
+			break;
+	}
+}
+
+edge_t *castRayCam()
+{
+	xy_t campos = {cam.pos.x, cam.pos.z};
+	xy_t dir = {cam.pos.x + sin(cam.angle), cam.pos.y + cos(cam.angle)};
+	return findWallRay(camsector, campos, dir);
+}
+
+void handlePreviewMouseClick()
+{
+	switch(toolselected){
+		case SECTOR_SELECT_TOOL:
+			{
+				edge_t *wall = castRayCam();
+				if(wall != NULL){
+					sectorselected = wall->sector;
+				}
 			}
 			break;
 		default:
@@ -730,10 +753,16 @@ int main(int argc, char **argv)
 				}
 				redraweditor = true;
 			}else if(ccWindowEventGet().type == CC_EVENT_MOUSE_UP){
-				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT && ccWindowGetMouse().x <= EDITOR_WIDTH && ccWindowGetMouse().y <= HEIGHT - MENU_HEIGHT){
-					handleMouseClick();
-					redrawpreview = true;
-					redraweditor = true;
+				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_LEFT){
+					if(ccWindowGetMouse().x <= EDITOR_WIDTH && ccWindowGetMouse().y <= HEIGHT - MENU_HEIGHT){
+						handleEditorMouseClick();
+						redrawpreview = true;
+						redraweditor = true;
+					}else if(ccWindowGetMouse().x > EDITOR_WIDTH){
+						handlePreviewMouseClick();
+						redrawpreview = true;
+						redraweditor = true;
+					}
 				}
 				if(ccWindowEventGet().mouseButton == CC_MOUSE_BUTTON_RIGHT){
 					rightmousepressed = false;

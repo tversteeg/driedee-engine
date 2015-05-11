@@ -44,4 +44,4 @@ int getIndexSector(sector_t *sector);
 
 edge_t* createEdge(sector_t *sector, xy_t next, edge_t *edge);
 
-bool pointInSector(sector_t *sector, xy_t point);
+bool pointInSector(const sector_t *sector, xy_t point);

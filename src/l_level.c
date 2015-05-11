@@ -207,3 +207,31 @@ sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos)
 	}
 	return NULL;
 }
+
+edge_t *findWallRay(const sector_t *sect, xy_t point, xy_t dir)
+{
+	if(!pointInSector(sect, point)){
+		return NULL;
+	}
+
+	const sector_t *current = sect;
+	while(current != NULL){
+		int i;
+		for(i = 0; i < sect->nedges; i++){
+			edge_t *edge = sect->edges + i;
+			xy_t edge1 = sect->vertices[edge->vertex1];
+			xy_t edge2 = sect->vertices[edge->vertex2];
+			xy_t isect;
+			if(lineSegmentIntersect(point, dir, edge1, edge2, &isect)){
+				if(edge->type == WALL){
+					return edge;
+				}else{
+					point = isect;
+					current = edge->neighbor->sector;
+				}
+			}
+		}
+	}
+
+	return NULL;
+}
