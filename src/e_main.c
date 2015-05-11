@@ -326,6 +326,14 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void changeWallTexture(edge_t *edge)
+{
+	edge->texture++;
+	if(edge->texture >= ngametextures){
+		edge->texture = 0;
+	}
+}
+
 void handleEditorMouseClick()
 {
 	xy_t mousemap = {mouse.x - mapoffset.x, mouse.y - mapoffset.y};
@@ -462,10 +470,7 @@ void handleEditorMouseClick()
 						edge_t *edge = sect->edges + i;
 						if(distanceToSegment(mousemap, sect->vertices[edge->vertex1], sect->vertices[edge->vertex2]) < snapsize){
 							if(edge->type == WALL){
-								edge->texture++;
-								if(edge->texture >= ngametextures){
-									edge->texture = 0;
-								}
+								changeWallTexture(edge);
 								return;
 							}
 						}
@@ -488,7 +493,7 @@ void handleEditorMouseClick()
 edge_t *castRayCam()
 {
 	xy_t campos = {cam.pos.x, cam.pos.z};
-	xy_t dir = {cam.pos.x + sin(cam.angle), cam.pos.y + cos(cam.angle)};
+	xy_t dir = vectorUnit((xy_t){sin(cam.angle), cos(cam.angle)});
 	return findWallRay(camsector, campos, dir);
 }
 
@@ -500,6 +505,14 @@ void handlePreviewMouseClick()
 				edge_t *wall = castRayCam();
 				if(wall != NULL){
 					sectorselected = wall->sector;
+				}
+			}
+			break;
+		case WALL_CHANGE_TOOL:
+			{
+				edge_t *wall = castRayCam();
+				if(wall != NULL){
+					changeWallTexture(wall);
 				}
 			}
 			break;

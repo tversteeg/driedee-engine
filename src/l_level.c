@@ -210,10 +210,6 @@ sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos)
 
 edge_t *findWallRay(const sector_t *sect, xy_t point, xy_t dir)
 {
-	if(!pointInSector(sect, point)){
-		return NULL;
-	}
-
 	const sector_t *current = sect;
 	while(current != NULL){
 		int i;
@@ -225,9 +221,10 @@ edge_t *findWallRay(const sector_t *sect, xy_t point, xy_t dir)
 			if(lineSegmentIntersect(point, dir, edge1, edge2, &isect)){
 				if(edge->type == WALL){
 					return edge;
-				}else{
+				}else if(edge->type == PORTAL){
 					point = isect;
 					current = edge->neighbor->sector;
+					break;
 				}
 			}
 		}
