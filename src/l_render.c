@@ -4,7 +4,7 @@
 #include "l_level.h"
 
 #include <math.h>
-#include <ccore/thread.h>
+//#include <ccore/thread.h>
 
 struct renderWallData {
 	texture_t *target;
@@ -114,7 +114,6 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 		if(bot < target->height){
 			int y;
 			for(y = bot; y < target->height; y++){
-				//double relscreeny = ((y - halfheight) / (double)halfheight + floorheight) * dis;
 				double relscreeny = (halfheight * floorheight) / (double)(halfheight - y);
 				double relscreenx = ((screenx - halfwidth) / (double)halfwidth) * relscreeny;
 
@@ -124,11 +123,11 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 				pixel_t pixel = floortex->pixels[((int)mapx % floortex->width) + ((int)mapy % floortex->height) * floortex->width];
 				setPixel(target, screenx, y, pixel);
 			}
-			//drawLine(target, (xy_t){(double)(screenleftx + x), (double)bot}, (xy_t){(double)(screenleftx + x), (double)target->height}, (pixel_t){255, 0, 0, 255});
 		}
 	}
 }
 
+/*
 ccThreadFunction(renderWallThreaded)
 {
 	struct renderWallData *data = ccThreadData;
@@ -136,6 +135,7 @@ ccThreadFunction(renderWallThreaded)
 	renderWall(data->target, data->tex, data->sect, data->cam, data->edge, data->left, data->right, data->leftuv, data->rightuv);
 	ccThreadReturn();
 }
+*/
 
 void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam, sprite_t *sprite, xy_t pos)
 {
@@ -239,6 +239,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			double leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
 			double rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
 
+			/*
 			struct renderWallData data;
 			data.target = texture;
 			data.tex = textures;
@@ -252,7 +253,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 
 			ccThread thread;
 			ccThreadStart(&thread, renderWallThreaded, (void*)&data);
-			//renderWall(texture, textures, sector, cam, edge, camedge1, camedge2, leftuv, rightuv);
+			*/
+			renderWall(texture, textures, sector, cam, edge, camedge1, camedge2, leftuv, rightuv);
 		}
 	}
 

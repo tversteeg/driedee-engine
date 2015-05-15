@@ -113,6 +113,41 @@ bool lineSegmentIntersect(xy_t line, xy_t dir, xy_t p1, xy_t p2, xy_t *p)
 	return true;
 }
 
+bool raySegmentIntersect(xy_t ray, xy_t dir, xy_t p1, xy_t p2, xy_t *p)
+{
+	xy_t s;
+	s.x = p2.x - p1.x;
+	s.y = p2.y - p1.y;
+
+	xy_t diff;
+	diff.x = p1.x - ray.x;
+	diff.y = p1.y - ray.y;
+
+	double denom = vectorCrossProduct(dir, s);
+	double u = vectorCrossProduct(diff, dir);
+	double v = vectorCrossProduct(diff, s);
+	if(fabs(denom) < V_ERROR){
+		if(fabs(u) < V_ERROR){
+			p->x = (ray.x + p1.x) / 2;
+			p->y = (ray.y + p1.y) / 2;
+			return true;
+		}else{
+			return false;
+		}
+	}
+	u /= denom;
+	if(u < -V_ERROR || u > 1.0 + V_ERROR){
+		return false;
+	}
+	v /= denom;
+	if(v < -V_ERROR){
+		return false;
+	}
+	p->x = p1.x + u * s.x;
+	p->y = p1.y + u * s.y;
+	return true;
+}
+
 bool segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p)
 {
 	xy_t seg = {p2.x - p1.x, p2.y - p1.y};

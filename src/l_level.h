@@ -16,4 +16,4 @@ void destroySprite(sector_t *sect, sprite_t *sprite);
 
 sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos);
 
-edge_t *findWallRay(const sector_t *sect, xy_t point, xy_t dir);
+edge_t *findWallRay(xy_t *result, const sector_t *sect, xy_t point, xy_t dir);

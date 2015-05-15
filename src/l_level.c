@@ -208,27 +208,32 @@ sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos)
 	return NULL;
 }
 
-edge_t *findWallRay(const sector_t *sect, xy_t point, xy_t dir)
+edge_t *findWallRay(xy_t *result, const sector_t *sect, xy_t point, xy_t dir)
 {
+	edge_t *previous = NULL;
 	const sector_t *current = sect;
-	while(current != NULL){
+	do {
+		previous = NULL;
 		int i;
-		for(i = 0; i < sect->nedges; i++){
-			edge_t *edge = sect->edges + i;
-			xy_t edge1 = sect->vertices[edge->vertex1];
-			xy_t edge2 = sect->vertices[edge->vertex2];
+		for(i = 0; i < current->nedges; i++){
+			edge_t *edge = current->edges + i;
+			xy_t edge1 = current->vertices[edge->vertex1];
+			xy_t edge2 = current->vertices[edge->vertex2];
 			xy_t isect;
-			if(lineSegmentIntersect(point, dir, edge1, edge2, &isect)){
+			if(raySegmentIntersect(point, dir, edge1, edge2, &isect)){
 				if(edge->type == WALL){
+					*result = isect;
 					return edge;
-				}else if(edge->type == PORTAL){
-					point = isect;
+				}else if(edge->type == PORTAL && edge->neighbor != previous){
+					point.x = isect.x + dir.x;
+					point.y = isect.y + dir.y;
 					current = edge->neighbor->sector;
+					previous = edge;
 					break;
 				}
 			}
 		}
-	}
+	} while(current != NULL && previous != NULL);
 
 	return NULL;
 }

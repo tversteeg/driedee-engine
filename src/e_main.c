@@ -494,8 +494,15 @@ edge_t *castRayCam()
 {
 	xy_t campos = {cam.pos.x, cam.pos.z};
 	double angle = -cam.angle - M_PI / 2;
-	xy_t dir = vectorUnit((xy_t){cos(angle), sin(angle)});
-	return findWallRay(camsector, campos, dir);
+	xy_t dir = {cos(angle), sin(angle)};
+	xy_t point;
+	edge_t *result = findWallRay(&point, camsector, campos, dir);
+
+	drawLine(&editortex, (xy_t){point.x - 2, point.y}, (xy_t){point.x + 2, point.y}, COLOR_WHITE);
+	drawLine(&editortex, (xy_t){point.x, point.y - 2}, (xy_t){point.x, point.y + 2}, COLOR_WHITE);
+	redraweditor = true;
+
+	return result;
 }
 
 void handlePreviewMouseClick()
