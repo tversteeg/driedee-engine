@@ -493,7 +493,7 @@ void handleEditorMouseClick()
 edge_t *castRayCam()
 {
 	xy_t campos = {cam.pos.x, cam.pos.z};
-	double angle = -cam.angle - M_PI / 2;
+	double angle = -cam.angle - M_PI / 2 - (realmouse.x - EDITOR_WIDTH - PREVIEW_WIDTH / 2) / (PREVIEW_WIDTH / 2) * cam.fov;
 	xy_t dir = {cos(angle), sin(angle)};
 	xy_t point;
 	edge_t *result = findWallRay(&point, camsector, campos, dir);
