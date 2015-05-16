@@ -175,7 +175,7 @@ void renderMouse()
 	buffer[pos] = '\0';
 	drawString(&editortex, &font, buffer, 8, 8, COLOR_YELLOW);
 
-	if(realmouse.y < HEIGHT - MENU_HEIGHT){
+	if(realmouse.y < HEIGHT - MENU_HEIGHT && realmouse.x < EDITOR_WIDTH){
 		drawLine(&editortex, (xy_t){mouse.x - 5, mouse.y}, (xy_t){mouse.x + 5, mouse.y}, COLOR_YELLOW);
 		drawLine(&editortex, (xy_t){mouse.x, mouse.y - 5}, (xy_t){mouse.x, mouse.y + 5}, COLOR_YELLOW);
 
@@ -183,12 +183,6 @@ void renderMouse()
 	}else{
 		ccWindowMouseSetCursor(CC_CURSOR_ARROW);
 	}
-}
-
-void renderMousePreview()
-{
-	drawLine(&previewtex, (xy_t){realmouse.x - 5 - EDITOR_WIDTH, realmouse.y}, (xy_t){realmouse.x + 5 - EDITOR_WIDTH, realmouse.y}, COLOR_YELLOW);
-	drawLine(&previewtex, (xy_t){realmouse.x - EDITOR_WIDTH, realmouse.y - 5}, (xy_t){realmouse.x - EDITOR_WIDTH, realmouse.y + 5}, COLOR_YELLOW);
 }
 
 void renderMap()
@@ -289,7 +283,6 @@ void render()
 {	
 	if(camsector != NULL && redrawpreview){
 		renderFromSector(&previewtex, gametextures, camsector, &cam);
-		renderMousePreview();
 
 		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0);
 		clearTexture(&previewtex, COLOR_NONE);
@@ -818,19 +811,18 @@ int main(int argc, char **argv)
 		}
 
 		if(!vectorIsEqual(oldmouse, mouse)){
-			if(mouse.x <= EDITOR_WIDTH - 10){
+			if(mouse.x <= EDITOR_WIDTH){
 				redraweditor = true;
-			}else if(mouse.x >= EDITOR_WIDTH + 10){
-				redrawpreview = true;
-			}else{
-				redraweditor = true;
-				redrawpreview = true;
 			}
 
 			if(rightmousepressed){
 				mapoffset.x += mouse.x - oldmouse.x;
 				mapoffset.y += mouse.y - oldmouse.y;
 			}
+		}
+	
+		if(oldmouse.x < EDITOR_WIDTH && mouse.x > EDITOR_WIDTH){
+			ccWindowMouseSetCursor(CC_CURSOR_ARROW);
 		}
 
 		render();
