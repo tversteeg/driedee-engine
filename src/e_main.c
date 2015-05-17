@@ -41,9 +41,9 @@
 typedef enum {NO_TOOL, VERTEX_MOVE_TOOL, SECTOR_ADD_TOOL, EDGE_ADD_TOOL, SECTOR_SELECT_TOOL, SECTOR_DELETE_TOOL, EDGE_CHANGE_TOOL, EDGE_CONNECT_TOOL, WALL_CHANGE_TOOL, SPRITE_ADD_TOOL} tool_t;
 
 GLuint texture;
-texture_t previewtex, editortex, tex;
+texture_t previewtex, previewdepthtex, editortex, tex;
 
-texture_t *gametextures;
+texture_t *gametextures, drawtextures[2];
 const char *gametexturenames[256];
 size_t ngametextures;
 font_t font, icons;
@@ -282,9 +282,9 @@ void renderMap()
 void render()
 {	
 	if(camsector != NULL && redrawpreview){
-		renderFromSector(&previewtex, gametextures, camsector, &cam);
+		renderFromSector(drawtextures, gametextures, camsector, &cam);
 
-		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0);
+		drawTexture(&tex, &previewdepthtex, EDITOR_WIDTH, 0);
 		clearTexture(&previewtex, COLOR_NONE);
 
 		redrawpreview = false;
@@ -613,6 +613,10 @@ int main(int argc, char **argv)
 	initTexture(&tex, EDITOR_WIDTH + PREVIEW_WIDTH, HEIGHT);
 	initTexture(&editortex, EDITOR_WIDTH, HEIGHT);
 	initTexture(&previewtex, PREVIEW_WIDTH, HEIGHT);
+	initTexture(&previewdepthtex, PREVIEW_WIDTH, HEIGHT);
+
+	drawtextures[0] = previewtex;
+	drawtextures[1] = previewdepthtex;
 
 	initFont(&font, fontwidth, fontheight);
 	initFont(&icons, iconfontwidth, iconfontheight);

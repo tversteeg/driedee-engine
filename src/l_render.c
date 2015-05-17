@@ -4,6 +4,8 @@
 #include "l_level.h"
 
 #include <math.h>
+#include <string.h>
+#include <stdint.h>
 //#include <ccore/thread.h>
 
 struct renderWallData {
@@ -108,6 +110,11 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 
 				pixel_t pixel = ceiltex->pixels[((int)mapx % ceiltex->width) + ((int)mapy % ceiltex->height) * ceiltex->width];
 				setPixel(target, screenx, y, pixel);
+
+				// Draw depth buffer
+				uint32_t depthpixel = relscreeny * cam->zfar;	
+				memcpy(&pixel, &depthpixel, 4);
+				setPixel(target + 1, screenx, y, pixel);
 			}
 		}
 		// Draw floor
@@ -122,6 +129,11 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 
 				pixel_t pixel = floortex->pixels[((int)mapx % floortex->width) + ((int)mapy % floortex->height) * floortex->width];
 				setPixel(target, screenx, y, pixel);
+
+				// Draw depth buffer
+				uint32_t depthpixel = relscreeny * cam->zfar;	
+				memcpy(&pixel, &depthpixel, 4);
+				setPixel(target + 1, screenx, y, pixel);
 			}
 		}
 	}

@@ -10,4 +10,4 @@ typedef struct {
 
 void calculateViewport(camera_t *cam, xy_t right);
 
-void renderFromSector(texture_t *texture, texture_t *wall, sector_t *sector, camera_t *cam);
+void renderFromSector(texture_t *targets, texture_t *texturestack, sector_t *sector, camera_t *cam);
