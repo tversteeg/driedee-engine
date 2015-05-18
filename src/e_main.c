@@ -284,7 +284,7 @@ void render()
 	if(camsector != NULL && redrawpreview){
 		renderFromSector(drawtextures, gametextures, camsector, &cam);
 
-		drawTexture(&tex, &previewdepthtex, EDITOR_WIDTH, 0);
+		drawTexture(&tex, &previewtex, EDITOR_WIDTH, 0);
 		clearTexture(&previewtex, COLOR_NONE);
 
 		redrawpreview = false;
