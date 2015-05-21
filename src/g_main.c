@@ -52,7 +52,7 @@ typedef struct {
 } bullet_t;
 
 GLuint texture;
-texture_t tex;
+texture_t *textures;
 
 texture_t *gametextures;
 size_t ngametextures;
@@ -114,7 +114,7 @@ void handleGame()
 
 void render()
 {
-	renderFromSector(&tex, gametextures, player.sector, &player.cam);
+	renderFromSector(textures, gametextures, player.sector, &player.cam);
 
 	texture_t *gun;
 	if(bulletdelay <= 4){
@@ -124,12 +124,12 @@ void render()
 	}
 
 	//drawTextureScaled(&tex, gun, HWIDTH - gun->width - 30, HEIGHT - gun->height * 2, (xy_t){2, 2});
-	drawTextureScaled(&tex, gun, (HWIDTH / 2) - gun->width + 50, HHEIGHT - gun->height, (xy_t){1, 1});
+	drawTextureScaled(textures, gun, (HWIDTH / 2) - gun->width + 50, HHEIGHT - gun->height, (xy_t){1, 1});
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width, tex.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex.pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, textures->width, textures->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, textures->pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -144,7 +144,7 @@ void render()
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	clearTexture(&tex, COLOR_BLACK);
+	clearTexture(textures, COLOR_BLACK);
 }
 
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
@@ -236,7 +236,9 @@ int main(int argc, char **argv)
 
 	sectorInitialize();
 
-	initTexture(&tex, HWIDTH, HHEIGHT);
+	textures = (texture_t*)malloc(2 * sizeof(texture_t));
+	initTexture(textures, HWIDTH, HHEIGHT);
+	initTexture(textures + 1, HWIDTH, HHEIGHT);
 
 	ngametextures = 7;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
