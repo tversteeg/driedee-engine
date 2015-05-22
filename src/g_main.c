@@ -71,7 +71,9 @@ bool isshooting;
 bullet_t *bullets = NULL;
 int nbullets = 0, bulletdelay = 0;
 
-#define MAPSIZE ((HWIDTH / 8) * (HHEIGHT / 8))
+#define MAPWIDTH (HWIDTH >> 3)
+#define MAPHEIGHT (HHEIGHT >> 3)
+#define MAPSIZE ((MAPWIDTH) * (MAPHEIGHT))
 char map[MAPSIZE];
 
 void handleGame()
@@ -130,7 +132,7 @@ void generateMap()
 
 	int i;
 	for(i = 0; i < MAPSIZE; i++){
-		if(i % (HWIDTH / 8) == 0 || i % (HWIDTH / 8) == HWIDTH / 8 - 1 || i < HWIDTH / 8 || i > MAPSIZE - HWIDTH / 8){
+		if(i % (MAPWIDTH) == 0 || i % (MAPWIDTH) == MAPWIDTH - 1 || i < MAPWIDTH || i > MAPSIZE - MAPWIDTH){
 			map[i] = '#';
 		}else if(rand() % 50 == 0){
 			map[i] = '#';
@@ -140,29 +142,49 @@ void generateMap()
 	}
 
 	int times;
-	for(times = 0; times < 18; times++){
-		for(i = HWIDTH / 8; i < MAPSIZE - HWIDTH / 8; i++){
-			if((map[i - 1] == '#' || map[i + 1] == '#' || map[i - HWIDTH / 8] == '#' || map[i + HWIDTH / 8] == '#') && rand() % 10 == 0){
+	for(times = 0; times < 10; times++){
+		for(i = MAPWIDTH; i < MAPSIZE - MAPWIDTH; i++){
+			if((map[i - 1] == '#' || map[i + 1] == '#' || map[i - MAPWIDTH] == '#' || map[i + MAPWIDTH] == '#') && rand() % 10 == 0){
 				map[i] = '#';
 			}
 		}
 	}
 
 	for(i = 0; i < MAPSIZE; i++){
-		if(map[i] == '.' && rand() % 100 == 0){
+		if(map[i] == '.' && map[i + 1] == '.' && map[i - 1] == '.' && rand() % 100 == 0){
 			map[i] = 'R';
 		}
 	}
 
-	map[rand() % (MAPSIZE - HWIDTH / 4) + HWIDTH / 8] = '@';
+	int rooms[20 * 4];
+	for(i = 0; i < 20; i++){
+		int width = rand() % 8 + 2;
+		int height = rand() % 8 + 2;
+		int x = rand() % (MAPWIDTH - width);
+		int y = rand() % (MAPHEIGHT - height);
+
+		rooms[i << 2] = x;
+		rooms[(i << 2) + 1] = y;
+		rooms[(i << 2) + 2] = width;
+		rooms[(i << 2) + 3] = height;
+
+		int j, k;
+		for(j = x; j < x + width; j++){
+			for(k = y; k < y + height; k++){
+				map[j + k * MAPWIDTH] = '*';
+			}
+		}
+	}
+
+	map[rand() % (MAPSIZE - HWIDTH / 4) + MAPWIDTH] = '@';
 }
 
 void renderMap()
 {
 	int i;
 	for(i = 0; i < MAPSIZE; i++){
-		int x = i % (HWIDTH / 8);
-		int y = i / (HWIDTH / 8);
+		int x = i % (MAPWIDTH);
+		int y = i / (MAPWIDTH);
 		drawLetter(TEX_MAP, &font, map[i], x * 8, y * 8, (map[i] != '#' && map[i] != '.') ? COLOR_RED : COLOR_WHITE);
 	}
 }
