@@ -94,8 +94,14 @@ void generateMap()
 		int width = rooms[(i << 2) + 2];
 		int height = rooms[(i << 2) + 3];
 
+		int doors;
+		if(width > 5 && height > 5){
+			doors = rand() % 3 + 1;
+		}else{
+			doors = rand() % 2;
+		}
 		int j;
-		for(j = rand() % 3 + 1; j >= 0; j--){
+		for(j = doors; j >= 0; j--){
 			int mx = x;
 			int my = y;
 
@@ -108,9 +114,9 @@ void generateMap()
 			}
 
 			if(side < 2){
-				map[mx + (my + rand() % height) * MAPWIDTH] = '/';
+				map[mx + (my + rand() % (height - 2) + 1) * MAPWIDTH] = '%';
 			}else{
-				map[mx + rand() % width + my * MAPWIDTH] = '/';
+				map[mx + rand() % (width - 2) + 1 + my * MAPWIDTH] = '%';
 			}
 		}
 	}
