@@ -150,16 +150,10 @@ void generateMap()
 		}
 	}
 
-	for(i = 0; i < MAPSIZE; i++){
-		if(map[i] == '.' && map[i + 1] == '.' && map[i - 1] == '.' && rand() % 100 == 0){
-			map[i] = 'R';
-		}
-	}
-
 	int rooms[20 * 4];
 	for(i = 0; i < 20; i++){
-		int width = rand() % 8 + 2;
-		int height = rand() % 8 + 2;
+		int width = rand() % 8 + 3;
+		int height = rand() % 8 + 3;
 		int x = rand() % (MAPWIDTH - width);
 		int y = rand() % (MAPHEIGHT - height);
 
@@ -171,8 +165,18 @@ void generateMap()
 		int j, k;
 		for(j = x; j < x + width; j++){
 			for(k = y; k < y + height; k++){
-				map[j + k * MAPWIDTH] = '*';
+				if(k == y || j == x || k == y + height - 1 || j == x + width - 1){
+					map[j + k * MAPWIDTH] = '*';
+				}else{
+					map[j + k * MAPWIDTH] = '%';
+				}
 			}
+		}
+	}
+
+	for(i = 0; i < MAPSIZE; i++){
+		if(map[i] == '.' && map[i + 1] == '.' && map[i - 1] == '.' && rand() % 100 == 0){
+			map[i] = 'R';
 		}
 	}
 
@@ -185,7 +189,17 @@ void renderMap()
 	for(i = 0; i < MAPSIZE; i++){
 		int x = i % (MAPWIDTH);
 		int y = i / (MAPWIDTH);
-		drawLetter(TEX_MAP, &font, map[i], x * 8, y * 8, (map[i] != '#' && map[i] != '.') ? COLOR_RED : COLOR_WHITE);
+		if(map[i] == '#'){
+			drawLetter(TEX_MAP, &font, '#', x * 8, y * 8, COLOR_DARKGREEN);
+		}else if(map[i] == '.'){
+			drawLetter(TEX_MAP, &font, '.', x * 8, y * 8, COLOR_DARKBROWN);
+		}else if(map[i] == '*'){
+			drawLetter(TEX_MAP, &font, '*', x * 8, y * 8, COLOR_LIGHTGRAY);
+		}else if(map[i] == '%'){
+			drawLetter(TEX_MAP, &font, '.', x * 8, y * 8, COLOR_DARKGRAY);
+		}else{
+			drawLetter(TEX_MAP, &font, map[i], x * 8, y * 8, COLOR_RED);
+		}
 	}
 }
 
