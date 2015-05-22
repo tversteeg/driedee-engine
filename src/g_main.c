@@ -41,8 +41,6 @@
 
 #define TEX_3D (textures)
 #define TEX_DEPTH (textures + 1)
-#define TEX_MAP (textures + 2)
-#define TEX_SCREEN (textures + 3)
 
 struct player {
 	camera_t cam;
@@ -70,11 +68,6 @@ bool isshooting;
 
 bullet_t *bullets = NULL;
 int nbullets = 0, bulletdelay = 0;
-
-#define MAPWIDTH (HWIDTH >> 3)
-#define MAPHEIGHT (HHEIGHT >> 3)
-#define MAPSIZE ((MAPWIDTH) * (MAPHEIGHT))
-char map[MAPSIZE];
 
 void handleGame()
 {
@@ -126,83 +119,6 @@ void handleGame()
 	}
 }
 
-void generateMap()
-{
-	srand(time(NULL));
-
-	int i;
-	for(i = 0; i < MAPSIZE; i++){
-		if(i % (MAPWIDTH) == 0 || i % (MAPWIDTH) == MAPWIDTH - 1 || i < MAPWIDTH || i > MAPSIZE - MAPWIDTH){
-			map[i] = '#';
-		}else if(rand() % 50 == 0){
-			map[i] = '#';
-		}else{
-			map[i] = '.';
-		}
-	}
-
-	int times;
-	for(times = 0; times < 10; times++){
-		for(i = MAPWIDTH; i < MAPSIZE - MAPWIDTH; i++){
-			if((map[i - 1] == '#' || map[i + 1] == '#' || map[i - MAPWIDTH] == '#' || map[i + MAPWIDTH] == '#') && rand() % 10 == 0){
-				map[i] = '#';
-			}
-		}
-	}
-
-	int rooms[20 * 4];
-	for(i = 0; i < 20; i++){
-		int width = rand() % 8 + 3;
-		int height = rand() % 8 + 3;
-		int x = rand() % (MAPWIDTH - width);
-		int y = rand() % (MAPHEIGHT - height);
-
-		rooms[i << 2] = x;
-		rooms[(i << 2) + 1] = y;
-		rooms[(i << 2) + 2] = width;
-		rooms[(i << 2) + 3] = height;
-
-		int j, k;
-		for(j = x; j < x + width; j++){
-			for(k = y; k < y + height; k++){
-				if(k == y || j == x || k == y + height - 1 || j == x + width - 1){
-					map[j + k * MAPWIDTH] = '*';
-				}else{
-					map[j + k * MAPWIDTH] = '%';
-				}
-			}
-		}
-	}
-
-	for(i = 0; i < MAPSIZE; i++){
-		if(map[i] == '.' && map[i + 1] == '.' && map[i - 1] == '.' && rand() % 100 == 0){
-			map[i] = 'R';
-		}
-	}
-
-	map[rand() % (MAPSIZE - HWIDTH / 4) + MAPWIDTH] = '@';
-}
-
-void renderMap()
-{
-	int i;
-	for(i = 0; i < MAPSIZE; i++){
-		int x = i % (MAPWIDTH);
-		int y = i / (MAPWIDTH);
-		if(map[i] == '#'){
-			drawLetter(TEX_MAP, &font, '#', x * 8, y * 8, COLOR_DARKGREEN);
-		}else if(map[i] == '.'){
-			drawLetter(TEX_MAP, &font, '.', x * 8, y * 8, COLOR_DARKBROWN);
-		}else if(map[i] == '*'){
-			drawLetter(TEX_MAP, &font, '*', x * 8, y * 8, COLOR_LIGHTGRAY);
-		}else if(map[i] == '%'){
-			drawLetter(TEX_MAP, &font, '.', x * 8, y * 8, COLOR_DARKGRAY);
-		}else{
-			drawLetter(TEX_MAP, &font, map[i], x * 8, y * 8, COLOR_RED);
-		}
-	}
-}
-
 void render()
 {
 	renderFromSector(TEX_3D, gametextures, player.sector, &player.cam);
@@ -217,15 +133,10 @@ void render()
 	//drawTextureScaled(&tex, gun, HWIDTH - gun->width - 30, HEIGHT - gun->height * 2, (xy_t){2, 2});
 	drawTextureScaled(TEX_3D, gun, (HWIDTH / 2) - gun->width + 50, HHEIGHT - gun->height, (xy_t){1, 1});
 
-	renderMap();
-
-	drawTexture(TEX_SCREEN, TEX_MAP, 0, 0);
-	drawTexture(TEX_SCREEN, TEX_3D, HWIDTH, 0);
-
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_SCREEN->width, TEX_SCREEN->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, TEX_SCREEN->pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_3D->width, TEX_3D->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, TEX_3D->pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -335,13 +246,9 @@ int main(int argc, char **argv)
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', (bool*)fontdata);
 
-	generateMap();
-
-	textures = (texture_t*)malloc(4 * sizeof(texture_t));
+	textures = (texture_t*)malloc(2 * sizeof(texture_t));
 	initTexture(textures, HWIDTH, HHEIGHT);
 	initTexture(textures + 1, HWIDTH, HHEIGHT);
-	initTexture(textures + 2, HWIDTH, HHEIGHT);
-	initTexture(textures + 3, WIDTH, HHEIGHT);
 
 	ngametextures = 7;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));

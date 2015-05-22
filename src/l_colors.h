@@ -34,6 +34,6 @@
 #define COLOR_CHARTREUSE ((pixel_t){127, 255, 0, 255})
 #define COLOR_SPRING ((pixel_t){0, 255, 127, 255})
 
-#define COLOR_LIGHTBROWN ((pixel_t){255, 127, 0, 255})
+#define COLOR_LIGHTBROWN ((pixel_t){255, 127, 31, 255})
 #define COLOR_BROWN ((pixel_t){127, 63, 0, 255})
 #define COLOR_DARKBROWN ((pixel_t){63, 31, 0, 255})
