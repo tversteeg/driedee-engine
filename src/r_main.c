@@ -29,8 +29,9 @@
 #define WIDTH 1280
 #define HEIGHT 768
 
-#define MAPWIDTH 1024
-#define MAPHEIGHT 1024
+#define VIEWPORTSIZE 20
+#define MAPWIDTH 256
+#define MAPHEIGHT 256
 #define MAPSIZE ((MAPWIDTH) * (MAPHEIGHT))
 char map[MAPSIZE];
 char unitmap[MAPSIZE];
@@ -62,6 +63,9 @@ void generateMap()
 
 	int i;
 	for(i = 0; i < MAPSIZE; i++){
+		map[i] = unitmap[i] = '\0';
+	}
+	for(i = 0; i < MAPSIZE; i++){
 		if(i % (MAPWIDTH) == 0 || i % (MAPWIDTH) == MAPWIDTH - 1 || i < MAPWIDTH || i > MAPSIZE - MAPWIDTH){
 			map[i] = '#';
 		}else if(rand() % 50 == 0){
@@ -71,7 +75,7 @@ void generateMap()
 		}
 	}
 
-#define ROOMS MAPSIZE / 1024
+#define ROOMS (MAPSIZE / 512)
 	int rooms[ROOMS * 4];
 	for(i = 0; i < ROOMS; i++){
 		int width = rand() % 10 + 3;
@@ -129,16 +133,16 @@ void generateMap()
 		}
 	}
 
+#undef ROOMS
+
 	int times;
-	for(times = 0; times < 10; times++){
+	for(times = 0; times < 15; times++){
 		for(i = MAPWIDTH; i < MAPSIZE - MAPWIDTH; i++){
 			if(map[i] != '*' && (map[i - 1] == '#' || map[i + 1] == '#' || map[i - MAPWIDTH] == '#' || map[i + MAPWIDTH] == '#') && rand() % 10 == 0){
 				map[i] = '#';
 			}
 		}
 	}
-
-#undef ROOMS
 
 	for(i = 0; i < MAPSIZE; i++){
 		if(map[i] == '.' && map[i + 1] == '.' && map[i - 1] == '.' && rand() % 100 == 0){
@@ -153,10 +157,10 @@ void generateMap()
 	player.pos = pos;
 }
 
-#define VIEWPORTSIZE 20
-
 void renderMap()
 {
+	clearTexture(&tex, COLOR_BLACK);
+
 	int minx = getMapX(player.pos) - VIEWPORTSIZE;
 	minx = minx > 0 ? minx : 0;
 	int maxx = getMapX(player.pos) + VIEWPORTSIZE;
@@ -189,13 +193,11 @@ void renderMap()
 		}
 	}
 
-	drawLetter(&tex, &font, '@', (maxx - minx) * 4, (maxy - miny) * 4, COLOR_LIGHTBLUE);
+	drawLetter(&tex, &font, '@', VIEWPORTSIZE * 8, VIEWPORTSIZE * 8, COLOR_LIGHTBLUE);
 }
 
 void render()
 {
-	renderMap();
-
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
@@ -213,36 +215,47 @@ void render()
 	glEnd();
 
 	glBindTexture(GL_TEXTURE_2D, 0);
+}
 
-	clearTexture(&tex, COLOR_BLACK);
+void endTurn()
+{
+	renderMap();
+}
+
+void movePlayer(int x, int y)
+{
+	int newpos = player.pos + x + y * MAPWIDTH;
+	if((map[newpos] == '.' || map[newpos] == '%') && unitmap[newpos] == '\0'){
+		player.pos = newpos;
+	}
+
+	endTurn();
 }
 
 void handleKeyUp(int keycode)
 {
 	switch(keycode){
 		case CC_KEY_LEFT:
-			player.pos--;
+			movePlayer(-1, 0);
 			break;
 		case CC_KEY_RIGHT:
-			player.pos++;
+			movePlayer(1, 0);
 			break;
 		case CC_KEY_UP:
-			player.pos -= MAPWIDTH;
+			movePlayer(0, -1);
 			break;
 		case CC_KEY_DOWN:
-			player.pos += MAPWIDTH;
+			movePlayer(0, 1);
 			break;
 	}
 }
 
 int main(int argc, char **argv)
 {
-	generateMap();
+	initTexture(&tex, WIDTH / 2, HEIGHT / 2);
 
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', (bool*)fontdata);
-
-	initTexture(&tex, WIDTH, HEIGHT);
 
 	ccDisplayInitialize();
 
@@ -262,6 +275,9 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	generateMap();
+	renderMap();
 
 	bool loop = true;
 	while(loop){
