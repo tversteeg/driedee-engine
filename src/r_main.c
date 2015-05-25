@@ -29,15 +29,32 @@
 #define WIDTH 1280
 #define HEIGHT 768
 
-#define MAPWIDTH (WIDTH >> 3)
-#define MAPHEIGHT (HEIGHT >> 3)
+#define MAPWIDTH 1024
+#define MAPHEIGHT 1024
 #define MAPSIZE ((MAPWIDTH) * (MAPHEIGHT))
 char map[MAPSIZE];
 char unitmap[MAPSIZE];
 
+int getMapX(int pos)
+{
+	return pos % MAPWIDTH;
+}
+int getMapY(int pos)
+{
+	return pos / MAPWIDTH;
+}
+int getMapPos(int x, int y)
+{
+	return x + y * MAPWIDTH;
+}
+
 GLuint texture;
 texture_t tex;
 font_t font;
+
+struct {
+	int pos;
+} player;
 
 void generateMap()
 {
@@ -54,16 +71,7 @@ void generateMap()
 		}
 	}
 
-	int times;
-	for(times = 0; times < 10; times++){
-		for(i = MAPWIDTH; i < MAPSIZE - MAPWIDTH; i++){
-			if((map[i - 1] == '#' || map[i + 1] == '#' || map[i - MAPWIDTH] == '#' || map[i + MAPWIDTH] == '#') && rand() % 10 == 0){
-				map[i] = '#';
-			}
-		}
-	}
-
-#define ROOMS 40
+#define ROOMS MAPSIZE / 1024
 	int rooms[ROOMS * 4];
 	for(i = 0; i < ROOMS; i++){
 		int width = rand() % 10 + 3;
@@ -80,9 +88,9 @@ void generateMap()
 		for(j = x; j < x + width; j++){
 			for(k = y; k < y + height; k++){
 				if(k == y || j == x || k == y + height - 1 || j == x + width - 1){
-					map[j + k * MAPWIDTH] = '*';
+					map[getMapPos(j, k)] = '*';
 				}else{
-					map[j + k * MAPWIDTH] = '%';
+					map[getMapPos(j, k)] = '%';
 				}
 			}
 		}
@@ -114,9 +122,18 @@ void generateMap()
 			}
 
 			if(side < 2){
-				map[mx + (my + rand() % (height - 2) + 1) * MAPWIDTH] = '%';
+				map[getMapPos(mx, my + rand() % (height - 2) + 1)] = '%';
 			}else{
-				map[mx + rand() % (width - 2) + 1 + my * MAPWIDTH] = '%';
+				map[getMapPos(mx + rand() % (width - 2) + 1 , my)] = '%';
+			}
+		}
+	}
+
+	int times;
+	for(times = 0; times < 10; times++){
+		for(i = MAPWIDTH; i < MAPSIZE - MAPWIDTH; i++){
+			if(map[i] != '*' && (map[i - 1] == '#' || map[i + 1] == '#' || map[i - MAPWIDTH] == '#' || map[i + MAPWIDTH] == '#') && rand() % 10 == 0){
+				map[i] = '#';
 			}
 		}
 	}
@@ -129,31 +146,50 @@ void generateMap()
 		}
 	}
 
-	unitmap[rand() % (MAPSIZE - MAPWIDTH * 2) + MAPWIDTH] = '@';
+	int pos;
+	do{
+		pos = rand() % MAPSIZE;
+	} while(map[pos] != '.');
+	player.pos = pos;
 }
+
+#define VIEWPORTSIZE 20
 
 void renderMap()
 {
-	int i;
-	for(i = 0; i < MAPSIZE; i++){
-		int x = i % (MAPWIDTH);
-		int y = i / (MAPWIDTH);
-		if(unitmap[i] == '@'){
-			drawLetter(&tex, &font, '@', x * 8, y * 8, COLOR_LIGHTBLUE);
-		}else if(unitmap[i] != '\0'){
-			drawLetter(&tex, &font, unitmap[i], x * 8, y * 8, COLOR_LIGHTRED);
-		}else if(map[i] == '#'){
-			drawLetter(&tex, &font, '#', x * 8, y * 8, COLOR_DARKGREEN);
-		}else if(map[i] == '.'){
-			drawLetter(&tex, &font, '.', x * 8, y * 8, COLOR_DARKBROWN);
-		}else if(map[i] == '*'){
-			drawLetter(&tex, &font, '*', x * 8, y * 8, COLOR_LIGHTGRAY);
-		}else if(map[i] == '%'){
-			drawLetter(&tex, &font, '.', x * 8, y * 8, COLOR_DARKGRAY);
-		}else{
-			drawLetter(&tex, &font, map[i], x * 8, y * 8, COLOR_RED);
+	int minx = getMapX(player.pos) - VIEWPORTSIZE;
+	minx = minx > 0 ? minx : 0;
+	int maxx = getMapX(player.pos) + VIEWPORTSIZE;
+	maxx = maxx < MAPWIDTH ? maxx : MAPWIDTH;
+	int miny = getMapY(player.pos) - VIEWPORTSIZE;
+	miny = miny > 0 ? miny : 0;
+	int maxy = getMapY(player.pos) + VIEWPORTSIZE;
+	maxy = maxy < MAPHEIGHT ? maxy : MAPHEIGHT;
+
+	int x;
+	for(x = minx; x < maxx; x++){
+		int y;
+		for(y = miny; y < maxy; y++){
+			int i = getMapPos(x, y);
+			int rx = (x - minx) * 8;
+			int ry = (y - miny) * 8;
+			if(unitmap[i] != '\0'){
+				drawLetter(&tex, &font, unitmap[i], rx, ry, COLOR_LIGHTRED);
+			}else if(map[i] == '#'){
+				drawLetter(&tex, &font, '#', rx, ry, COLOR_DARKGREEN);
+			}else if(map[i] == '.'){
+				drawLetter(&tex, &font, '.', rx, ry, COLOR_DARKBROWN);
+			}else if(map[i] == '*'){
+				drawLetter(&tex, &font, '*', rx, ry, COLOR_LIGHTGRAY);
+			}else if(map[i] == '%'){
+				drawLetter(&tex, &font, '.', rx, ry, COLOR_DARKGRAY);
+			}else{
+				drawLetter(&tex, &font, map[i], rx, ry, COLOR_RED);
+			}
 		}
 	}
+
+	drawLetter(&tex, &font, '@', (maxx - minx) * 4, (maxy - miny) * 4, COLOR_LIGHTBLUE);
 }
 
 void render()
@@ -179,6 +215,24 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	clearTexture(&tex, COLOR_BLACK);
+}
+
+void handleKeyUp(int keycode)
+{
+	switch(keycode){
+		case CC_KEY_LEFT:
+			player.pos--;
+			break;
+		case CC_KEY_RIGHT:
+			player.pos++;
+			break;
+		case CC_KEY_UP:
+			player.pos -= MAPWIDTH;
+			break;
+		case CC_KEY_DOWN:
+			player.pos += MAPWIDTH;
+			break;
+	}
 }
 
 int main(int argc, char **argv)
@@ -220,6 +274,8 @@ int main(int argc, char **argv)
 						loop = false;
 						break;
 				}
+			}else if(ccWindowEventGet().type == CC_EVENT_KEY_UP){
+				handleKeyUp(ccWindowEventGet().keyCode);
 			}
 		}
 
