@@ -29,7 +29,7 @@
 #define WIDTH 1280
 #define HEIGHT 768
 
-#define VIEWPORTSIZE 20
+#define VIEWPORTSIZE 40
 #define MAPWIDTH 256
 #define MAPHEIGHT 256
 #define MAPSIZE ((MAPWIDTH) * (MAPHEIGHT))
@@ -55,6 +55,7 @@ font_t font;
 
 struct {
 	int pos;
+	int health, coins;
 } player;
 
 void generateMap()
@@ -157,26 +158,46 @@ void generateMap()
 	player.pos = pos;
 }
 
+void renderGui()
+{
+	char *healthstr = (char*)malloc(30);
+	snprintf(healthstr, 30, "Health: %d\nCoins:  %d", player.health, player.coins);
+	drawString(&tex, &font, healthstr, VIEWPORTSIZE * 8 + 8, 8, COLOR_WHITE);
+
+	free(healthstr);
+}
+
+char vismap[VIEWPORTSIZE][VIEWPORTSIZE];
 void renderMap()
 {
-	clearTexture(&tex, COLOR_BLACK);
-
-	int minx = getMapX(player.pos) - VIEWPORTSIZE;
+	int minx = getMapX(player.pos) - VIEWPORTSIZE / 2;
 	minx = minx > 0 ? minx : 0;
-	int maxx = getMapX(player.pos) + VIEWPORTSIZE;
+	int maxx = minx + VIEWPORTSIZE;
 	maxx = maxx < MAPWIDTH ? maxx : MAPWIDTH;
-	int miny = getMapY(player.pos) - VIEWPORTSIZE;
+	int miny = getMapY(player.pos) - VIEWPORTSIZE / 2;
 	miny = miny > 0 ? miny : 0;
-	int maxy = getMapY(player.pos) + VIEWPORTSIZE;
+	int maxy = miny + VIEWPORTSIZE;
 	maxy = maxy < MAPHEIGHT ? maxy : MAPHEIGHT;
 
+	memset(&vismap, 0, VIEWPORTSIZE * VIEWPORTSIZE);
+
 	int x;
+	for(x = 0; x < VIEWPORTSIZE * 2; x++){
+
+	}
+
 	for(x = minx; x < maxx; x++){
 		int y;
 		for(y = miny; y < maxy; y++){
 			int i = getMapPos(x, y);
-			int rx = (x - minx) * 8;
-			int ry = (y - miny) * 8;
+			int ax = x - minx;
+			int ay = y - miny;
+			if(vismap[ax][ay] == 0){
+				//continue;
+			}
+
+			int rx = ax * 8;
+			int ry = ay * 8;
 			if(unitmap[i] != '\0'){
 				drawLetter(&tex, &font, unitmap[i], rx, ry, COLOR_LIGHTRED);
 			}else if(map[i] == '#'){
@@ -193,7 +214,7 @@ void renderMap()
 		}
 	}
 
-	drawLetter(&tex, &font, '@', VIEWPORTSIZE * 8, VIEWPORTSIZE * 8, COLOR_LIGHTBLUE);
+	drawLetter(&tex, &font, '@', VIEWPORTSIZE * 4, VIEWPORTSIZE * 4, COLOR_LIGHTBLUE);
 }
 
 void render()
@@ -219,6 +240,10 @@ void render()
 
 void endTurn()
 {
+	clearTexture(&tex, COLOR_BLACK);
+
+	renderGui();
+
 	renderMap();
 }
 
@@ -275,6 +300,8 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	player.health = 100;
 
 	generateMap();
 	renderMap();
