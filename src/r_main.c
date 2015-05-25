@@ -168,6 +168,46 @@ void renderGui()
 }
 
 char vismap[VIEWPORTSIZE][VIEWPORTSIZE];
+bool checkvismap(int x, int y)
+{
+	if(vismap[x][y] != 0){
+		return false;
+	}
+	if(x > 0){
+		if(vismap[x - 1][y] != 0){
+			return false;
+		}
+	}
+	if(x < VIEWPORTSIZE - 1){
+		if(vismap[x + 1][y] != 0){
+			return false;
+		}
+	}
+	if(y > 0){
+		if(vismap[x][y - 1] != 0){
+			return false;
+		}
+	}
+	if(y < VIEWPORTSIZE - 1){
+		if(vismap[x][y + 1] != 0){
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void calculatelos()
+{
+	int x;
+	for(x = 0; x < VIEWPORTSIZE / 2; x++){
+		int y;
+		for(y = 0; y < VIEWPORTSIZE / 2; y++){
+			
+		}
+	}
+}
+
 void renderMap()
 {
 	int minx = getMapX(player.pos) - VIEWPORTSIZE / 2;
@@ -182,9 +222,17 @@ void renderMap()
 	memset(&vismap, 0, VIEWPORTSIZE * VIEWPORTSIZE);
 
 	int x;
-	for(x = 0; x < VIEWPORTSIZE * 2; x++){
-
+	for(x = 0; x < VIEWPORTSIZE; x++){
+		int y;
+		for(y = 0; y < VIEWPORTSIZE; y++){
+			int i = getMapPos(minx + x, miny + y);
+			if(map[i] == '%' || map[i] == '.'){
+				vismap[x][y] = 1;
+			}
+		}
 	}
+
+	calculatelos();
 
 	for(x = minx; x < maxx; x++){
 		int y;
@@ -192,8 +240,8 @@ void renderMap()
 			int i = getMapPos(x, y);
 			int ax = x - minx;
 			int ay = y - miny;
-			if(vismap[ax][ay] == 0){
-				//continue;
+			if(checkvismap(ax, ay)){
+				continue;
 			}
 
 			int rx = ax * 8;
