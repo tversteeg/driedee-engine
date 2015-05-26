@@ -214,7 +214,8 @@ void setLOSVismap(int x, int y)
 			ocluded = true;
 		}
 		if(ocluded){
-			vismap[x2][y2] = 0;
+			vismap[x][y] = 0;
+			return;
 		}
 		if(x == x2 && y == y2){
 			return;
