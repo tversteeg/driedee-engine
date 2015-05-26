@@ -168,7 +168,7 @@ void renderGui()
 }
 
 char vismap[VIEWPORTSIZE][VIEWPORTSIZE];
-bool checkvismap(int x, int y)
+bool checkVismap(int x, int y)
 {
 	if(vismap[x][y] != 0){
 		return false;
@@ -197,13 +197,47 @@ bool checkvismap(int x, int y)
 	return true;
 }
 
-void calculatelos()
+void setLOSVismap(int x, int y)
+{
+	int x2 = VIEWPORTSIZE / 2;
+	int y2 = VIEWPORTSIZE / 2;
+	int dx = abs(x - x2);
+	int dy = abs(y - y2);
+
+	int sx = x2 < x ? 1 : -1;
+	int sy = y2 < y ? 1 : -1;
+
+	int err = (dx > dy ? dx : -dy) / 2;
+	bool ocluded = false;
+	while(true){
+		if(vismap[x2][y2] <= 0){
+			ocluded = true;
+		}
+		if(ocluded){
+			vismap[x2][y2] = 0;
+		}
+		if(x == x2 && y == y2){
+			return;
+		}
+		int err2 = err;
+		if(err2 > -dx){
+			err -= dy;
+			x2 += sx;
+		}
+		if(err2 < dy){
+			err += dx;
+			y2 += sy;
+		}
+	}
+}
+
+void calculateLOS()
 {
 	int x;
-	for(x = 0; x < VIEWPORTSIZE / 2; x++){
+	for(x = 0; x < VIEWPORTSIZE; x++){
 		int y;
-		for(y = 0; y < VIEWPORTSIZE / 2; y++){
-			
+		for(y = 0; y < VIEWPORTSIZE; y++){
+			setLOSVismap(x, y);
 		}
 	}
 }
@@ -232,7 +266,7 @@ void renderMap()
 		}
 	}
 
-	calculatelos();
+	calculateLOS();
 
 	for(x = minx; x < maxx; x++){
 		int y;
@@ -240,7 +274,7 @@ void renderMap()
 			int i = getMapPos(x, y);
 			int ax = x - minx;
 			int ay = y - miny;
-			if(checkvismap(ax, ay)){
+			if(checkVismap(ax, ay)){
 				continue;
 			}
 
