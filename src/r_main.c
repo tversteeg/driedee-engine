@@ -34,7 +34,18 @@
 #define MAPHEIGHT 256
 #define MAPSIZE ((MAPWIDTH) * (MAPHEIGHT))
 char map[MAPSIZE];
+char vismap[MAPSIZE];
 char unitmap[MAPSIZE];
+char viewportmap[VIEWPORTSIZE][VIEWPORTSIZE];
+
+GLuint texture;
+texture_t tex;
+font_t font;
+
+struct {
+	int pos;
+	int health, coins;
+} player;
 
 int getMapX(int pos)
 {
@@ -49,22 +60,13 @@ int getMapPos(int x, int y)
 	return x + y * MAPWIDTH;
 }
 
-GLuint texture;
-texture_t tex;
-font_t font;
-
-struct {
-	int pos;
-	int health, coins;
-} player;
-
 void generateMap()
 {
 	srand(time(NULL));
 
 	int i;
 	for(i = 0; i < MAPSIZE; i++){
-		map[i] = unitmap[i] = '\0';
+		map[i] = unitmap[i] = vismap[i] = '\0';
 	}
 	for(i = 0; i < MAPSIZE; i++){
 		if(i % (MAPWIDTH) == 0 || i % (MAPWIDTH) == MAPWIDTH - 1 || i < MAPWIDTH || i > MAPSIZE - MAPWIDTH){
@@ -167,29 +169,28 @@ void renderGui()
 	free(healthstr);
 }
 
-char vismap[VIEWPORTSIZE][VIEWPORTSIZE];
-bool checkVismap(int x, int y)
+bool checkViewport(int x, int y)
 {
-	if(vismap[x][y] != 0){
+	if(viewportmap[x][y] != 0){
 		return false;
 	}
 	if(x > 0){
-		if(vismap[x - 1][y] != 0){
+		if(viewportmap[x - 1][y] != 0){
 			return false;
 		}
 	}
 	if(x < VIEWPORTSIZE - 1){
-		if(vismap[x + 1][y] != 0){
+		if(viewportmap[x + 1][y] != 0){
 			return false;
 		}
 	}
 	if(y > 0){
-		if(vismap[x][y - 1] != 0){
+		if(viewportmap[x][y - 1] != 0){
 			return false;
 		}
 	}
 	if(y < VIEWPORTSIZE - 1){
-		if(vismap[x][y + 1] != 0){
+		if(viewportmap[x][y + 1] != 0){
 			return false;
 		}
 	}
@@ -197,7 +198,7 @@ bool checkVismap(int x, int y)
 	return true;
 }
 
-void setLOSVismap(int x, int y)
+void setLOSViewport(int x, int y)
 {
 	int x2 = VIEWPORTSIZE / 2;
 	int y2 = VIEWPORTSIZE / 2;
@@ -210,11 +211,11 @@ void setLOSVismap(int x, int y)
 	int err = (dx > dy ? dx : -dy) / 2;
 	bool ocluded = false;
 	while(true){
-		if(vismap[x2][y2] <= 0){
+		if(viewportmap[x2][y2] <= 0){
 			ocluded = true;
 		}
 		if(ocluded){
-			vismap[x][y] = 0;
+			viewportmap[x][y] = 0;
 			return;
 		}
 		if(x == x2 && y == y2){
@@ -238,23 +239,21 @@ void calculateLOS()
 	for(x = 0; x < VIEWPORTSIZE; x++){
 		int y;
 		for(y = 0; y < VIEWPORTSIZE; y++){
-			setLOSVismap(x, y);
+			setLOSViewport(x, y);
 		}
 	}
 }
 
 void renderMap()
 {
-	int minx = getMapX(player.pos) - VIEWPORTSIZE / 2;
-	minx = minx > 0 ? minx : 0;
+	int px = getMapX(player.pos);
+	int py = getMapY(player.pos);
+	int minx = px - VIEWPORTSIZE / 2;
 	int maxx = minx + VIEWPORTSIZE;
-	maxx = maxx < MAPWIDTH ? maxx : MAPWIDTH;
-	int miny = getMapY(player.pos) - VIEWPORTSIZE / 2;
-	miny = miny > 0 ? miny : 0;
+	int miny = py - VIEWPORTSIZE / 2;
 	int maxy = miny + VIEWPORTSIZE;
-	maxy = maxy < MAPHEIGHT ? maxy : MAPHEIGHT;
 
-	memset(&vismap, 0, VIEWPORTSIZE * VIEWPORTSIZE);
+	memset(&viewportmap, 0, VIEWPORTSIZE * VIEWPORTSIZE);
 
 	int x;
 	for(x = 0; x < VIEWPORTSIZE; x++){
@@ -262,7 +261,7 @@ void renderMap()
 		for(y = 0; y < VIEWPORTSIZE; y++){
 			int i = getMapPos(minx + x, miny + y);
 			if(map[i] == '%' || map[i] == '.'){
-				vismap[x][y] = 1;
+				viewportmap[x][y] = 1;
 			}
 		}
 	}
@@ -275,24 +274,32 @@ void renderMap()
 			int i = getMapPos(x, y);
 			int ax = x - minx;
 			int ay = y - miny;
-			if(checkVismap(ax, ay)){
-				continue;
-			}
+			if(!checkViewport(ax, ay)){
+				int rx = ax * 8;
+				int ry = ay * 8;
+				if(unitmap[i] != '\0'){
+					drawLetter(&tex, &font, unitmap[i], rx, ry, COLOR_LIGHTRED);
+				}else if(map[i] == '#'){
+					drawLetter(&tex, &font, '#', rx, ry, COLOR_DARKGREEN);
+				}else if(map[i] == '.'){
+					drawLetter(&tex, &font, '.', rx, ry, COLOR_DARKBROWN);
+				}else if(map[i] == '*'){
+					drawLetter(&tex, &font, '*', rx, ry, COLOR_LIGHTGRAY);
+				}else if(map[i] == '%'){
+					drawLetter(&tex, &font, '.', rx, ry, COLOR_DARKGRAY);
+				}else{
+					drawLetter(&tex, &font, map[i], rx, ry, COLOR_RED);
+				}
 
-			int rx = ax * 8;
-			int ry = ay * 8;
-			if(unitmap[i] != '\0'){
-				drawLetter(&tex, &font, unitmap[i], rx, ry, COLOR_LIGHTRED);
-			}else if(map[i] == '#'){
-				drawLetter(&tex, &font, '#', rx, ry, COLOR_DARKGREEN);
-			}else if(map[i] == '.'){
-				drawLetter(&tex, &font, '.', rx, ry, COLOR_DARKBROWN);
-			}else if(map[i] == '*'){
-				drawLetter(&tex, &font, '*', rx, ry, COLOR_LIGHTGRAY);
-			}else if(map[i] == '%'){
-				drawLetter(&tex, &font, '.', rx, ry, COLOR_DARKGRAY);
-			}else{
-				drawLetter(&tex, &font, map[i], rx, ry, COLOR_RED);
+				vismap[i] = 1;
+			}else if(vismap[i] > 0){
+				int rx = ax * 8;
+				int ry = ay * 8;
+				if(map[i] == '#'){
+					drawLetter(&tex, &font, '#', rx, ry, COLOR_DARKGRAY);
+				}else if(map[i] == '*'){
+					drawLetter(&tex, &font, '*', rx, ry, COLOR_DARKGRAY);
+				}
 			}
 		}
 	}
