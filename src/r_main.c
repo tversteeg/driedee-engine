@@ -33,19 +33,47 @@
 #define MAPWIDTH 256
 #define MAPHEIGHT 256
 #define MAPSIZE ((MAPWIDTH) * (MAPHEIGHT))
-char map[MAPSIZE];
-char vismap[MAPSIZE];
-char unitmap[MAPSIZE];
-char viewportmap[VIEWPORTSIZE][VIEWPORTSIZE];
 
-GLuint texture;
-texture_t tex;
-font_t font;
+typedef enum { ENEMY_RAT, ENEMY_ARCHER } enemytype_t;
+
+typedef struct {
+	enemytype_t type;
+	int pos;
+	int health;
+} enemy_t;
 
 struct {
 	int pos;
 	int health, coins;
 } player;
+
+char map[MAPSIZE];
+char vismap[MAPSIZE];
+char viewportmap[VIEWPORTSIZE][VIEWPORTSIZE];
+enemy_t *enemies;
+int nenemies;
+
+GLuint texture;
+texture_t tex;
+font_t font;
+
+void spawnEnemy(int pos, enemytype_t type)
+{
+	enemies = (enemy_t*)realloc(enemies, ++nenemies * sizeof(enemy_t));
+
+	enemy_t *enemy = enemies + nenemies - 1;
+	enemy->pos = pos;
+	enemy->type = type;
+
+	switch(type){
+		case ENEMY_RAT:
+			enemy->health = 10;
+			break;
+		case ENEMY_ARCHER:
+			enemy->health = 100;
+			break;
+	}
+}
 
 int getMapX(int pos)
 {
@@ -62,11 +90,14 @@ int getMapPos(int x, int y)
 
 void generateMap()
 {
+	nenemies = 0;
+	enemies = NULL;
+
 	srand(time(NULL));
 
 	int i;
 	for(i = 0; i < MAPSIZE; i++){
-		map[i] = unitmap[i] = vismap[i] = '\0';
+		map[i] = vismap[i] = '\0';
 	}
 	for(i = 0; i < MAPSIZE; i++){
 		if(i % (MAPWIDTH) == 0 || i % (MAPWIDTH) == MAPWIDTH - 1 || i < MAPWIDTH || i > MAPSIZE - MAPWIDTH){
@@ -149,7 +180,7 @@ void generateMap()
 
 	for(i = 0; i < MAPSIZE; i++){
 		if(map[i] == '.' && map[i + 1] == '.' && map[i - 1] == '.' && rand() % 100 == 0){
-			unitmap[i] = 'R';
+			spawnEnemy(i, (enemytype_t)(rand() % 2));
 		}
 	}
 
@@ -277,9 +308,7 @@ void renderMap()
 			if(!checkViewport(ax, ay)){
 				int rx = ax * 8;
 				int ry = ay * 8;
-				if(unitmap[i] != '\0'){
-					drawLetter(&tex, &font, unitmap[i], rx, ry, COLOR_LIGHTRED);
-				}else if(map[i] == '#'){
+				if(map[i] == '#'){
 					drawLetter(&tex, &font, '#', rx, ry, COLOR_DARKGREEN);
 				}else if(map[i] == '.'){
 					drawLetter(&tex, &font, '.', rx, ry, COLOR_DARKBROWN);
@@ -301,6 +330,28 @@ void renderMap()
 					drawLetter(&tex, &font, '*', rx, ry, COLOR_DARKGRAY);
 				}
 			}
+		}
+	}
+
+	int i;
+	for(i = 0; i < nenemies; i++){
+		enemy_t enemy = enemies[i];
+		int ex = getMapX(enemy.pos) - minx;
+		int ey = getMapY(enemy.pos) - miny;
+		if(ex >= 0 && ex < VIEWPORTSIZE && ey >= 0 && ey < VIEWPORTSIZE && !checkViewport(ex, ey)){
+			char enemychar = '\0';
+			pixel_t color;
+			switch(enemy.type){
+				case ENEMY_RAT:
+					enemychar = 'R';
+					color = COLOR_LIGHTBROWN;
+					break;
+				case ENEMY_ARCHER:
+					enemychar = 'A';
+					color = COLOR_GREEN;
+					break;
+			}
+			drawLetter(&tex, &font, enemychar, ex * 8, ey * 8, color);
 		}
 	}
 
@@ -339,10 +390,17 @@ void endTurn()
 
 void movePlayer(int x, int y)
 {
-	int newpos = player.pos + x + y * MAPWIDTH;
-	if((map[newpos] == '.' || map[newpos] == '%') && unitmap[newpos] == '\0'){
-		player.pos = newpos;
+	int i, newpos = player.pos + x + y * MAPWIDTH;
+	for(i = 0; i < nenemies; i++){
+		if(enemies[i].pos == newpos){
+			return;
+		}
 	}
+	if(map[newpos] != '.' && map[newpos] != '%'){
+		return;
+	}
+		
+	player.pos = newpos;
 
 	endTurn();
 }
