@@ -42,9 +42,19 @@ typedef struct {
 	int health;
 } enemy_t;
 
+typedef struct _itemtype_t {
+	struct _itemtype_t *parent;
+	char *name;
+} itemtype_t;
+
+typedef struct {
+	itemtype_t type;
+} item_t;
+
 struct {
 	int pos;
 	int health, coins;
+	item_t *items;
 } player;
 
 char map[MAPSIZE];
