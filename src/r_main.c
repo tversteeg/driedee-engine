@@ -44,11 +44,13 @@ typedef struct {
 
 typedef struct _itemtype_t {
 	struct _itemtype_t *parent;
-	char *name;
+	char name[20];
 } itemtype_t;
 
 typedef struct {
-	itemtype_t type;
+	itemtype_t *type;
+	bool onplayer;
+	int pos;
 } item_t;
 
 struct {
@@ -57,11 +59,23 @@ struct {
 	item_t *items;
 } player;
 
+itemtype_t weapontype = {NULL, "Weapon"};
+itemtype_t swordtype = {&weapontype, "Sword"};
+itemtype_t speartype = {&weapontype, "Spear"};
+
+itemtype_t potiontype = {NULL, "Potion"};
+itemtype_t healthtype = {&potiontype, "Health Potion"};
+itemtype_t manatype = {&potiontype, "Mana Potion"};
+
+itemtype_t *droptypes[] = {&healthtype, &manatype, &swordtype, &speartype};
+
 char map[MAPSIZE];
 char vismap[MAPSIZE];
 char viewportmap[VIEWPORTSIZE][VIEWPORTSIZE];
 enemy_t *enemies;
 int nenemies;
+item_t *items;
+int nitems;
 
 GLuint texture;
 texture_t tex;
@@ -85,6 +99,15 @@ void spawnEnemy(int pos, enemytype_t type)
 	}
 }
 
+void spawnItem(int pos, int typeindex)
+{
+	items = (item_t*)realloc(items, ++nitems * sizeof(item_t));
+
+	item_t *item = items + nitems - 1;
+	item->pos = pos;
+	item->type = droptypes[typeindex];
+}
+
 int getMapX(int pos)
 {
 	return pos % MAPWIDTH;
@@ -102,6 +125,9 @@ void generateMap()
 {
 	nenemies = 0;
 	enemies = NULL;
+
+	nitems = 0;
+	items = NULL;
 
 	srand(time(NULL));
 
@@ -193,6 +219,12 @@ void generateMap()
 			spawnEnemy(i, (enemytype_t)(rand() % 2));
 		}
 	}
+	
+	for(i = 0; i < MAPSIZE; i++){
+		if(map[i] == '%' && rand() % 20 == 0){
+			spawnItem(i, rand() % (sizeof(droptypes) / sizeof(droptypes[0])));
+		}
+	}
 
 	int pos;
 	do{
@@ -206,8 +238,18 @@ void renderGui()
 	char *healthstr = (char*)malloc(30);
 	snprintf(healthstr, 30, "Health: %d\nCoins:  %d", player.health, player.coins);
 	drawString(&tex, &font, healthstr, VIEWPORTSIZE * 8 + 8, 8, COLOR_WHITE);
-
 	free(healthstr);
+
+	int i;
+	for(i = 0; i < nitems; i++){
+		if(player.pos == items[i].pos){
+			char *itemstr = (char*)malloc(30);
+			snprintf(itemstr, 30, "Item: %s\n", items[i].type->name);
+			drawString(&tex, &font, itemstr, VIEWPORTSIZE * 8 + 8, 32, COLOR_YELLOW);
+			free(itemstr);
+			break;
+		}
+	}
 }
 
 bool checkViewport(int x, int y)
@@ -362,6 +404,15 @@ void renderMap()
 					break;
 			}
 			drawLetter(&tex, &font, enemychar, ex * 8, ey * 8, color);
+		}
+	}
+
+	for(i = 0; i < nitems; i++){
+		item_t item = items[i];
+		int ex = getMapX(item.pos) - minx;
+		int ey = getMapY(item.pos) - miny;
+		if(ex >= 0 && ex < VIEWPORTSIZE && ey >= 0 && ey < VIEWPORTSIZE && !checkViewport(ex, ey)){
+			drawLetter(&tex, &font, 'C', ex * 8, ey * 8, COLOR_BROWN);
 		}
 	}
 
