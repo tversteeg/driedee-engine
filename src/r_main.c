@@ -50,13 +50,14 @@ typedef struct _itemtype_t {
 typedef struct {
 	itemtype_t *type;
 	bool onplayer;
-	int pos;
+	int pos, amount;
 } item_t;
 
 struct {
 	int pos;
 	int health, coins;
 	item_t *items;
+	int nitems;
 } player;
 
 itemtype_t weapontype = {NULL, "Weapon"};
@@ -106,6 +107,7 @@ void spawnItem(int pos, int typeindex)
 	item_t *item = items + nitems - 1;
 	item->pos = pos;
 	item->type = droptypes[typeindex];
+	item->amount = 1;
 }
 
 int getMapX(int pos)
@@ -241,14 +243,11 @@ void renderGui()
 	free(healthstr);
 
 	int i;
-	for(i = 0; i < nitems; i++){
-		if(player.pos == items[i].pos){
-			char *itemstr = (char*)malloc(30);
-			snprintf(itemstr, 30, "Item: %s\n", items[i].type->name);
-			drawString(&tex, &font, itemstr, VIEWPORTSIZE * 8 + 8, 32, COLOR_YELLOW);
-			free(itemstr);
-			break;
-		}
+	for(i = 0; i < player.nitems; i++){
+		char *itemstr = (char*)malloc(30);
+		snprintf(itemstr, 30, "Item: %d %s\n", player.items[i].amount, player.items[i].type->name);
+		drawString(&tex, &font, itemstr, VIEWPORTSIZE * 8 + 8, 32 + i * 8, COLOR_YELLOW);
+		free(itemstr);
 	}
 }
 
@@ -408,6 +407,9 @@ void renderMap()
 	}
 
 	for(i = 0; i < nitems; i++){
+		if(items + i == NULL){
+			continue;
+		}
 		item_t item = items[i];
 		int ex = getMapX(item.pos) - minx;
 		int ey = getMapY(item.pos) - miny;
@@ -463,6 +465,27 @@ void movePlayer(int x, int y)
 		
 	player.pos = newpos;
 
+	for(i = 0; i < nitems; i++){
+		if(player.pos == items[i].pos){
+			int j;
+			bool hasitem = false;
+			for(j = 0; j < player.nitems; j++){
+				if(player.items[j].type == items[i].type){
+					hasitem = true;
+					player.items[j].amount += items[i].amount;
+					break;
+				}
+			}
+			if(!hasitem){
+				player.items = (item_t*)realloc(player.items, ++player.nitems * sizeof(item_t));
+				memcpy(player.items + player.nitems - 1, items + i, sizeof(item_t));
+			}
+			
+			memmove(items + i, items + i + 1, (--nitems - i) * sizeof(item_t));
+			break;
+		}
+	}
+
 	endTurn();
 }
 
@@ -511,6 +534,7 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	player.health = 100;
+	player.nitems = 0;
 
 	generateMap();
 	renderMap();
