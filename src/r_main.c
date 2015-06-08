@@ -34,6 +34,8 @@
 #define MAPHEIGHT 256
 #define MAPSIZE ((MAPWIDTH) * (MAPHEIGHT))
 
+#define MAXEVENTS 5
+
 typedef enum { ENEMY_RAT, ENEMY_ARCHER } enemytype_t;
 
 typedef struct {
@@ -59,6 +61,11 @@ struct {
 	item_t *items;
 	int nitems;
 } player;
+
+struct {
+	char *events[MAXEVENTS];
+	int top;
+} eventlist;
 
 itemtype_t weapontype = {NULL, "Weapon"};
 itemtype_t swordtype = {&weapontype, "Sword"};
@@ -114,10 +121,12 @@ int getMapX(int pos)
 {
 	return pos % MAPWIDTH;
 }
+
 int getMapY(int pos)
 {
 	return pos / MAPWIDTH;
 }
+
 int getMapPos(int x, int y)
 {
 	return x + y * MAPWIDTH;
@@ -245,9 +254,14 @@ void renderGui()
 	int i;
 	for(i = 0; i < player.nitems; i++){
 		char *itemstr = (char*)malloc(30);
-		snprintf(itemstr, 30, "Item: %d %s\n", player.items[i].amount, player.items[i].type->name);
+		snprintf(itemstr, 30, "Item: %d %s", player.items[i].amount, player.items[i].type->name);
 		drawString(&tex, &font, itemstr, VIEWPORTSIZE * 8 + 8, 32 + i * 8, COLOR_YELLOW);
 		free(itemstr);
+	}
+
+	for(i = 0; i < eventlist.top; i++){
+		int colorval = 255 - (i / (float)MAXEVENTS) * 255;
+		drawString(&tex, &font, eventlist.events[i], 8, VIEWPORTSIZE * 8 + 8 + i * 8, (pixel_t){colorval, colorval, colorval, 255});
 	}
 }
 
@@ -442,6 +456,22 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void pushEvent(const char *event)
+{
+	if(eventlist.top > 0){
+		if(eventlist.top == MAXEVENTS - 1){
+			free(eventlist.events[eventlist.top]);
+		}else{
+			eventlist.top++;
+		}
+		memmove(eventlist.events + 1, eventlist.events, eventlist.top * sizeof(char*));
+	}else{
+		eventlist.top++;
+	}
+	eventlist.events[0] = (char*)malloc(strlen(event) + 1);
+	strcpy(eventlist.events[0], event);
+}
+
 void endTurn()
 {
 	clearTexture(&tex, COLOR_BLACK);
@@ -481,7 +511,10 @@ void movePlayer(int x, int y)
 				memcpy(player.items + player.nitems - 1, items + i, sizeof(item_t));
 			}
 			
+			pushEvent(items[i].type->name);
+			pushEvent("Picked up item:");
 			memmove(items + i, items + i + 1, (--nitems - i) * sizeof(item_t));
+			
 			break;
 		}
 	}
@@ -535,6 +568,11 @@ int main(int argc, char **argv)
 
 	player.health = 100;
 	player.nitems = 0;
+
+	eventlist.top = 0;
+
+	pushEvent("Press \"WASD\" to move");
+	pushEvent("Welcome to Rogueliek");
 
 	generateMap();
 	renderMap();
