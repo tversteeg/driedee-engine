@@ -67,6 +67,10 @@ struct {
 	int top;
 } eventlist;
 
+typedef struct {
+	int *points, npoint;
+} poly_t;
+
 itemtype_t weapontype = {NULL, "Weapon"};
 itemtype_t swordtype = {&weapontype, "Sword"};
 itemtype_t speartype = {&weapontype, "Spear"};
@@ -84,6 +88,9 @@ enemy_t *enemies;
 int nenemies;
 item_t *items;
 int nitems;
+
+poly_t *polys;
+int npolys;
 
 GLuint texture;
 texture_t tex;
@@ -244,23 +251,50 @@ void generateMap()
 	player.pos = pos;
 }
 
+bool isWall(int pos)
+{
+	return map[pos] == '*' || map[pos] == '#';
+}
+
+void generateMapPolys()
+{
+	npolys = 0;
+	polys = NULL;
+
+	char inpoly[MAPSIZE];
+	int x;
+	for(x = 1; x < MAPWIDTH - 1; x++){
+		int y;
+		for(y = 1; y < MAPHEIGHT - 1; y++){
+			int pos = getMapPos(x, y);
+			if(!isWall(pos)){
+				continue;
+			}
+
+			if(!isWall(pos + 1) || !isWall(pos - 1) || !isWall(pos - MAPWIDTH) || !isWall(pos + MAPWIDTH)){
+				inpoly[pos] = 1;
+			}
+		}
+	}
+}
+
 void renderGui()
 {
 	char *healthstr = (char*)malloc(30);
 	snprintf(healthstr, 30, "Health: %d\nCoins:  %d", player.health, player.coins);
-	drawString(&tex, &font, healthstr, VIEWPORTSIZE * 8 + 8, 8, COLOR_WHITE);
+	drawString(&tex, &font, healthstr, VIEWPORTSIZE * 8 + 8, MAPHEIGHT + 8, COLOR_WHITE);
 	free(healthstr);
 
 	int i;
 	for(i = 0; i < player.nitems; i++){
 		char *itemstr = (char*)malloc(30);
 		snprintf(itemstr, 30, "Item: %d %s", player.items[i].amount, player.items[i].type->name);
-		drawString(&tex, &font, itemstr, VIEWPORTSIZE * 8 + 8, 32 + i * 8, COLOR_YELLOW);
+		drawString(&tex, &font, itemstr, VIEWPORTSIZE * 8 + 8, MAPHEIGHT + 32 + i * 8, COLOR_YELLOW);
 		free(itemstr);
 	}
 
 	for(i = 0; i < eventlist.top; i++){
-		int colorval = 255 - (i / (float)MAXEVENTS) * 255;
+		unsigned char colorval = 255 - (i / (float)MAXEVENTS) * 255;
 		drawString(&tex, &font, eventlist.events[i], 8, VIEWPORTSIZE * 8 + 8 + i * 8, (pixel_t){colorval, colorval, colorval, 255});
 	}
 }
@@ -433,6 +467,14 @@ void renderMap()
 	}
 
 	drawLetter(&tex, &font, '@', VIEWPORTSIZE * 4, VIEWPORTSIZE * 4, COLOR_LIGHTBLUE);
+
+	for(i = 0; i < MAPSIZE; i++){
+		if(map[i] == '*'){
+			drawPixel(&tex, getMapX(i) + VIEWPORTSIZE * 8, getMapY(i), COLOR_WHITE);
+		}else if(map[i] == '#'){
+			drawPixel(&tex, getMapX(i) + VIEWPORTSIZE * 8, getMapY(i), COLOR_DARKGREEN);
+		}
+	}
 }
 
 void render()
