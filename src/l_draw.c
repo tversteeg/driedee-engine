@@ -4,9 +4,9 @@
 
 #include <string.h>
 
-inline void drawPixel(texture_t *tex, int x, int y, pixel_t pixel);
+void drawPixel(texture_t *tex, int x, int y, pixel_t pixel);
 
-static inline void vline(texture_t *tex, int x, int top, int bot, pixel_t pixel)
+static void vline(texture_t *tex, int x, int top, int bot, pixel_t pixel)
 {
 	if(x < 0 || x >= tex->width){
 		return;
@@ -31,7 +31,7 @@ static inline void vline(texture_t *tex, int x, int top, int bot, pixel_t pixel)
 	}
 }
 
-static inline void hline(texture_t *tex, int y, int left, int right, pixel_t pixel)
+static void hline(texture_t *tex, int y, int left, int right, pixel_t pixel)
 {
 	if(y < 0 || y >= tex->height){
 		return;
@@ -89,12 +89,12 @@ void clearTexture(texture_t *tex, pixel_t pixel)
 	}
 }
 
-inline bool samePixel(pixel_t p1, pixel_t p2)
+bool samePixel(pixel_t p1, pixel_t p2)
 {
 	return p1.r == p2.r && p1.g == p2.g && p1.b == p2.b && p1.a == p2.a;
 }
 
-inline bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y)
+bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y)
 {
 	if(x < tex->width && y < tex->height){
 		pixel = &tex->pixels[x + y * tex->width];
@@ -103,12 +103,12 @@ inline bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsig
 	return false;
 }
 
-inline void setPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel)
+void setPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel)
 {
 	tex->pixels[x + y * tex->width] = pixel;
 }
 
-inline void drawPixel(texture_t *tex, int x, int y, pixel_t pixel)
+void drawPixel(texture_t *tex, int x, int y, pixel_t pixel)
 {
 	if(x >= 0 && x < tex->width && y >= 0 && y < tex->height){
 		setPixel(tex, x, y, pixel);

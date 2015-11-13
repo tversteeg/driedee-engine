@@ -25,12 +25,12 @@ void loadFont(font_t *font, char start, const bool *pixels);
 
 void clearTexture(texture_t *tex, pixel_t pixel);
 
-inline bool samePixel(pixel_t p1, pixel_t p2);
-inline bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y);
+bool samePixel(pixel_t p1, pixel_t p2);
+bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y);
 // Force setting the pixel in a unsafe way
-inline void setPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel);
+void setPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel);
 // Set the pixel with a boundary check
-inline void drawPixel(texture_t *tex, int x, int y, pixel_t pixel);
+void drawPixel(texture_t *tex, int x, int y, pixel_t pixel);
 
 void drawLine(texture_t *tex, xy_t p1, xy_t p2, pixel_t pixel);
 void drawCircle(texture_t *tex, xy_t p, unsigned int radius, pixel_t pixel);
