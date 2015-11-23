@@ -8,6 +8,7 @@ typedef struct {
 } map_t;
 
 map_t* createMap(unsigned int width, unsigned int height);
+void destroyMap(map_t *map);
 
 void setMapTileFromChar(map_t *map, unsigned int index, char type);
 
