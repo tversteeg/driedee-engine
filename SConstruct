@@ -17,5 +17,5 @@ env.Append(CCFLAGS=['-Iinclude/'])
 
 staticLibrary=env.Library(target='lib/roguelib', source=sources, LIBS=libs, LIBPATH=libpaths)
 env.Program(target='bin/editor', source=['src/e_main.c'], LIBS=[staticLibrary, libs], LIBPATH=libpaths)
-env.Program(target='bin/game', source=['src/g_main.c'], LIBS=[staticLibrary, libs], LIBPATH=libpaths)
+env.Program(target='bin/game', source=[Glob('src/g_*.c')], LIBS=[staticLibrary, libs], LIBPATH=libpaths)
 env.Program(target='bin/rogue', source=['src/r_main.c'], LIBS=[staticLibrary, libs], LIBPATH=libpaths)

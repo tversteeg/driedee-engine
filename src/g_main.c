@@ -26,6 +26,8 @@
 #include "l_colors.h"
 #include "l_png.h"
 
+#include "g_map.h"
+
 #define WIDTH 800
 #define HWIDTH (WIDTH / 2)
 #define HEIGHT 600
@@ -282,7 +284,7 @@ int main(int argc, char **argv)
 	initTexture(gametextures + 6, width, height);
 	loadPng(gametextures + 6, "skeleton.png");
 
-	loadLevel(argv[1]);
+//	loadLevel(argv[1]);
 	player.sector = getSector(0);
 	player.pos.x = player.sector->vertices[0].x + 5;
 	player.pos.z = player.sector->vertices[0].y + 5;
@@ -292,9 +294,6 @@ int main(int argc, char **argv)
 	calculateViewport(&player.cam, (xy_t){1, 1});
 	player.cam.pos = player.pos;
 	
-	//xyz_t spritepos = {getSector(1)->vertices[0].x + 20, -8, getSector(1)->vertices[0].y + 20};
-	//spawnSprite(player.sector, spritepos, (xy_t){100, 100}, 6);
-
 	ccDisplayInitialize();
 
 	ccWindowCreate((ccRect){0, 0, WIDTH * 2, HEIGHT}, "3D", CC_WINDOW_FLAG_NORESIZE);
