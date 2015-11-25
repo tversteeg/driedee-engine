@@ -35,7 +35,7 @@ void generateNoiseMap(map_t *map, int seed)
 		char tile = '.';
 		if(i % map->width == 0 || i % (map->width) == map->width - 1 || i < map->width || i > map->size - map->width){
 			tile = '#';
-		}else if(rand() % 50 == 0){
+		}else if(rand() % 5 == 0){
 			tile = '#';
 		}
 		setMapTileFromChar(map, i, tile);
@@ -60,4 +60,17 @@ unsigned int getMapY(map_t *map, unsigned int index)
 unsigned int getMapIndex(map_t *map, unsigned int x, unsigned int y)
 {
 	return x + y * map->width;
+}
+
+void debugPrintMap(map_t *map)
+{
+	putc('\n', stdout);
+
+	unsigned int i;
+	for(i = 0; i < map->size; i++){
+		putc(map->tiles[i], stdout);
+		if(i % map->width == map->width - 1){
+			putc('\n', stdout);
+		}
+	}
 }

@@ -17,3 +17,5 @@ void setMapTileFromChar(map_t *map, unsigned int index, char type);
 unsigned int getMapX(map_t *map, unsigned int index);
 unsigned int getMapY(map_t *map, unsigned int index);
 unsigned int getMapIndex(map_t *map, unsigned int x, unsigned int y);
+
+void debugPrintMap(map_t *map);

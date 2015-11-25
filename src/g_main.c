@@ -286,8 +286,9 @@ int main(int argc, char **argv)
 	loadPng(gametextures + 6, "skeleton.png");
 
 //	loadLevel(argv[1]);
-	map_t *map = createMap(100, 100);
+	map_t *map = createMap(50, 20);
 	generateNoiseMap(map, 0);
+	debugPrintMap(map);
 	createLevelFromMap(map);
 
 	player.sector = getSector(0);
