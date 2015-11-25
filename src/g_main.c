@@ -27,6 +27,7 @@
 #include "l_png.h"
 
 #include "g_map.h"
+#include "g_level.h"
 
 #define WIDTH 800
 #define HWIDTH (WIDTH / 2)
@@ -285,6 +286,10 @@ int main(int argc, char **argv)
 	loadPng(gametextures + 6, "skeleton.png");
 
 //	loadLevel(argv[1]);
+	map_t *map = createMap(100, 100);
+	generateNoiseMap(map, 0);
+	createLevelFromMap(map);
+
 	player.sector = getSector(0);
 	player.pos.x = player.sector->vertices[0].x + 5;
 	player.pos.z = player.sector->vertices[0].y + 5;
@@ -296,7 +301,7 @@ int main(int argc, char **argv)
 	
 	ccDisplayInitialize();
 
-	ccWindowCreate((ccRect){0, 0, WIDTH * 2, HEIGHT}, "3D", CC_WINDOW_FLAG_NORESIZE);
+	ccWindowCreate((ccRect){0, 0, WIDTH, HEIGHT}, "3D", CC_WINDOW_FLAG_NORESIZE);
 	ccWindowMouseSetCursor(CC_CURSOR_NONE);
 
 	ccGLContextBind();
