@@ -166,6 +166,10 @@ void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam
 
 static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, xy_t camleft, xy_t camright, edge_t *previous)
 {
+	if(cam == NULL){
+		exit(1);
+	}
+
 	double anglesin = sin(cam->angle);
 	double anglecos = cos(cam->angle);
 
