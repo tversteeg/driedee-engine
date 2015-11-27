@@ -170,6 +170,11 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		exit(1);
 	}
 
+	//TODO fix, source of the glitchy screen
+	if(abs(camleft.x - camright.x) < 0.0001){
+		return;
+	}
+
 	double anglesin = sin(cam->angle);
 	double anglecos = cos(cam->angle);
 
