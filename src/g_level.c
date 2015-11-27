@@ -14,20 +14,20 @@ void createLevelFromMap(map_t *map)
 		}
 		xy_t vert = {getMapX(map, i) * 32, getMapY(map, i) * 32};
 		edge_t edge = {.type = WALL};
-		// Top
+		// Left
 		sector_t *sect = createSector(vert, &edge);
-		// Right
+		// Top
 		vert.x += 32;
 		createEdge(sect, vert, &edge)->texture = 1;
-		// Bottom
+		// Right
 		vert.y += 32;
 		createEdge(sect, vert, &edge)->texture = 0;
-		// Left
+		// Bottom
 		vert.x -= 32;
 		createEdge(sect, vert, &edge)->texture = 0;
 
 		if(i > 0 && i % map->width != 0 && map->tiles[i - 1] == '.'){
-			edge_t *edge1 = sect->edges + 0;
+			edge_t *edge1 = sect->edges;
 			edge_t *edge2 = lastsect->edges + 2;
 
 			edge1->type = PORTAL;
@@ -36,14 +36,23 @@ void createLevelFromMap(map_t *map)
 			edge2->neighbor = edge1;
 		}
 		
+		vert.y -= 32;
 		if(i > map->width && map->tiles[i - map->width] == '.'){
-			edge_t *edge1 = sect->edges + 0;
-			edge_t *edge2 = lastsect->edges + 2;
-
-			edge1->type = PORTAL;
-			edge2->type = PORTAL;
-			edge1->neighbor = edge2;
-			edge2->neighbor = edge1;
+			sector_t *sect2 = getFirstSector();
+			unsigned int max = i - 1;
+			while(max-- && sect2 != NULL){
+				edge_t *edge2 = sect2->edges + 3;
+				xy_t vert2 = sect2->vertices[edge2->vertex1];
+				if(vert2.x == vert.x && vert2.y == vert.y){
+					edge_t *edge1 = sect->edges + 1;
+					edge1->type = PORTAL;
+					edge2->type = PORTAL;
+					edge1->neighbor = edge2;
+					edge2->neighbor = edge1;
+					break;
+				}
+				sect2 = getNextSector(sect2);
+			}
 		}
 
 		sect->ceiltex = 0;
