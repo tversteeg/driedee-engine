@@ -51,6 +51,7 @@ void createLevelFromMap(map_t *map)
 					edge2->neighbor = edge1;
 					break;
 				}
+
 				sect2 = getNextSector(sect2);
 			}
 		}

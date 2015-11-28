@@ -1,19 +1,21 @@
+#include <stdlib.h>
+
 #include "l_sector.h"
 
-#include "l_utils.h"
-#include "l_level.h"
+static sector_t *sectors = NULL;
+static unsigned int nsectors = 0;
 
-static pool_t sectors;
-static sector_t *first = NULL;
-
-void sectorInitialize()
+static sector_t* mallocSector()
 {
-	poolInitialize(&sectors, sizeof(sector_t), 1024);
+	//TODO add error handling
+	sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(sector_t));
+
+	return sectors[nsectors];
 }
 
 sector_t* createSector(xy_t start, edge_t *edge)
 {
-	sector_t *sector = (sector_t*)poolMalloc(&sectors);
+	sector_t *sector = mallocSector();
 
 	sector->edges = (edge_t*)malloc(sizeof(edge_t));
 	edge_t *edge2 = sector->edges;
@@ -46,6 +48,8 @@ sector_t* createSector(xy_t start, edge_t *edge)
 
 void deleteSector(sector_t *sector)
 {
+	//TODO reimplement
+	/*
   sector_t *sect = getFirstSector();
   while(sect != NULL){
     unsigned int i;
@@ -59,42 +63,30 @@ void deleteSector(sector_t *sector)
   }
 
 	poolFree(&sectors, sector);
-}
-
-sector_t* getFirstSector()
-{
-	return first;
-}
-
-sector_t* getNextSector(sector_t *sector)
-{
-	return (sector_t*)poolGetNext(&sectors, sector);
+	*/
 }
 
 sector_t* getSector(unsigned int index)
 {
-	sector_t *sector = getFirstSector();
-	while(index > 0){
-		sector = getNextSector(sector);
-		index--;
-	}
-	return sector;
+	return sectors + index;
+}
+
+unsigned int getNumSectors()
+{
+	return nsectors;
 }
 
 /* TODO speed up this function by using pointer arithmetic */
 int getIndexSector(sector_t *sector)
 {
-	int index = 0;
-	sector_t *search = getFirstSector();
-	while(search != sector){
-		search = getNextSector(search);
-		if(search == NULL){
-			return -1;
+	int i;
+	for(i = 0; i < nsectors; i++){
+		if(sectors + i == sector){
+			return i;
 		}
-		index++;
-	}
-
-	return index;
+	}	
+	
+	return -1;
 }
 
 edge_t *createEdge(sector_t *sector, xy_t next, edge_t *edge)

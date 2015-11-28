@@ -31,14 +31,11 @@ struct _sector_t {
 	unsigned char floortex, ceiltex;
 };
 
-void sectorInitialize();
-
 sector_t* createSector(xy_t start, edge_t *edge);
 void deleteSector(sector_t *sector);
 
-sector_t* getFirstSector();
-sector_t* getNextSector(sector_t *sector);
 sector_t* getSector(unsigned int index);
+unsigned int getNumSectors();
 /* Return the index of a sector and -1 if it's not found */
 int getIndexSector(sector_t *sector);
 
