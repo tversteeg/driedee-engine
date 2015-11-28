@@ -6,17 +6,6 @@
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
-//#include <ccore/thread.h>
-
-struct renderWallData {
-	texture_t *target;
-	const texture_t *tex;
-	const sector_t *sect;
-	const camera_t *cam;
-	edge_t *edge;
-	xy_t left, right;
-	double leftuv, rightuv;
-};
 
 void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
@@ -260,21 +249,6 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			double leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
 			double rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
 
-			/*
-			struct renderWallData data;
-			data.target = texture;
-			data.tex = textures;
-			data.sect = sector;
-			data.cam = cam;
-			data.edge = edge;
-			data.left = camedge1;
-			data.right = camedge2;
-			data.leftuv = leftuv;
-			data.rightuv = rightuv;
-
-			ccThread thread;
-			ccThreadStart(&thread, renderWallThreaded, (void*)&data);
-			*/
 			renderWall(texture, textures, sector, cam, edge, camedge1, camedge2, leftuv, rightuv);
 		}
 	}
