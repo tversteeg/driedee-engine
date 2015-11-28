@@ -95,10 +95,9 @@ void save()
 
 	fprintf(fp, "\n");
 
-	unsigned int totalsectors = 0;
-	sector_t *sect = getFirstSector();
-	while(sect != NULL){
-		fprintf(fp, "s %.lf %.lf %ld %ld %u\n", sect->ceil, sect->floor, hash(gametexturenames[sect->ceiltex]), hash(gametexturenames[sect->floortex]), totalsectors);
+	for(i = 0; i < getNumSectors(); i++){
+		sector_t *sect = getSector(i);
+		fprintf(fp, "s %.lf %.lf %ld %ld %u\n", sect->ceil, sect->floor, hash(gametexturenames[sect->ceiltex]), hash(gametexturenames[sect->floortex]), i);
 
 		int i;
 		for(i = 0; i < sect->nedges; i++){
@@ -114,16 +113,13 @@ void save()
 			}
 		}
 		fprintf(fp, "\n");
-		sect = getNextSector(sect);
-		totalsectors++;
 	}
 
-	totalsectors = 0;
-	sect = getFirstSector();
-	while(sect != NULL){
-		int i;
-		for(i = 0; i < sect->nedges; i++){
-			edge_t edge = sect->edges[i];
+	for(i = 0; i < getNumSectors(); i++){
+		sector_t *sect = getSector(i);
+		int j;
+		for(j = 0; j < sect->nedges; j++){
+			edge_t edge = sect->edges[j];
 			if(edge.type != PORTAL || edge.neighbor == NULL){
 				continue;
 			}
@@ -133,10 +129,8 @@ void save()
 			if(sector2 == -1){
 				exit(1);
 			}
-			fprintf(fp, "p %u %u %u %u\n", totalsectors, i, sector2, (unsigned int)(edge.neighbor - neighbor->edges));
+			fprintf(fp, "p %u %u %u %u\n", i, j, sector2, (unsigned int)(edge.neighbor - neighbor->edges));
 		}
-		sect = getNextSector(sect);
-		totalsectors++;
 	}
 
 	fclose(fp);
@@ -188,7 +182,7 @@ void renderMouse()
 void renderMap()
 {
 	pixel_t color;
-	sector_t *sect = getFirstSector();
+	sector_t *sect = getSector(0);
 	while(sect != NULL){
 		// Draw edges
 		int i, start = 0;
@@ -342,7 +336,7 @@ void handleEditorMouseClick()
 			break;
 		case SECTOR_SELECT_TOOL:
 			{
-				sector_t *sect = getFirstSector();
+				sector_t *sect = getSector(0);
 				while(sect != NULL){
 					if(sect != sectorselected){
 						int i;
@@ -360,7 +354,7 @@ void handleEditorMouseClick()
 			break;
 		case SECTOR_DELETE_TOOL:
 			{
-				sector_t *sect = getFirstSector();
+				sector_t *sect = getSector(0);
 				while(sect != NULL){
 					int i;
 					for(i = 0; i < sect->nedges; i++){
@@ -395,7 +389,7 @@ void handleEditorMouseClick()
 			break;
 		case EDGE_CHANGE_TOOL:
 			{
-				sector_t *sect = getFirstSector();
+				sector_t *sect = getSector(0);
 				while(sect != NULL){
 					int i;
 					for(i = 0; i < sect->nedges; i++){
@@ -414,7 +408,7 @@ void handleEditorMouseClick()
 			break;
 		case EDGE_CONNECT_TOOL:
 			{
-				sector_t *sect = getFirstSector();
+				sector_t *sect = getSector(0);
 				while(sect != NULL){
 					int i;
 					for(i = 0; i < sect->nedges; i++){
@@ -456,7 +450,7 @@ void handleEditorMouseClick()
 			break;
 		case WALL_CHANGE_TOOL:
 			{
-				sector_t *sect = getFirstSector();
+				sector_t *sect = getSector(0);
 				while(sect != NULL){
 					int i;
 					for(i = 0; i < sect->nedges; i++){
@@ -608,8 +602,6 @@ void buttonEventUp(button_t *button)
 
 int main(int argc, char **argv)
 {
-	sectorInitialize();
-
 	initTexture(&tex, EDITOR_WIDTH + PREVIEW_WIDTH, HEIGHT);
 	initTexture(&editortex, EDITOR_WIDTH, HEIGHT);
 	initTexture(&previewtex, PREVIEW_WIDTH, HEIGHT);
@@ -632,9 +624,9 @@ int main(int argc, char **argv)
 	}
 
 	if(argc >= 3 && loadLevel(argv[2])){
-		cam.pos.x = getFirstSector()->vertices[0].x + 10;
-		cam.pos.z = getFirstSector()->vertices[0].y;
-		camsector = getFirstSector();
+		camsector = getSector(0);
+		cam.pos.x = camsector->vertices[0].x + 10;
+		cam.pos.z = camsector->vertices[0].y;
 	}
 
 	bindFont(&font, "default");

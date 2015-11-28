@@ -244,8 +244,6 @@ int main(int argc, char **argv)
 {
 	bool loop, upPressed, downPressed, leftPressed, rightPressed, spacePressed;
 
-	sectorInitialize();
-
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', (bool*)fontdata);
 

@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "l_sector.h"
 
@@ -7,10 +8,14 @@ static unsigned int nsectors = 0;
 
 static sector_t* mallocSector()
 {
-	//TODO add error handling
 	sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(sector_t));
 
-	return sectors[nsectors];
+	if(sectors == NULL || sectors + nsectors == NULL){
+		fprintf(stderr, "Bad realloc\n");
+		exit(1);
+	}
+
+	return sectors + nsectors - 1;
 }
 
 sector_t* createSector(xy_t start, edge_t *edge)
@@ -38,10 +43,6 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	sector->ceiltex = sector->floortex = 0;
 
 	sector->lastsprite = NULL;
-
-	if(first == NULL){
-		first = sector;
-	}
 
 	return sector;
 }
@@ -76,7 +77,6 @@ unsigned int getNumSectors()
 	return nsectors;
 }
 
-/* TODO speed up this function by using pointer arithmetic */
 int getIndexSector(sector_t *sector)
 {
 	int i;
