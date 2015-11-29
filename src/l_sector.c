@@ -8,11 +8,11 @@ static unsigned int nsectors = 0;
 
 static sector_t* mallocSector()
 {
-	sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(sector_t));
-
-	if(sectors == NULL || sectors + nsectors == NULL){
-		fprintf(stderr, "Bad realloc\n");
-		exit(1);
+	if(nsectors == 0){
+		sectors = (sector_t*)malloc(sizeof(sector_t));
+		nsectors++;
+	}else{
+		sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(sector_t));
 	}
 
 	return sectors + nsectors - 1;
@@ -69,6 +69,9 @@ void deleteSector(sector_t *sector)
 
 sector_t* getSector(unsigned int index)
 {
+	if(index >= nsectors){
+		return NULL;
+	}
 	return sectors + index;
 }
 

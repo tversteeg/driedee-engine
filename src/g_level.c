@@ -38,7 +38,7 @@ void createLevelFromMap(map_t *map)
 		vert.y -= 32;
 		if(i > map->width && map->tiles[i - map->width] == '.'){
 			int j;
-			for(j = 0; j < getNumSectors(); j++){
+			for(j = 0; j < getNumSectors() - 1; j++){
 				sector_t *sect2 = getSector(j);
 				edge_t *edge2 = sect2->edges + 3;
 				xy_t vert2 = sect2->vertices[edge2->vertex1];
