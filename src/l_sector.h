@@ -31,7 +31,7 @@ struct _sector_t {
 	unsigned char floortex, ceiltex;
 };
 
-sector_t* createSector(xy_t start, edge_t *edge);
+sector_t* createSector(xy_t start, edgetype_t type);
 void deleteSector(sector_t *sector);
 
 sector_t* getSector(unsigned int index);
@@ -39,6 +39,8 @@ unsigned int getNumSectors();
 /* Return the index of a sector and -1 if it's not found */
 int getIndexSector(sector_t *sector);
 
-edge_t* createEdge(sector_t *sector, xy_t next, edge_t *edge);
+edge_t* createEdge(sector_t *sector, xy_t next, edgetype_t type);
 
 bool pointInSector(const sector_t *sector, xy_t point);
+
+void debugPrintSector(const sector_t *sector, bool verbose);

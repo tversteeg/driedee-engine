@@ -58,19 +58,19 @@ bool loadLevel(const char *filename)
 				break;
 			case 'e':
 				{
-					edge_t edge;
+					edgetype_t type;
 					xy_t vert;
-					sscanf(line + 2, "%d (%lf,%lf)", (int*)&edge.type, &vert.x, &vert.y);
+					sscanf(line + 2, "%d (%lf,%lf)", (int*)&type, &vert.x, &vert.y);
 
 					if(firstedge){
-						sect = createSector(vert, &edge);
+						sect = createSector(vert, type);
 						sect->ceil = tempsect.ceil;
 						sect->floor = tempsect.floor;
 						sect->ceiltex = tempsect.ceiltex;
 						sect->floortex = tempsect.floortex;
 						firstedge = false;
 					}else{
-						createEdge(sect, vert, &edge);
+						createEdge(sect, vert, type);
 					}
 				}
 				break;

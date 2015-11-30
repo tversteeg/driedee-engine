@@ -10,8 +10,8 @@ static unsigned int nsectors = 0;
 static sector_t* mallocSector()
 {
 	if(nsectors == 0){
-		sectors = (sector_t*)calloc(1, sizeof(sector_t));
 		nsectors++;
+		sectors = (sector_t*)calloc(1, sizeof(sector_t));
 	}else{
 		sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(sector_t));
 		memset(sectors + nsectors - 1, 0, sizeof(sector_t));
@@ -20,7 +20,7 @@ static sector_t* mallocSector()
 	return sectors + nsectors - 1;
 }
 
-sector_t* createSector(xy_t start, edge_t *edge)
+sector_t* createSector(xy_t start, edgetype_t type)
 {
 	sector_t *sector = mallocSector();
 
@@ -28,7 +28,7 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	sector->nedges = 1;
 
 	edge_t *edge2 = sector->edges;
-	edge2->type = edge->type;
+	edge2->type = type;
 	edge2->sector = sector;
 
 	sector->vertices = (xy_t*)calloc(1, sizeof(xy_t));
@@ -45,21 +45,6 @@ void deleteSector(sector_t *sector)
 	fprintf(stderr, "Not implemented deleteSector\n");
 	exit(1);
 	//TODO reimplement
-	/*
-  sector_t *sect = getFirstSector();
-  while(sect != NULL){
-    unsigned int i;
-    for(i = 0; i < sect->nedges; i++){
-      edge_t *edge = sect->edges + i;
-      if(edge->type == PORTAL && edge->neighbor != NULL && edge->neighbor->sector == sector){
-        edge->neighbor = NULL;
-      } 
-    }
-    sect = getNextSector(sect);
-  }
-
-	poolFree(&sectors, sector);
-	*/
 }
 
 sector_t* getSector(unsigned int index)
@@ -77,7 +62,7 @@ unsigned int getNumSectors()
 
 int getIndexSector(sector_t *sector)
 {
-	int i;
+	unsigned int i;
 	for(i = 0; i < nsectors; i++){
 		if(sectors + i == sector){
 			return i;
@@ -87,15 +72,15 @@ int getIndexSector(sector_t *sector)
 	return -1;
 }
 
-edge_t *createEdge(sector_t *sector, xy_t next, edge_t *edge)
+edge_t *createEdge(sector_t *sector, xy_t next, edgetype_t type)
 {	
 	sector->vertices = (xy_t*)realloc(sector->vertices, ++sector->nedges * sizeof(xy_t));
 	sector->vertices[sector->nedges - 1] = next;
 
 	sector->edges = (edge_t*)realloc(sector->edges, sector->nedges * sizeof(edge_t));
-	edge_t *edge2 = sector->edges + (sector->nedges - 1);
-	edge2->type = edge->type;
+	edge_t *edge2 = sector->edges + sector->nedges - 1;
 
+	edge2->type = type;
 	edge2->vertex1 = sector->nedges - 1;
 	edge2->vertex2 = sector->nedges - 2;
 	edge2->sector = sector;
@@ -134,3 +119,28 @@ bool pointInSector(const sector_t *sector, xy_t point)
 
 	return in;
 }
+
+void debugPrintSector(const sector_t *sector, bool verbose)
+{
+	printf("\nSector %d\n", getIndexSector(sector));
+	if(verbose){
+		printf("Ceil: %.f, floor: %.f\n", sector->ceil, sector->floor);
+	}
+	printf("Edges: %d\n", sector->nedges);
+	unsigned int i;
+	for(i = 0; i < sector->nedges; i++){
+		edge_t *edge = sector->edges + i;
+		xy_t v1 = sector->vertices[edge->vertex1];
+		xy_t v2 = sector->vertices[edge->vertex2];
+		printf("\t %d: (%.f,%.f) - (%.f,%.f)", i, v1.x, v1.y, v2.x, v2.y);
+		if(verbose){
+			if(edge->type == PORTAL){
+				printf("\tPORTAL, neighbor sector: %d", getIndexSector(edge->neighbor->sector));
+			}else{
+				printf("\tWALL, uv division: %d", edge->uvdiv);
+			}
+		}
+		printf("\n");
+	}
+}
+
