@@ -49,7 +49,7 @@ struct player {
 	camera_t cam;
 	xyz_t pos, vel;
 	double height, radius;
-	sector_t *sector;
+	int sector;
 } player;
 
 typedef struct {
@@ -197,26 +197,27 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 
 	if(player.vel.x > V_ERROR || player.vel.x < -V_ERROR || player.vel.y > V_ERROR || player.vel.y < -V_ERROR){
 		unsigned int i;
+		sector_t *sect = getSector(player.sector);
 		sector_t *next = NULL;
-		for(i = 0; i < player.sector->nedges; i++){
-			edge_t *edge = player.sector->edges + i;
+		for(i = 0; i < sect->nedges; i++){
+			edge_t *edge = sect->edges + i;
 			if(edge->type != PORTAL){
 				continue;
 			}
 
 			xy_t playerpos = {player.pos.x, player.pos.z};
 			xy_t playerposnext = {player.pos.x + player.vel.x, player.pos.z + player.vel.z};
-			xy_t edge1 = player.sector->vertices[edge->vertex1];
-			xy_t edge2 = player.sector->vertices[edge->vertex2];
+			xy_t edge1 = sect->vertices[edge->vertex1];
+			xy_t edge2 = sect->vertices[edge->vertex2];
 			xy_t result;
 			if(segmentSegmentIntersect(playerpos, playerposnext, edge1, edge2, &result)){
-				next = edge->neighbor->sector;
+				next = getSector(edge->neighbor->sector);
 				break;
 			}
 		}
 
 		if(next != NULL){
-			player.sector = next;
+			player.sector = getIndexSector(next);
 		}
 
 		player.pos.x += player.vel.x;
@@ -289,9 +290,9 @@ int main(int argc, char **argv)
 	debugPrintMap(map);
 	createLevelFromMap(map);
 
-	player.sector = getSector(5);
-	player.pos.x = player.sector->vertices[0].x + 5;
-	player.pos.z = player.sector->vertices[0].y + 5;
+	player.sector = 5;
+	player.pos.x = getSector(player.sector)->vertices[0].x + 5;
+	player.pos.z = getSector(player.sector)->vertices[0].y + 5;
 	player.pos.y = player.vel.x = player.vel.y = player.vel.z = player.cam.angle = 0;
 	player.cam.znear = 1;
 	player.cam.zfar = 200;

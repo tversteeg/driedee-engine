@@ -241,7 +241,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
 			if(neighbor != NULL){
-				renderSector(texture, textures, neighbor->sector, cam, camedge1, camedge2, neighbor);
+				renderSector(texture, textures, getSector(neighbor->sector), cam, camedge1, camedge2, neighbor);
 			}
 		}else if(edge->type == WALL){
 			xy_t norm = {transp2.x - transp1.x, transp2.y - transp1.y};
@@ -288,5 +288,5 @@ void renderFromSector(texture_t *texture, texture_t *textures, sector_t *sector,
 	xy_t camleft = {camdis * -cam->fov, camdis};
 	xy_t camright = {camdis * cam->fov, camdis};
 
-	renderSector(texture, textures, sector, cam, camleft, camright, NULL);
+	renderSector(texture, textures, getSector(sector), cam, camleft, camright, NULL);
 }

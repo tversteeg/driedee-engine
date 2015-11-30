@@ -29,7 +29,7 @@ sector_t* createSector(xy_t start, edgetype_t type)
 
 	edge_t *edge2 = sector->edges;
 	edge2->type = type;
-	edge2->sector = sector;
+	edge2->sector = nsectors - 1;
 
 	sector->vertices = (xy_t*)calloc(1, sizeof(xy_t));
 	sector->vertices[0] = start;
@@ -83,7 +83,7 @@ edge_t *createEdge(sector_t *sector, xy_t next, edgetype_t type)
 	edge2->type = type;
 	edge2->vertex1 = sector->nedges - 1;
 	edge2->vertex2 = sector->nedges - 2;
-	edge2->sector = sector;
+	edge2->sector = getIndexSector(sector);
 	if(edge2->type == WALL){
 		xy_t v1 = sector->vertices[edge2->vertex1];
 		xy_t v2 = sector->vertices[edge2->vertex2];
@@ -122,11 +122,12 @@ bool pointInSector(const sector_t *sector, xy_t point)
 
 void debugPrintSector(const sector_t *sector, bool verbose)
 {
-	printf("\nSector %d\n", getIndexSector(sector));
+	printf("\nSector %d", getIndexSector(sector));
 	if(verbose){
-		printf("Ceil: %.f, floor: %.f\n", sector->ceil, sector->floor);
+		printf(" (%p)\nCeil: %.f, floor: %.f", sector, sector->ceil, sector->floor);
 	}
-	printf("Edges: %d\n", sector->nedges);
+	printf("\nEdges: %d\n", sector->nedges);
+
 	unsigned int i;
 	for(i = 0; i < sector->nedges; i++){
 		edge_t *edge = sector->edges + i;
@@ -135,7 +136,7 @@ void debugPrintSector(const sector_t *sector, bool verbose)
 		printf("\t %d: (%.f,%.f) - (%.f,%.f)", i, v1.x, v1.y, v2.x, v2.y);
 		if(verbose){
 			if(edge->type == PORTAL){
-				printf("\tPORTAL, neighbor sector: %d", getIndexSector(edge->neighbor->sector));
+				printf("\tPORTAL, neighbor: %d (%p)", edge->neighbor->sector, getSector(edge->neighbor->sector));
 			}else{
 				printf("\tWALL, uv division: %d", edge->uvdiv);
 			}
@@ -143,4 +144,3 @@ void debugPrintSector(const sector_t *sector, bool verbose)
 		printf("\n");
 	}
 }
-

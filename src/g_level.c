@@ -42,16 +42,17 @@ void createLevelFromMap(map_t *map)
 			edge1->type = PORTAL;
 			edge2->type = PORTAL;
 		}
-		/*
-		vert = sect->vertices[sect->edges[EDGE_TOP].vertex1];
+
 		if(i > map->width && map->tiles[i - map->width] == '.'){
-			int j;
+			vert = sect->vertices[sect->edges[EDGE_TOP].vertex2];
+
+			unsigned int j;
 			for(j = 0; j < getNumSectors() - 1; j++){
 				sector_t *sect2 = getSector(j);
 				edge_t *edge2 = sect2->edges + EDGE_BOTTOM;
 				xy_t vert2 = sect2->vertices[edge2->vertex1];
 				if(vert2.x == vert.x && vert2.y == vert.y){
-					edge_t *edge1 = sect->edges;
+					edge_t *edge1 = sect->edges + EDGE_TOP;
 
 					edge1->type = PORTAL;
 					edge2->type = PORTAL;
@@ -61,10 +62,9 @@ void createLevelFromMap(map_t *map)
 				}
 			}
 		}
-		*/
 	}
 
-	for(i = 0; i < 5; i++){
-		debugPrintSector(getSector(i), true);
+	for(i = 0; i < 20; i++){
+		debugPrintSector(getSector(i), false);
 	}
 }

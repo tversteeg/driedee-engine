@@ -11,7 +11,7 @@ typedef struct _sector_t sector_t;
 struct _edge_t {
 	unsigned int vertex1, vertex2;
 	edgetype_t type;
-	sector_t *sector;
+	int sector;
 	union {
 		edge_t *neighbor;
 		struct {
