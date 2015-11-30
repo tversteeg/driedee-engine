@@ -96,8 +96,8 @@ void handleGame()
 		bullet->vel.y = sin(playerangle) * 5;
 
 		xyz_t bulletpos = (xyz_t){player.pos.x + bullet->vel.x * 0.5, -player.pos.y - 4, player.pos.z + bullet->vel.y * 0.5};
-		bullet->sprite = spawnSprite(player.sector, bulletpos, (xy_t){20, 20}, 5);
-		bullet->sect = player.sector;
+		bullet->sprite = spawnSprite(getSector(player.sector), bulletpos, (xy_t){20, 20}, 5);
+		bullet->sect = getSector(player.sector);
 		bullet->active = true;
 
 		bulletdelay = 0;
@@ -124,7 +124,7 @@ void handleGame()
 
 void render()
 {
-	renderFromSector(TEX_3D, gametextures, player.sector, &player.cam);
+	renderFromSector(TEX_3D, gametextures, getSector(player.sector), &player.cam);
 
 	texture_t *gun;
 	if(bulletdelay <= 4){

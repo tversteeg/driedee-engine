@@ -162,7 +162,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 	}
 
 	//TODO fix, source of the glitchy screen
-	if(abs(camleft.x - camright.x) < 0.0001){
+	if(abs(camleft.x - camright.x) < V_ERROR){
 		return;
 	}
 
@@ -288,5 +288,5 @@ void renderFromSector(texture_t *texture, texture_t *textures, sector_t *sector,
 	xy_t camleft = {camdis * -cam->fov, camdis};
 	xy_t camright = {camdis * cam->fov, camdis};
 
-	renderSector(texture, textures, getSector(sector), cam, camleft, camright, NULL);
+	renderSector(texture, textures, sector, cam, camleft, camright, NULL);
 }

@@ -20,15 +20,15 @@ void createLevelFromMap(map_t *map)
 
 		sector_t *sect = createSector(vert, WALL);
 		vert.x += 32;
-		createEdge(sect, vert, WALL);
+		createEdge(sect, vert, WALL)->texture = 1;
 		vert.y += 32;
 		createEdge(sect, vert, WALL);
 		vert.x -= 32;
-		createEdge(sect, vert, WALL);
+		createEdge(sect, vert, WALL)->texture = 1;
 
 		sect->ceiltex = 0;
 		sect->floortex = 0;
-		sect->ceil = 10;
+		sect->ceil = 50;
 		sect->floor = -10;
 
 		// Find neighbors to create portals to
@@ -62,9 +62,5 @@ void createLevelFromMap(map_t *map)
 				}
 			}
 		}
-	}
-
-	for(i = 0; i < 20; i++){
-		debugPrintSector(getSector(i), false);
 	}
 }

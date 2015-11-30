@@ -201,8 +201,8 @@ sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos)
 		xy_t edge2 = sect->vertices[edge->vertex2];
 		xy_t result;
 		if(segmentSegmentIntersect(pos, oldpos, edge1, edge2, &result)){
-			moveSprite(edge->neighbor->sector, sect, sprite);
-			return edge->neighbor->sector;
+			moveSprite(getSector(edge->neighbor->sector), sect, sprite);
+			return getSector(edge->neighbor->sector);
 		}
 	}
 	return NULL;
@@ -227,7 +227,7 @@ edge_t *findWallRay(xy_t *result, const sector_t *sect, xy_t point, xy_t dir)
 				}else if(edge->type == PORTAL && edge->neighbor != previous){
 					point.x = isect.x + dir.x;
 					point.y = isect.y + dir.y;
-					current = edge->neighbor->sector;
+					current = getSector(edge->neighbor->sector);
 					previous = edge;
 					break;
 				}
