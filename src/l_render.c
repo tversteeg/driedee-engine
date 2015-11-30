@@ -6,6 +6,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
+#include <stdio.h>
 
 void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
@@ -155,7 +156,8 @@ void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam
 
 static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, xy_t camleft, xy_t camright, edge_t *previous)
 {
-	if(cam == NULL){
+	if(sector == NULL){
+		fprintf(stderr, "Edge's sector is undefined\n");
 		exit(1);
 	}
 

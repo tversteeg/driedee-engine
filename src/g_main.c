@@ -289,7 +289,7 @@ int main(int argc, char **argv)
 	debugPrintMap(map);
 	createLevelFromMap(map);
 
-	player.sector = getSector(0);
+	player.sector = getSector(5);
 	player.pos.x = player.sector->vertices[0].x + 5;
 	player.pos.z = player.sector->vertices[0].y + 5;
 	player.pos.y = player.vel.x = player.vel.y = player.vel.z = player.cam.angle = 0;

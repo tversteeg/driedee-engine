@@ -25,25 +25,25 @@ sector_t* createSector(xy_t start, edge_t *edge)
 	sector_t *sector = mallocSector();
 
 	sector->edges = (edge_t*)calloc(1, sizeof(edge_t));
+	sector->nedges = 1;
+
 	edge_t *edge2 = sector->edges;
 	edge2->type = edge->type;
 	edge2->sector = sector;
 
 	sector->vertices = (xy_t*)calloc(1, sizeof(xy_t));
 	sector->vertices[0] = start;
-	sector->nedges = 1;
 
 	sector->ceil = 10;
 	sector->floor = -10;
-	sector->ceiltex = sector->floortex = 0;
-
-	sector->lastsprite = NULL;
 
 	return sector;
 }
 
 void deleteSector(sector_t *sector)
 {
+	fprintf(stderr, "Not implemented deleteSector\n");
+	exit(1);
 	//TODO reimplement
 	/*
   sector_t *sect = getFirstSector();

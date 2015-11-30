@@ -32,7 +32,8 @@ void createLevelFromMap(map_t *map)
 
 		if(i > 0 && i % map->width != 0 && map->tiles[i - 1] == '.'){
 			edge_t *edge1 = sect->edges + EDGE_LEFT;
-			edge_t *edge2 = getSector(getNumSectors() - 2)->edges + EDGE_RIGHT;
+			sector_t *sect2 = getSector(getNumSectors() - 2);
+			edge_t *edge2 = sect2->edges + EDGE_RIGHT;
 
 			edge1->type = PORTAL;
 			edge2->type = PORTAL;
