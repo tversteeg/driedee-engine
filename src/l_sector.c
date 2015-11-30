@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "l_sector.h"
 
@@ -9,10 +10,11 @@ static unsigned int nsectors = 0;
 static sector_t* mallocSector()
 {
 	if(nsectors == 0){
-		sectors = (sector_t*)malloc(sizeof(sector_t));
+		sectors = (sector_t*)calloc(1, sizeof(sector_t));
 		nsectors++;
 	}else{
 		sectors = (sector_t*)realloc(sectors, ++nsectors * sizeof(sector_t));
+		memset(sectors + nsectors - 1, 0, sizeof(sector_t));
 	}
 
 	return sectors + nsectors - 1;
@@ -22,19 +24,12 @@ sector_t* createSector(xy_t start, edge_t *edge)
 {
 	sector_t *sector = mallocSector();
 
-	sector->edges = (edge_t*)malloc(sizeof(edge_t));
+	sector->edges = (edge_t*)calloc(1, sizeof(edge_t));
 	edge_t *edge2 = sector->edges;
 	edge2->type = edge->type;
 	edge2->sector = sector;
-	edge2->vertex1 = edge2->vertex2 = 0;
-	if(edge2->type == WALL){
-		edge2->texture = 0;
-		edge2->uvdiv = 0;
-	}else{
-		edge2->neighbor = NULL;
-	}
 
-	sector->vertices = (xy_t*)malloc(sizeof(xy_t));
+	sector->vertices = (xy_t*)calloc(1, sizeof(xy_t));
 	sector->vertices[0] = start;
 	sector->nedges = 1;
 

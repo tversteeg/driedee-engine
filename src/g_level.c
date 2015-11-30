@@ -4,6 +4,11 @@
 
 #include <stdio.h>
 
+#define EDGE_TOP 0
+#define EDGE_RIGHT 1
+#define EDGE_BOTTOM 2
+#define EDGE_LEFT 3
+
 void createLevelFromMap(map_t *map)
 {
 	unsigned int i;
@@ -26,8 +31,8 @@ void createLevelFromMap(map_t *map)
 		createEdge(sect, vert, &edge)->texture = 0;
 
 		if(i > 0 && i % map->width != 0 && map->tiles[i - 1] == '.'){
-			edge_t *edge1 = sect->edges;
-			edge_t *edge2 = getSector(getIndexSector(sect) - 1)->edges + 2;
+			edge_t *edge1 = sect->edges + EDGE_LEFT;
+			edge_t *edge2 = getSector(getNumSectors() - 2)->edges + EDGE_RIGHT;
 
 			edge1->type = PORTAL;
 			edge2->type = PORTAL;
@@ -35,15 +40,16 @@ void createLevelFromMap(map_t *map)
 			edge2->neighbor = edge1;
 		}
 		
-		vert.y -= 32;
+		vert = sect->vertices[sect->edges[EDGE_TOP].vertex1];
 		if(i > map->width && map->tiles[i - map->width] == '.'){
 			int j;
 			for(j = 0; j < getNumSectors() - 1; j++){
 				sector_t *sect2 = getSector(j);
-				edge_t *edge2 = sect2->edges + 3;
+				edge_t *edge2 = sect2->edges + EDGE_BOTTOM;
 				xy_t vert2 = sect2->vertices[edge2->vertex1];
 				if(vert2.x == vert.x && vert2.y == vert.y){
-					edge_t *edge1 = sect->edges + 1;
+					edge_t *edge1 = sect->edges;
+
 					edge1->type = PORTAL;
 					edge2->type = PORTAL;
 					edge1->neighbor = edge2;
