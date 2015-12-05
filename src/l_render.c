@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
+static void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
 	if(p1->y < 0){
 		p1->x += -p1->y * (p2.x - p1->x) / (p2.y - p1->y);
@@ -25,7 +25,7 @@ void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect(XY_ZERO, cam, *p1, p2, p1);
 }
 
-void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
+static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
 {
 	// Find x position on the near plane
 	//TODO change near plane from 1 to cam->znear
@@ -131,7 +131,7 @@ void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, c
 	}
 }
 
-void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam, sprite_t *sprite, xy_t pos)
+static void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam, sprite_t *sprite, xy_t pos)
 {
 	xy_t proj = {(pos.x / pos.y) * cam->fov, (sprite->pos.y + cam->pos.y) / pos.y};
 
@@ -158,9 +158,6 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		return;
 	}
 
-	double anglesin = sin(cam->angle);
-	double anglecos = cos(cam->angle);
-
 	xy_t camleftnorm = vectorUnit(camleft);
 	xy_t camrightnorm = vectorUnit(camright);
 
@@ -180,8 +177,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		xy_t relp2 = {cam->pos.x - p2.x, cam->pos.z - p2.y};
 
 		// Rotate the vertices according to the angle of the camera
-		xy_t transp1 = {.y = anglesin * relp1.x + anglecos * relp1.y};
-		xy_t transp2 = {.y = anglesin * relp2.x + anglecos * relp2.y};
+		xy_t transp1 = {.y = cam->anglesin * relp1.x + cam->anglecos * relp1.y};
+		xy_t transp2 = {.y = cam->anglesin * relp2.x + cam->anglecos * relp2.y};
 
 		// Clip everything behind the camera
 		if(transp1.y <= 0 && transp2.y <= 0){
@@ -189,8 +186,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		}
 
 		//TODO fix rounding error here
-		transp1.x = anglecos * relp1.x - anglesin * relp1.y;
-		transp2.x = anglecos * relp2.x - anglesin * relp2.y;
+		transp1.x = cam->anglecos * relp1.x - cam->anglesin * relp1.y;
+		transp2.x = cam->anglecos * relp2.x - cam->anglesin * relp2.y;
 
 		xy_t unit1 = vectorUnit(transp1);
 		xy_t unit2 = vectorUnit(transp2);
@@ -219,7 +216,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			clipPointToCamera(camleftnorm, camrightnorm, &camedge2, transp1);
 		}
 
-		double cross = vectorCrossProduct(camedge1, camedge2);
+	/*	double cross = vectorCrossProduct(camedge1, camedge2);
 		if(cross > 0){
 			xy_t temp = transp1;
 			transp1 = transp2;
@@ -228,7 +225,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			temp = camedge1;
 			camedge1 = camedge2;
 			camedge2 = temp;
-		}
+		}*/
 
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
@@ -251,11 +248,11 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 	sprite_t *sprite = (sprite_t*)sector->lastsprite;
 	while(sprite != NULL){
 		xy_t relp = {cam->pos.x - sprite->pos.x, cam->pos.z - sprite->pos.z};
-		xy_t transp = {.y = anglesin * relp.x + anglecos * relp.y};
+		xy_t transp = {.y = cam->anglesin * relp.x + cam->anglecos * relp.y};
 		if(transp.y <= cam->znear){
 			goto next_sprite;
 		}
-		transp.x = anglecos * relp.x - anglesin * relp.y;
+		transp.x = cam->anglecos * relp.x - cam->anglesin * relp.y;
 
 		if(vectorIsLeft(transp, XY_ZERO, camleftnorm) || !vectorIsLeft(transp, XY_ZERO, camrightnorm)){
 			goto next_sprite;
@@ -266,6 +263,13 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 next_sprite:
 		sprite = sprite->prev;
 	}
+}
+
+void setCameraRotation(camera_t *cam, double angle)
+{
+	cam->angle = angle;
+	cam->anglesin = sin(angle);
+	cam->anglecos = cos(angle);
 }
 
 void calculateViewport(camera_t *cam, xy_t right)

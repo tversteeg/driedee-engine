@@ -183,7 +183,7 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		player.vel.x += cos(player.cam.angle) * PLAYER_SPEED / 2;
 		player.vel.z -= sin(player.cam.angle) * PLAYER_SPEED / 2;
 #else
-		player.cam.angle -= 0.035f;
+		setCameraRotation(&player.cam, player.cam.angle - 0.035f);
 #endif
 	}
 	if(rightPressed){
@@ -191,7 +191,7 @@ void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPr
 		player.vel.x += cos(player.cam.angle - M_PI) * PLAYER_SPEED / 2;
 		player.vel.z -= sin(player.cam.angle - M_PI) * PLAYER_SPEED / 2;
 #else
-		player.cam.angle += 0.035f;
+		setCameraRotation(&player.cam, player.cam.angle + 0.035f);
 #endif
 	}
 

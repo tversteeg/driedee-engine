@@ -6,7 +6,10 @@
 typedef struct {
 	xyz_t pos;
 	double znear, zfar, fov, angle;
+	double anglesin, anglecos;
 } camera_t;
+
+void setCameraRotation(camera_t *cam, double angle);
 
 void calculateViewport(camera_t *cam, xy_t right);
 
