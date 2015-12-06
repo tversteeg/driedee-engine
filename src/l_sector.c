@@ -60,7 +60,7 @@ unsigned int getNumSectors()
 	return nsectors;
 }
 
-int getIndexSector(sector_t *sector)
+int getIndexSector(const sector_t *sector)
 {
 	unsigned int i;
 	for(i = 0; i < nsectors; i++){
@@ -107,7 +107,7 @@ edge_t *createEdge(sector_t *sector, xy_t next, edgetype_t type)
 bool pointInSector(const sector_t *sector, xy_t point)
 {
 	bool in = false;
-	int i, j;
+	unsigned int i, j;
 	for(i = 0, j = sector->nedges - 1; i < sector->nedges; j = i++){
 		xy_t pi = sector->vertices[i];
 		xy_t pj = sector->vertices[j];
@@ -138,7 +138,7 @@ void debugPrintSector(const sector_t *sector, bool verbose)
 			if(edge->type == PORTAL){
 				printf("\tPORTAL, neighbor: %d (%p)", edge->neighbor->sector, getSector(edge->neighbor->sector));
 			}else{
-				printf("\tWALL, uv division: %d", edge->uvdiv);
+				printf("\tWALL, uv division: %f", edge->uvdiv);
 			}
 		}
 		printf("\n");

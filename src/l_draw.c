@@ -4,11 +4,11 @@
 
 #include <string.h>
 
-void drawPixel(texture_t *tex, int x, int y, pixel_t pixel);
+void drawPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel);
 
 static void vline(texture_t *tex, int x, int top, int bot, pixel_t pixel)
 {
-	if(x < 0 || x >= tex->width){
+	if(x < 0 || (unsigned int)x >= tex->width){
 		return;
 	}
 
@@ -18,7 +18,7 @@ static void vline(texture_t *tex, int x, int top, int bot, pixel_t pixel)
 		bot = tmp;
 	}
 
-	if(top >= tex->height){
+	if((unsigned int)top >= tex->height){
 		top = tex->height - 1;
 	}
 	if(bot < 0){
@@ -33,7 +33,7 @@ static void vline(texture_t *tex, int x, int top, int bot, pixel_t pixel)
 
 static void hline(texture_t *tex, int y, int left, int right, pixel_t pixel)
 {
-	if(y < 0 || y >= tex->height){
+	if(y < 0 || (unsigned int)y >= tex->height){
 		return;
 	}
 
@@ -43,7 +43,7 @@ static void hline(texture_t *tex, int y, int left, int right, pixel_t pixel)
 		left = tmp;
 	}
 
-	if(right >= tex->width){
+	if((unsigned int)right >= tex->width){
 		right = tex->width - 1;
 	}
 	if(left < 0){
@@ -108,9 +108,9 @@ void setPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel)
 	tex->pixels[x + y * tex->width] = pixel;
 }
 
-void drawPixel(texture_t *tex, int x, int y, pixel_t pixel)
+void drawPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel)
 {
-	if(x >= 0 && x < tex->width && y >= 0 && y < tex->height){
+	if(x < tex->width && y < tex->height){
 		setPixel(tex, x, y, pixel);
 	}
 }
@@ -219,7 +219,7 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 
 void drawTexture(texture_t *target, const texture_t *source, int x, int y)
 {
-	if(x >= target->width || y >= target->height || x < -source->width || y < -source->height){
+	if((unsigned int)x >= target->width || (unsigned int)y >= target->height || x < -(int)source->width || y < -(int)source->height){
 		return;
 	}
 
@@ -231,7 +231,7 @@ void drawTexture(texture_t *target, const texture_t *source, int x, int y)
 	}
 }
 
-void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, int height, double uvx)
+void drawTextureSlice(texture_t *target, const texture_t *source, unsigned int x, int y, unsigned int height, double uvx)
 {
 	if(height < 1){
 		return;
@@ -246,8 +246,8 @@ void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, 
 	unsigned int j;
 	for(j = 0; j < height; j++){
 		int yscreen = y + j;
-		if(yscreen >= 0 && yscreen < target->height){
-			unsigned int yproj = j * ((double)source->height / height);
+		if(yscreen >= 0 && (unsigned int)yscreen < target->height){
+			unsigned int yproj = j * ((v_t)source->height / height);
 			pixel_t pixel = source->pixels[uvcx + yproj * source->width];
 			setPixel(target, x, yscreen, pixel);
 		}
@@ -256,7 +256,7 @@ void drawTextureSlice(texture_t *target, const texture_t *source, int x, int y, 
 
 void drawTextureScaled(texture_t *target, const texture_t *source, int x, int y, xy_t scale)
 {
-	if(x >= target->width || y >= target->height){
+	if(x >= (int)target->width || y >= (int)target->height){
 		return;
 	}
 	unsigned int width = source->width * scale.x;
@@ -287,7 +287,7 @@ void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width
 	if(gridwidth <= 1 || gridheight <= 1){
 		return;
 	}
-	int i;
+	unsigned int i;
 	for(i = x; i < width; i += gridwidth){
 		vline(tex, i, x, height, pixel);
 	}

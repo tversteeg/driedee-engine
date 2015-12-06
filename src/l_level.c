@@ -44,7 +44,7 @@ bool loadLevel(const char *filename)
 
 					tempsect.ceiltex = tempsect.floortex  =  0;
 
-					int i;
+					unsigned int i;
 					for(i = 0; i < textures; i++){
 						if(hashes[i] == ceiltexhash){
 							tempsect.ceiltex = i;
@@ -60,7 +60,7 @@ bool loadLevel(const char *filename)
 				{
 					edgetype_t type;
 					xy_t vert;
-					sscanf(line + 2, "%d (%lf,%lf)", (int*)&type, &vert.x, &vert.y);
+					sscanf(line + 2, "%d (%f,%f)", (int*)&type, &vert.x, &vert.y);
 
 					if(firstedge){
 						sect = createSector(vert, type);
@@ -86,7 +86,7 @@ bool loadLevel(const char *filename)
 					edge->uvdiv = uvdiv;
 					edge->texture = 0;
 
-					int i;
+					unsigned int i;
 					for(i = 0; i < textures; i++){
 						if(hashes[i] == texturehash){
 							edge->texture = i;
@@ -191,7 +191,7 @@ sector_t *tryMoveSprite(sector_t *sect, sprite_t *sprite, xy_t pos)
 	}
 
 	xy_t oldpos = {sprite->pos.x, sprite->pos.z};
-	int i;
+	unsigned int i;
 	for(i = 0; i < sect->nedges; i++){
 		edge_t *edge = sect->edges + i;
 		if(edge->type != PORTAL){
@@ -214,7 +214,7 @@ edge_t *findWallRay(xy_t *result, const sector_t *sect, xy_t point, xy_t dir)
 	const sector_t *current = sect;
 	do {
 		previous = NULL;
-		int i;
+		unsigned int i;
 		for(i = 0; i < current->nedges; i++){
 			edge_t *edge = current->edges + i;
 			xy_t edge1 = current->vertices[edge->vertex1];

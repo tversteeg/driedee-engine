@@ -53,18 +53,18 @@ xy_t vectorProject(xy_t p1, xy_t p2)
 	return normal;
 }
 
-double vectorDistance(xy_t p1, xy_t p2)
+v_t vectorDistance(xy_t p1, xy_t p2)
 {
-	double dx = p1.x - p2.x;
-	double dy = p1.y - p2.y;
+	v_t dx = p1.x - p2.x;
+	v_t dy = p1.y - p2.y;
 	return sqrt(dx * dx + dy * dy);
 }
 
 bool segmentSegmentIntersect(xy_t p1, xy_t p2, xy_t p3, xy_t p4, xy_t *p)
 {
-	double denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-	double n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
-	double n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
+	v_t denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
+	v_t n1 = (p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x);
+	v_t n2 = (p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x);
 	if(fabs(n1) < V_ERROR && fabs(n2) < V_ERROR && fabs(denom) < V_ERROR){
 		p->x = (p1.x + p2.x) / 2;
 		p->y = (p1.y + p2.y) / 2;
@@ -93,8 +93,8 @@ bool lineSegmentIntersect(xy_t line, xy_t dir, xy_t p1, xy_t p2, xy_t *p)
 	diff.x = p1.x - line.x;
 	diff.y = p1.y - line.y;
 
-	double denom = vectorCrossProduct(dir, s);
-	double u = vectorCrossProduct(diff, dir);
+	v_t denom = vectorCrossProduct(dir, s);
+	v_t u = vectorCrossProduct(diff, dir);
 	if(fabs(denom) < V_ERROR){
 		if(fabs(u) < V_ERROR){
 			p->x = (line.x + p1.x) / 2;
@@ -123,9 +123,9 @@ bool raySegmentIntersect(xy_t ray, xy_t dir, xy_t p1, xy_t p2, xy_t *p)
 	diff.x = p1.x - ray.x;
 	diff.y = p1.y - ray.y;
 
-	double denom = vectorCrossProduct(dir, s);
-	double u = vectorCrossProduct(diff, dir);
-	double v = vectorCrossProduct(diff, s);
+	v_t denom = vectorCrossProduct(dir, s);
+	v_t u = vectorCrossProduct(diff, dir);
+	v_t v = vectorCrossProduct(diff, s);
 	if(fabs(denom) < V_ERROR){
 		if(fabs(u) < V_ERROR){
 			p->x = (ray.x + p1.x) / 2;
@@ -148,11 +148,11 @@ bool raySegmentIntersect(xy_t ray, xy_t dir, xy_t p1, xy_t p2, xy_t *p)
 	return true;
 }
 
-bool segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *p)
+bool segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, v_t radius, xy_t *p)
 {
 	xy_t seg = {p2.x - p1.x, p2.y - p1.y};
 	xy_t cir = {circle.x - p1.x, circle.y - p1.y};
-	double proj = vectorProjectScalar(cir, seg);
+	v_t proj = vectorProjectScalar(cir, seg);
 
 	xy_t closest;
 	if(proj < 0){
@@ -164,9 +164,9 @@ bool segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *
 		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
 	}
 
-	double dx = circle.x - closest.x;
-	double dy = circle.y - closest.y;
-	double dist = sqrt(dx * dx + dy * dy);
+	v_t dx = circle.x - closest.x;
+	v_t dy = circle.y - closest.y;
+	v_t dist = sqrt(dx * dx + dy * dy);
 	if(dist < radius){
 		p->x = closest.x;
 		p->y = closest.y;
@@ -176,11 +176,11 @@ bool segmentCircleIntersect(xy_t p1, xy_t p2, xy_t circle, double radius, xy_t *
 	}
 }
 
-double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
+v_t distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 {
 	xy_t seg = {p2.x - p1.x, p2.y - p1.y};
 	xy_t cir = {p.x - p1.x, p.y - p1.y};
-	double proj = vectorProjectScalar(cir, seg);
+	v_t proj = vectorProjectScalar(cir, seg);
 
 	xy_t closest;
 	if(proj < 0){
@@ -192,8 +192,8 @@ double distanceToSegment(xy_t p, xy_t p1, xy_t p2)
 		closest = (xy_t){p1.x + projv.x, p1.y + projv.y};
 	}
 
-	double dx = p.x - closest.x;
-	double dy = p.y - closest.y;
+	v_t dx = p.x - closest.x;
+	v_t dy = p.y - closest.y;
 
 	return sqrt(dx * dx + dy * dy);
 }

@@ -52,7 +52,7 @@ bool loadGuiFromFile(const char *file)
 	nbuttons = config_setting_length(setting);
 	buttons = (button_t*)calloc(nbuttons, sizeof(button_t));
 
-	int i;
+	unsigned int i;
 	for(i = 0; i < nbuttons; i++){
 		button_t *button = buttons + i;
 		config_setting_t *elem = config_setting_get_elem(setting, i);
@@ -69,7 +69,7 @@ bool loadGuiFromFile(const char *file)
 
 		const char *fontname;
 		config_setting_lookup_string(elem, "font", &fontname);
-		int j;
+		unsigned int j;
 		for(j = 0; j < nboundfonts; j++){
 			boundfont_t bound = boundfonts[j];
 			if(strcmp(bound.name, fontname) == 0){
@@ -110,7 +110,7 @@ bool loadGuiFromFile(const char *file)
 
 		const char *fontname;
 		config_setting_lookup_string(elem, "font", &fontname);
-		int j;
+		unsigned int j;
 		for(j = 0; j < nboundfonts; j++){
 			boundfont_t bound = boundfonts[j];
 			if(strcmp(bound.name, fontname) == 0){
@@ -146,7 +146,7 @@ void renderGui(texture_t *tex)
 
 void updateGui(int mousex, int mousey, bool mousedown)
 {
-	int i;
+	unsigned int i;
 	for(i = 0; i < nbuttons; i++){
 		button_t *button = buttons + i;
 		bool ismouseover = mousex >= button->x && mousex <= button->x + button->width &&
@@ -190,7 +190,7 @@ void bindFont(const font_t *font, const char *name)
 
 void bindButtonEvent(const char *name, void (*event)(button_t*), guievent_t type)
 {
-	int i;
+	unsigned int i;
 	if(name == NULL){
 		// Bind event for all buttons
 		for(i = 0; i < nbuttons; i++){
@@ -242,7 +242,7 @@ button_t* getButtonByName(const char *name)
 
 button_t* getButtonByHash(hash_t id)
 {
-	int i;
+	unsigned int i;
 	for(i = 0; i < nbuttons; i++){
 		if(buttons[i].id == id){
 			return buttons + i;
@@ -258,7 +258,7 @@ textfield_t* getTextfieldByName(const char *name)
 
 textfield_t* getTextfieldByHash(hash_t id)
 {
-	int i;
+	unsigned int i;
 	for(i = 0; i < ntextfields; i++){
 		if(textfields[i].id == id){
 			return textfields + i;

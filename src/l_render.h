@@ -9,7 +9,7 @@ typedef struct {
 	double anglesin, anglecos;
 } camera_t;
 
-void setCameraRotation(camera_t *cam, double angle);
+void setCameraRotation(camera_t *cam, v_t angle);
 
 void calculateViewport(camera_t *cam, xy_t right);
 

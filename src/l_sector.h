@@ -37,7 +37,7 @@ void deleteSector(sector_t *sector);
 sector_t* getSector(unsigned int index);
 unsigned int getNumSectors();
 /* Return the index of a sector and -1 if it's not found */
-int getIndexSector(sector_t *sector);
+int getIndexSector(const sector_t *sector);
 
 edge_t* createEdge(sector_t *sector, xy_t next, edgetype_t type);
 

@@ -284,11 +284,14 @@ int main(int argc, char **argv)
 	initTexture(gametextures + 6, width, height);
 	loadPng(gametextures + 6, "skeleton.png");
 
-//	loadLevel(argv[1]);
-	map_t *map = createMap(50, 20);
-	generateNoiseMap(map, 0);
-	debugPrintMap(map);
-	createLevelFromMap(map);
+	if(argc > 2){
+		loadLevel(argv[1]);
+	}else{
+		map_t *map = createMap(50, 20);
+		generateNoiseMap(map, 0);
+		debugPrintMap(map);
+		createLevelFromMap(map);
+	}
 
 	player.sector = 5;
 	player.pos.x = getSector(player.sector)->vertices[0].x + 5;

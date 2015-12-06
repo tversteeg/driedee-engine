@@ -85,8 +85,8 @@ bool loadPng(texture_t *tex, const char *file)
 
 	png_read_info(png, info);
 
-	int width = png_get_image_width(png, info);
-	int height = png_get_image_height(png, info);
+	unsigned int width = png_get_image_width(png, info);
+	unsigned int height = png_get_image_height(png, info);
 
 	png_byte bitdepth = png_get_bit_depth(png, info);
 	if(bitdepth < 8){
@@ -107,7 +107,7 @@ bool loadPng(texture_t *tex, const char *file)
 	}
 
 	png_bytep *rows = (png_bytep*)malloc(sizeof(png_bytep) * height);
-	int y;
+	unsigned int y;
 	for(y = 0; y < height; y++){
 		rows[y] = (png_byte*)malloc(png_get_rowbytes(png, info));
 	}

@@ -10,7 +10,7 @@
 
 static void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
-	if(p1->y < 0){
+	if(p1->y <= 0){
 		p1->x += -p1->y * (p2.x - p1->x) / (p2.y - p1->y);
 		p1->y = 0;
 	}
@@ -25,31 +25,31 @@ static void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect(XY_ZERO, cam, *p1, p2, p1);
 }
 
-static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const camera_t *cam, edge_t *edge, xy_t left, xy_t right, double leftuv, double rightuv)
+static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const camera_t *cam, edge_t *edge, xy_t left, xy_t right, v_t leftuv, v_t rightuv)
 {
 	// Find x position on the near plane
 	//TODO change near plane from 1 to cam->znear
-	double projleftx = (left.x / left.y) * cam->fov;
-	double projrightx = (right.x / right.y) * cam->fov;
+	v_t projleftx = (left.x / left.y);// * cam->fov;
+	v_t projrightx = (right.x / right.y);// * cam->fov;
 
 	int halfwidth = target->width >> 1;
 	int halfheight = target->height >> 1;
 
 	// Convert to screen coordinates
-	int screenleftx = halfwidth + projleftx * halfwidth;
-	int screenrightx = halfwidth + projrightx * halfwidth;
+	int screenleftx = halfwidth + (projleftx * halfwidth);
+	int screenrightx = halfwidth + (projrightx * halfwidth);
 	if(screenleftx == screenrightx){
 		return;
 	}
 
-	double ceilheight = sect->ceil + cam->pos.y;
-	double floorheight = sect->floor + cam->pos.y;
+	v_t ceilheight = sect->ceil + cam->pos.y;
+	v_t floorheight = sect->floor + cam->pos.y;
 
 	// Divide by the z value to get the distance and calculate the height with that
-	double projtoplefty = ceilheight / left.y;
-	double projbotlefty = floorheight / left.y;
-	double projtoprighty = ceilheight / right.y;
-	double projbotrighty = floorheight / right.y;
+	v_t projtoplefty = ceilheight / left.y;
+	v_t projbotlefty = floorheight / left.y;
+	v_t projtoprighty = ceilheight / right.y;
+	v_t projbotrighty = floorheight / right.y;
 
 	int screentoplefty = halfheight - projtoplefty * halfheight;
 	int screenbotlefty = halfheight - projbotlefty * halfheight;
@@ -57,15 +57,15 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	int screenbotrighty = halfheight - projbotrighty * halfheight;
 
 	int screenwidth = screenrightx - screenleftx;
-	double slopetop = (screentoprighty - screentoplefty) / (double)screenwidth;
-	double slopebot = (screenbotrighty - screenbotlefty) / (double)screenwidth;
+	v_t slopetop = (screentoprighty - screentoplefty) / (v_t)screenwidth;
+	v_t slopebot = (screenbotrighty - screenbotlefty) / (v_t)screenwidth;
 
 	const texture_t *walltex = tex + edge->texture;
 	const texture_t *ceiltex = tex + sect->ceiltex;
 	const texture_t *floortex = tex + sect->floortex;
 
-	double anglesin = sin(-cam->angle - M_PI / 2.0);
-	double anglecos = cos(-cam->angle - M_PI / 2.0);
+	v_t anglesin = sin(-cam->angle - M_PI / 2.0);
+	v_t anglecos = cos(-cam->angle - M_PI / 2.0);
 
 	int x;
 	for(x = 0; x < screenwidth; x++){
@@ -74,29 +74,29 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 		int bot = screenbotlefty + x * slopebot;
 		// Affine transformation
 		/*
-			 double uvdiff = (rightuv - leftuv) / (double)screenwidth;
+			 v_t uvdiff = (rightuv - leftuv) / (v_t)screenwidth;
 			 drawTextureSlice(target, textures, screenleftx + x, top, bot - top, leftuv + (x * uvdiff));
 			 */
 
 		// Perspective transformation
 		/* Naive method
-			 double alpha = x / (double)screenwidth;
-			 double uvx = ((1 - alpha) * (leftuv / left.y) + alpha * (rightuv / right.y)) / ((1 - alpha) / left.y + alpha / right.y);
+			 v_t alpha = x / (v_t)screenwidth;
+			 v_t uvx = ((1 - alpha) * (leftuv / left.y) + alpha * (rightuv / right.y)) / ((1 - alpha) / left.y + alpha / right.y);
 			 */
-		double xt1 = (screenwidth - x) * right.y;
-		double xt2 = x * left.y;
-		double uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
+		v_t xt1 = (screenwidth - x) * right.y;
+		v_t xt2 = x * left.y;
+		v_t uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
 		drawTextureSlice(target, walltex, screenx, top, bot - top, uvx);
 
 		// Draw ceiling
 		if(top > 0){
 			int y;
 			for(y = 0; y < top; y++){
-				double relscreeny = (halfheight * ceilheight) / (double)(halfheight - y);
-				double relscreenx = ((screenx - halfwidth) / (double)halfwidth) * relscreeny;
+				v_t relscreeny = (halfheight * ceilheight) / (v_t)(halfheight - y);
+				v_t relscreenx = ((screenx - halfwidth) / (v_t)halfwidth) * relscreeny;
 
-				double mapx = cam->pos.x + anglecos * relscreeny + anglesin * relscreenx;
-				double mapy = cam->pos.z + anglesin * relscreeny - anglecos * relscreenx;
+				v_t mapx = cam->pos.x + anglecos * relscreeny + anglesin * relscreenx;
+				v_t mapy = cam->pos.z + anglesin * relscreeny - anglecos * relscreenx;
 
 				pixel_t pixel = ceiltex->pixels[((int)mapx % ceiltex->width) + ((int)mapy % ceiltex->height) * ceiltex->width];
 				setPixel(target, screenx, y, pixel);
@@ -109,14 +109,14 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 			}
 		}
 		// Draw floor
-		if(bot < target->height){
+		if(bot < (int)target->height){
 			int y;
-			for(y = bot; y < target->height; y++){
-				double relscreeny = (halfheight * floorheight) / (double)(halfheight - y);
-				double relscreenx = ((screenx - halfwidth) / (double)halfwidth) * relscreeny;
+			for(y = bot; y < (int)target->height; y++){
+				v_t relscreeny = (halfheight * floorheight) / (v_t)(halfheight - y);
+				v_t relscreenx = ((screenx - halfwidth) / (v_t)halfwidth) * relscreeny;
 
-				double mapx = cam->pos.x + anglecos * relscreeny + anglesin * relscreenx;
-				double mapy = cam->pos.z + anglesin * relscreeny - anglecos * relscreenx;
+				v_t mapx = cam->pos.x + anglecos * relscreeny + anglesin * relscreenx;
+				v_t mapy = cam->pos.z + anglesin * relscreeny - anglecos * relscreenx;
 
 				pixel_t pixel = floortex->pixels[((int)mapx % floortex->width) + ((int)mapy % floortex->height) * floortex->width];
 				setPixel(target, screenx, y, pixel);
@@ -216,17 +216,6 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			clipPointToCamera(camleftnorm, camrightnorm, &camedge2, transp1);
 		}
 
-	/*	double cross = vectorCrossProduct(camedge1, camedge2);
-		if(cross > 0){
-			xy_t temp = transp1;
-			transp1 = transp2;
-			transp2 = temp;
-
-			temp = camedge1;
-			camedge1 = camedge2;
-			camedge2 = temp;
-		}*/
-
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
 			if(neighbor != NULL){
@@ -237,8 +226,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			xy_t leftnorm = {camedge1.x - transp1.x, camedge1.y - transp1.y};
 			xy_t rightnorm = {camedge2.x - transp1.x, camedge2.y - transp1.y};
 
-			double leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
-			double rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
+			v_t leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
+			v_t rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
 
 			renderWall(texture, textures, sector, cam, edge, camedge1, camedge2, leftuv, rightuv);
 		}
@@ -265,7 +254,7 @@ next_sprite:
 	}
 }
 
-void setCameraRotation(camera_t *cam, double angle)
+void setCameraRotation(camera_t *cam, v_t angle)
 {
 	cam->angle = angle;
 	cam->anglesin = sin(angle);
@@ -275,12 +264,12 @@ void setCameraRotation(camera_t *cam, double angle)
 void calculateViewport(camera_t *cam, xy_t right)
 {
 	xy_t camunit = vectorUnit(right);
-	cam->fov = camunit.x * camunit.y * 2;
+	cam->fov = camunit.x * camunit.y * 2.0;
 }
 
 void renderFromSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam)
 {
-	double camdis = cam->zfar - cam->znear;
+	v_t camdis = cam->zfar - cam->znear;
 	xy_t camleft = {camdis * -cam->fov, camdis};
 	xy_t camright = {camdis * cam->fov, camdis};
 
