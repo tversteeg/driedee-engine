@@ -2,15 +2,21 @@
 
 #include "l_vector.h"
 #include "l_level.h"
+#include "l_colors.h"
 
 #include <math.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 
+static v_t *screenangles = NULL;
+static unsigned int screenw = 0;
+static unsigned int screenhw = 0;
+static unsigned int screenh = 0;
+
 static void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 {
-	if(p1->y <= 0){
+	if(p1->y < 0){
 		p1->x += -p1->y * (p2.x - p1->x) / (p2.y - p1->y);
 		p1->y = 0;
 	}
@@ -25,6 +31,15 @@ static void clipPointToCamera(xy_t camleft, xy_t camright, xy_t *p1, xy_t p2)
 	lineSegmentIntersect(XY_ZERO, cam, *p1, p2, p1);
 }
 
+static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, edge_t *edge, int left, int right)
+{
+	unsigned int i;
+	for(i = left + screenhw; i < right + screenhw - 1; i++){
+		drawLine(target, (xy_t){i, 0}, (xy_t){i, screenh}, COLOR_RED);
+	}
+}
+
+#if 0
 static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const camera_t *cam, edge_t *edge, xy_t left, xy_t right, v_t leftuv, v_t rightuv)
 {
 	// Find x position on the near plane
@@ -130,6 +145,7 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 		}
 	}
 }
+#endif
 
 static void renderSprite(texture_t *target, const texture_t *sheet, const camera_t *cam, sprite_t *sprite, xy_t pos)
 {
@@ -146,20 +162,15 @@ static void renderSprite(texture_t *target, const texture_t *sheet, const camera
 	drawTextureScaled(target, sheet, screenx, screeny, scale);
 }
 
-static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, xy_t camleft, xy_t camright, edge_t *previous)
+static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, int camleft, int camright, edge_t *previous)
 {
 	if(sector == NULL){
 		fprintf(stderr, "Edge's sector is undefined\n");
 		exit(1);
 	}
 
-	//TODO fix, source of the glitchy screen
-	if(abs(camleft.x - camright.x) < V_ERROR){
-		return;
-	}
-
-	xy_t camleftnorm = vectorUnit(camleft);
-	xy_t camrightnorm = vectorUnit(camright);
+	v_t asin = cam->anglesin;
+	v_t acos = cam->anglecos;
 
 	unsigned int i;
 	for(i = 0; i < sector->nedges; i++){
@@ -177,8 +188,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		xy_t relp2 = {cam->pos.x - p2.x, cam->pos.z - p2.y};
 
 		// Rotate the vertices according to the angle of the camera
-		xy_t transp1 = {.y = cam->anglesin * relp1.x + cam->anglecos * relp1.y};
-		xy_t transp2 = {.y = cam->anglesin * relp2.x + cam->anglecos * relp2.y};
+		xy_t transp1 = {.y = asin * relp1.x + acos * relp1.y};
+		xy_t transp2 = {.y = asin * relp2.x + acos * relp2.y};
 
 		// Clip everything behind the camera
 		if(transp1.y <= 0 && transp2.y <= 0){
@@ -186,20 +197,22 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		}
 
 		//TODO fix rounding error here
-		transp1.x = cam->anglecos * relp1.x - cam->anglesin * relp1.y;
-		transp2.x = cam->anglecos * relp2.x - cam->anglesin * relp2.y;
+		transp1.x = acos * relp1.x - asin * relp1.y;
+		transp2.x = acos * relp2.x - asin * relp2.y;
 
-		xy_t unit1 = vectorUnit(transp1);
-		xy_t unit2 = vectorUnit(transp2);
-		bool isnotinview1 = !vectorIsBetween(unit1, camleftnorm, camrightnorm);
-		bool isnotinview2 = !vectorIsBetween(unit2, camleftnorm, camrightnorm);
-		if(isnotinview1 && isnotinview2){
+		v_t angle1 = (v_t)atan2(transp1.y, transp1.x);
+		v_t angle2 = (v_t)atan2(transp2.y, transp2.x);
+
+		bool isleftcam1 = angle1 < screenangles[camleft];
+		bool isrightcam1 = angle1 > screenangles[camright];
+		bool isleftcam2 = angle2 < screenangles[camleft];
+		bool isrightcam2 = angle2 > screenangles[camright];
+
+		bool isnotinview1 = isleftcam1 && isrightcam1;
+		bool isnotinview2 = isleftcam2 && isrightcam2;
+		if(isnotinview1 && isnotinview2 ){
 			// Clip the edge when it lies next to the camera
-			if(vectorIsLeft(transp1, XY_ZERO, camleftnorm) &&
-					vectorIsLeft(transp2, XY_ZERO, camleftnorm)){
-				continue;
-			}else if(!vectorIsLeft(transp1, XY_ZERO, camrightnorm) &&
-					!vectorIsLeft(transp2, XY_ZERO, camrightnorm)){
+			if((isleftcam1 && isleftcam2) || (isrightcam1 && isrightcam2)){
 				continue;
 			}else if(transp1.y - ((transp2.y - transp1.y) / (transp2.x - transp1.x)) * transp1.x < V_ERROR){
 				// Clip the edge when the line 'y = ax + b' is above the camera
@@ -207,21 +220,36 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			}
 		}
 
+		v_t angleleft = min(angle1, angle2);
+		v_t angleright = max(angle1, angle2);
+
+		int newleft = cos(angleleft) * screenhw;
+		if(newleft < camleft){
+			newleft = camleft;
+		}
+
+		int newright = cos(angleright) * screenhw;
+		if(newright > camright){
+			newright = camright;
+		}
+		/*
 		xy_t camedge1 = transp1;
-		if(isnotinview1 && !vectorIsEqual(transp1, camleft) && !vectorIsEqual(transp1, camright)){
+		if(isnotinview1){
 			clipPointToCamera(camleftnorm, camrightnorm, &camedge1, transp2);
 		}
 		xy_t camedge2 = transp2;
-		if(isnotinview2 && !vectorIsEqual(transp2, camleft) && !vectorIsEqual(transp2, camright)){
+		if(isnotinview2){
 			clipPointToCamera(camleftnorm, camrightnorm, &camedge2, transp1);
 		}
+		*/
 
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
 			if(neighbor != NULL){
-				renderSector(texture, textures, getSector(neighbor->sector), cam, camedge1, camedge2, neighbor);
+				//renderSector(texture, textures, getSector(neighbor->sector), cam, newleft, newright, neighbor);
 			}
 		}else if(edge->type == WALL){
+			/*
 			xy_t norm = {transp2.x - transp1.x, transp2.y - transp1.y};
 			xy_t leftnorm = {camedge1.x - transp1.x, camedge1.y - transp1.y};
 			xy_t rightnorm = {camedge2.x - transp1.x, camedge2.y - transp1.y};
@@ -230,18 +258,20 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			v_t rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
 
 			renderWall(texture, textures, sector, cam, edge, camedge1, camedge2, leftuv, rightuv);
+			*/
+			renderWall(texture, textures, sector, edge, newleft, newright);
 		}
 	}
-
+/*
 	// Render the sprites
 	sprite_t *sprite = (sprite_t*)sector->lastsprite;
 	while(sprite != NULL){
 		xy_t relp = {cam->pos.x - sprite->pos.x, cam->pos.z - sprite->pos.z};
-		xy_t transp = {.y = cam->anglesin * relp.x + cam->anglecos * relp.y};
+		xy_t transp = {.y = asin * relp.x + acos * relp.y};
 		if(transp.y <= cam->znear){
 			goto next_sprite;
 		}
-		transp.x = cam->anglecos * relp.x - cam->anglesin * relp.y;
+		transp.x = acos * relp.x - asin * relp.y;
 
 		if(vectorIsLeft(transp, XY_ZERO, camleftnorm) || !vectorIsLeft(transp, XY_ZERO, camrightnorm)){
 			goto next_sprite;
@@ -252,6 +282,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 next_sprite:
 		sprite = sprite->prev;
 	}
+	*/
 }
 
 void setCameraRotation(camera_t *cam, v_t angle)
@@ -264,14 +295,23 @@ void setCameraRotation(camera_t *cam, v_t angle)
 void calculateViewport(camera_t *cam, xy_t right)
 {
 	xy_t camunit = vectorUnit(right);
-	cam->fov = camunit.x * camunit.y * 2.0;
+	cam->fov = camunit.x * camunit.y;
+}
+
+void initRender(unsigned int width, unsigned int height, camera_t *cam)
+{
+	screenw = width;
+	screenh = height;
+	screenhw = width / 2;
+
+	screenangles = (v_t*)malloc(sizeof(v_t) * screenw);
+	unsigned int i;
+	for(i = 0; i < screenw; i++){
+		screenangles[i] = (v_t)atan2(1, (i - screenhw) * cam->fov);
+	}
 }
 
 void renderFromSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam)
 {
-	v_t camdis = cam->zfar - cam->znear;
-	xy_t camleft = {camdis * -cam->fov, camdis};
-	xy_t camright = {camdis * cam->fov, camdis};
-
-	renderSector(texture, textures, sector, cam, camleft, camright, NULL);
+	renderSector(texture, textures, sector, cam, -(int)screenhw, (int)screenhw, NULL);
 }

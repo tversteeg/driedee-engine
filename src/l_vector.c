@@ -12,7 +12,8 @@ xy_t vectorUnit(xy_t p)
 
 bool vectorIsEqual(xy_t p1, xy_t p2)
 {
-	return p1.x - V_ERROR < p2.x && p1.x + V_ERROR > p2.x && p1.y - V_ERROR < p2.y && p1.y + V_ERROR > p2.y;
+	//return p1.x - V_ERROR < p2.x && p1.x + V_ERROR > p2.x && p1.y - V_ERROR < p2.y && p1.y + V_ERROR > p2.y;
+	return p1.x == p2.x && p1.y == p2.y;
 }
 
 bool vectorIsBetween(xy_t p, xy_t left, xy_t right)
