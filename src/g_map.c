@@ -35,7 +35,7 @@ void generateNoiseMap(map_t *map, int seed)
 		char tile = '.';
 		if(i % map->width == 0 || i % (map->width) == map->width - 1 || i < map->width || i > map->size - map->width){
 			tile = '#';
-		}else if(rand() % 5 == 0){
+		}else if(rand() % 2 == 0){
 			tile = '#';
 		}
 		setMapTileFromChar(map, i, tile);

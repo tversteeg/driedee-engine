@@ -13,6 +13,6 @@ void setCameraRotation(camera_t *cam, v_t angle);
 
 void calculateViewport(camera_t *cam, xy_t right);
 
-void initRender(unsigned int width, unsigned int height, camera_t *cam);
+void initRender(unsigned int width, unsigned int height);
 
 void renderFromSector(texture_t *targets, texture_t *texturestack, sector_t *sector, camera_t *cam);
