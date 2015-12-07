@@ -13,11 +13,84 @@ static unsigned int screenw = 0;
 static unsigned int screenhw = 0;
 static unsigned int screenh = 0;
 
-static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, edge_t *edge, int leftproj, int rightproj, xy_t left, xy_t right)
+static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 {
+	v_t a = p2.y - p1.y;
+	v_t b = p1.x - p2.x;
+	v_t c = a * p1.x + b * p1.y;
+
+	v_t delta = -a * x - b;
+	if(delta == 0){
+		return false;
+	}
+
+	result->x = (-x * c) / delta;
+	result->y = -c / delta;
+
+	return true;
+}
+
+static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const edge_t *edge, 
+		v_t viewheight,
+		int leftproj, int rightproj, 
+		xy_t left, xy_t right,
+		bool clipleft, bool clipright)
+{
+	// Clip the edges when they are partially hidden
+	xy_t leftfix = left;
+	if(clipleft){
+		if(!clipIntersection(left, right, leftproj, &leftfix)){
+			exit(1);
+		}
+	}
+	xy_t rightfix = right;
+	if(clipright){
+		if(!clipIntersection(left, right, rightproj, &rightfix)){
+			exit(1);
+		}
+	}
+
+	// Calculate the UV coordinates
+	xy_t norm = {right.x - left.x, right.y - left.y};
+	xy_t leftnorm = {leftfix.x - left.x, leftfix.y - left.y};
+	xy_t rightnorm = {rightfix.x - right.x, rightfix.y - right.y};
+	v_t leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
+	v_t rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
+
+	v_t ceilheight = sect->ceil + viewheight;
+	v_t floorheight = sect->floor + viewheight;
+
+	// Divide by the z value to get the distance and calculate the height with that
+	v_t projtoplefty = ceilheight / leftfix.y;
+	v_t projbotlefty = floorheight / leftfix.y;
+	v_t projtoprighty = ceilheight / rightfix.y;
+	v_t projbotrighty = floorheight / rightfix.y;
+
+	int screentoplefty = screenhw - projtoplefty * screenhw;
+	int screenbotlefty = screenhw - projbotlefty * screenhw;
+	int screentoprighty = screenhw - projtoprighty * screenhw;
+	int screenbotrighty = screenhw - projbotrighty * screenhw;
+
+	unsigned int screenwidth = rightproj - leftproj;
+	v_t topslope = (screentoprighty - screentoplefty) / (v_t)screenwidth;
+	v_t botslope = (screenbotrighty - screenbotlefty) / (v_t)screenwidth;
+
+	int screenleft = leftproj + screenhw;
+	
+	const texture_t *walltex = tex + edge->texture;
+	const texture_t *ceiltex = tex + sect->ceiltex;
+	const texture_t *floortex = tex + sect->floortex;
+
 	unsigned int i;
-	for(i = leftproj + screenhw; i < rightproj + screenhw; i++){
-		drawLine(target, (xy_t){i, 0}, (xy_t){i, screenh}, COLOR_RED);
+	for(i = 0; i < screenwidth; i++){
+		int screenx = screenleft + i;
+		int top = screentoplefty + screenx * topslope;
+		int bot = screenbotlefty + screenx * botslope;
+		
+		v_t xt1 = (screenwidth - i) * rightfix.y;
+		v_t xt2 = i * leftfix.y;
+		v_t uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
+		drawTextureSlice(target, walltex, screenx, top, bot - top, uvx);
 	}
 }
 
@@ -60,8 +133,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		transp2.x = acos * relp2.x - asin * relp2.y;
 
 		// Perspective projection
-		int proj1 = transp1.x * (cam->fov / transp1.y) * screenhw + screenhw;
-		int proj2 = transp2.x * (cam->fov / transp2.y) * screenhw + screenhw;
+		int proj1 = transp1.x * (cam->fov / transp1.y) * screenhw;
+		int proj2 = transp2.x * (cam->fov / transp2.y) * screenhw;
 
 		if(proj1 == proj2){
 			continue;
@@ -76,23 +149,24 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			continue;
 		}
 
-
-		drawLine(texture, (xy_t){proj1, 0}, (xy_t){proj1, 20}, COLOR_GREEN);
-		drawLine(texture, (xy_t){proj2, 0}, (xy_t){proj2, 20}, COLOR_YELLOW);
+		bool clipleft = false;
+		if(proj1 < camleft){
+			proj1 = camleft;
+			clipleft = true;
+		}
+		bool clipright = false;
+		if(proj2 > camright){
+			proj2 = camright;
+			clipright = true;
+		}
 
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
 			if(neighbor != NULL){
-				if(proj1 < camleft){
-					proj1 = camleft;
-				}
-				if(proj2 > camright){
-					proj2 = camright;
-				}
 				//renderSector(texture, textures, getSector(neighbor->sector), cam, left, right, neighbor);
 			}
 		}else if(edge->type == WALL){
-			renderWall(texture, textures, sector, edge, proj1, proj2, transp2, transp1);
+			renderWall(texture, textures, sector, edge, cam->pos.y, proj1, proj2, transp2, transp1, clipleft, clipright);
 		}
 	}
 }
