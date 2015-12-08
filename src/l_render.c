@@ -9,9 +9,12 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define DEBUG_MAP 1
+
 static unsigned int screenw = 0;
 static unsigned int screenhw = 0;
 static unsigned int screenh = 0;
+static unsigned int screenhh = 0;
 static v_t *screenlookup = NULL;
 
 static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
@@ -85,14 +88,32 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	unsigned int i;
 	for(i = 0; i < screenwidth; i++){
 		int screenx = screenleft + i;
-		int top = max(screentoplefty + screenx * topslope, 0);
-		int bot = min(screenbotlefty + screenx * botslope, target->height - 1);
+		int top = screentoplefty + screenx * topslope;
+		int bot = screenbotlefty + screenx * botslope;
 		
 		v_t xt1 = (screenwidth - i) * rightfix.y;
 		v_t xt2 = i * leftfix.y;
-		v_t uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
-		drawTextureSlice(target, walltex, screenx, top, bot, uvx);
+		v_t uvfx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
+		unsigned int uvx = (int)(walltex->width * uvfx) % walltex->width;
+		v_t uvy = walltex->height / (v_t)(bot - top);
+		drawTextureSlice(target, walltex, screenx, max(top, 0), min(bot, target->height - 1), uvx, uvy);
 	}
+}
+
+static xy_t worldToCamCoordinates(xy_t p, camera_t *cam)
+{
+	p.x = cam->pos.x - p.x;
+	p.y = cam->pos.z - p.y;
+
+	v_t asin = cam->anglesin;
+	v_t acos = cam->anglecos;
+
+	return (xy_t){acos * p.x - asin * p.y, asin * p.x + acos * p.y};
+}
+
+static int projectCamToScreenCoordinates(xy_t p, camera_t *cam)
+{
+	return p.x * (cam->fov / p.y) * screenhw;
 }
 
 static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, int camleft, int camright, edge_t *previous)
@@ -102,8 +123,9 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		exit(1);
 	}
 
-	v_t asin = cam->anglesin;
-	v_t acos = cam->anglecos;
+#ifdef DEBUG_MAP
+	drawPixel(texture, screenhw, screenhh, COLOR_GREEN);
+#endif
 
 	unsigned int i;
 	for(i = 0; i < sector->nedges; i++){
@@ -112,30 +134,17 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			continue;
 		}
 
-		// Get the position of the vertices
-		xy_t p1 = sector->vertices[edge->vertex1];
-		xy_t p2 = sector->vertices[edge->vertex2];
-
-		// Get the position of the vertices in relation to the camera
-		xy_t relp1 = {cam->pos.x - p1.x, cam->pos.z - p1.y};
-		xy_t relp2 = {cam->pos.x - p2.x, cam->pos.z - p2.y};
-
-		// Rotate the vertices according to the angle of the camera
-		xy_t transp1 = {.y = asin * relp1.x + acos * relp1.y};
-		xy_t transp2 = {.y = asin * relp2.x + acos * relp2.y};
+		xy_t p1 = worldToCamCoordinates(sector->vertices[edge->vertex1], cam);
+		xy_t p2 = worldToCamCoordinates(sector->vertices[edge->vertex2], cam);
 
 		// Clip everything behind the camera minimal view
-		if(transp1.y <= cam->znear && transp2.y <= cam->znear){
+		if(p1.y <= cam->znear && p2.y <= cam->znear){
 			continue;
 		}
 
-		//TODO fix rounding error here
-		transp1.x = acos * relp1.x - asin * relp1.y;
-		transp2.x = acos * relp2.x - asin * relp2.y;
-
 		// Perspective projection
-		int proj1 = transp1.x * (cam->fov / transp1.y) * screenhw;
-		int proj2 = transp2.x * (cam->fov / transp2.y) * screenhw;
+		int proj1 = projectCamToScreenCoordinates(p1, cam);
+		int proj2 = projectCamToScreenCoordinates(p2, cam);
 
 		if(proj1 == proj2){
 			continue;
@@ -161,14 +170,30 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			clipright = true;
 		}
 
+#ifdef DEBUG_MAP
+		pixel_t d_edgecol = COLOR_YELLOW;
+#endif
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
 			if(neighbor != NULL){
 				renderSector(texture, textures, getSector(neighbor->sector), cam, proj1, proj2, neighbor);
 			}
+#ifdef DEBUG_MAP
+			d_edgecol = COLOR_BLUE;
+#endif
 		}else if(edge->type == WALL){
-			renderWall(texture, textures, sector, edge, cam,proj1, proj2, transp2, transp1, clipleft, clipright);
+			//renderWall(texture, textures, sector, edge, cam,proj1, proj2, p2, p1, clipleft, clipright);
 		}
+
+#ifdef DEBUG_MAP
+		xy_t d_p1 = {p1.x + screenhw, -p1.y + screenhh};
+		xy_t d_p2 = {p2.x + screenhw, -p2.y + screenhh};
+		drawLine(texture, d_p1, d_p2, d_edgecol);
+
+		xy_t d_r;
+		clipIntersection(d_p1, d_p2, proj1, &d_r);
+		drawPixel(texture, d_r.x + screenhw, -d_r.y + screenhh, COLOR_GREEN);
+#endif
 	}
 }
 
@@ -190,6 +215,7 @@ void initRender(unsigned int width, unsigned int height, camera_t *cam)
 	screenw = width;
 	screenh = height;
 	screenhw = width / 2;
+	screenhh = height / 2;
 
 	screenlookup = (v_t*)malloc(width * sizeof(v_t));
 	unsigned int i;

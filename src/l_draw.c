@@ -232,24 +232,21 @@ void drawTexture(texture_t *target, const texture_t *source, int x, int y)
 	}
 }
 
-void drawTextureSlice(texture_t *target, const texture_t *source, unsigned int x, int y, int y2, double uvx)
+void drawTextureSlice(texture_t *target, const texture_t *source, unsigned int x, int y, int y2, unsigned int uvx, double uvyscale)
 {
 	int height = y2 - y;
 	if(height < 1){
 		return;
 	}
 
-	if(uvx > target->width || y < 0 || y2 >= target->width){
-		fprintf(stderr, "Slice out of bounds: %d %d %d\n", uvx, y, y2);
-		return;
+	if(y < 0 || y2 >= (int)target->width){
+		fprintf(stderr, "Slice out of bounds: %d %d\n", y, y2);
+		exit(1);
 	}
 
-	unsigned int uvcx = (int)(source->width * uvx) % source->width;
-	v_t scale = source->height / height;
-
-	unsigned int i;
+	int i;
 	for(i = 0; i < height; i++){
-		pixel_t pixel = source->pixels[uvcx + (unsigned int)(i * scale) * source->width];
+		pixel_t pixel = source->pixels[uvx + (unsigned int)(i * uvyscale) * source->width];
 		setPixel(target, x, i, pixel);
 	}
 }
