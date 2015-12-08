@@ -300,7 +300,7 @@ int main(int argc, char **argv)
 	player.cam.znear = 1;
 	player.cam.zfar = 200;
 	calculateViewport(&player.cam, (xy_t){1, 1});
-	initRender(HWIDTH, HHEIGHT);
+	initRender(HWIDTH, HHEIGHT, &player.cam);
 	player.cam.pos = player.pos;
 	
 	ccDisplayInitialize();

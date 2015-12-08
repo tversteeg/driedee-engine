@@ -233,7 +233,7 @@ void drawTexture(texture_t *target, const texture_t *source, int x, int y)
 
 void drawTextureSlice(texture_t *target, const texture_t *source, unsigned int x, int y, unsigned int height, double uvx)
 {
-	if(height < 1){
+	if(height == 0 || y >= target->height || y < -height){
 		return;
 	}
 
@@ -243,14 +243,23 @@ void drawTextureSlice(texture_t *target, const texture_t *source, unsigned int x
 	}else{
 		uvcx = (int)(source->width * uvx) % source->width;
 	}
+
+	unsigned int drawy = 0;
+	if(y > 0){
+		drawy = y;
+	}
+	unsigned int drawheight = height;
+	if(drawy + height > target->height){
+		drawheight = target->height;
+	}
+	drawheight += y;
+
 	unsigned int j;
-	for(j = 0; j < height; j++){
-		int yscreen = y + j;
-		if(yscreen >= 0 && (unsigned int)yscreen < target->height){
-			unsigned int yproj = j * ((v_t)source->height / height);
-			pixel_t pixel = source->pixels[uvcx + yproj * source->width];
-			setPixel(target, x, yscreen, pixel);
-		}
+	for(j = drawy; j < drawheight; j++){
+		int yscreen = j;
+		unsigned int yproj = j * ((v_t)source->height / height);
+		pixel_t pixel = source->pixels[uvcx + yproj * source->width];
+		setPixel(target, x, yscreen, pixel);
 	}
 }
 

@@ -12,6 +12,7 @@
 static unsigned int screenw = 0;
 static unsigned int screenhw = 0;
 static unsigned int screenh = 0;
+static v_t *screenlookup = NULL;
 
 static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 {
@@ -19,12 +20,13 @@ static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 	v_t b = p1.x - p2.x;
 	v_t c = a * p1.x + b * p1.y;
 
-	v_t delta = -a * x - b;
+	v_t realx = screenlookup[x + screenhw];
+	v_t delta = -a * realx - b;
 	if(delta == 0){
 		return false;
 	}
 
-	result->x = (-x * c) / delta;
+	result->x = (-realx * c) / delta;
 	result->y = -c / delta;
 
 	return true;
@@ -184,11 +186,17 @@ void calculateViewport(camera_t *cam, xy_t right)
 	cam->fov = camunit.x * camunit.y * 2.0;
 }
 
-void initRender(unsigned int width, unsigned int height)
+void initRender(unsigned int width, unsigned int height, camera_t *cam)
 {
 	screenw = width;
 	screenh = height;
 	screenhw = width / 2;
+
+	screenlookup = (v_t*)malloc(width * sizeof(v_t));
+	unsigned int i;
+	for(i = 0; i < width; i++){
+		screenlookup[i] = (i - screenhw) * cam->fov;
+	}
 }
 
 void renderFromSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam)
