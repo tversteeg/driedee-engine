@@ -32,8 +32,7 @@ static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 	return true;
 }
 
-static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const edge_t *edge, 
-		v_t viewheight,
+static void renderWall(texture_t *target, const texture_t *tex, const sector_t *sect, const edge_t *edge, const camera_t *cam, 
 		int leftproj, int rightproj, 
 		xy_t left, xy_t right,
 		bool clipleft, bool clipright)
@@ -41,13 +40,13 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	// Clip the edges when they are partially hidden
 	xy_t leftfix = left;
 	if(clipleft){
-		if(!clipIntersection(left, right, leftproj, &leftfix)){
+		if(!clipIntersection(left, right, leftproj / cam->fov, &leftfix)){
 			exit(1);
 		}
 	}
 	xy_t rightfix = right;
 	if(clipright){
-		if(!clipIntersection(left, right, rightproj, &rightfix)){
+		if(!clipIntersection(left, right, rightproj / cam->fov, &rightfix)){
 			exit(1);
 		}
 	}
@@ -59,8 +58,8 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	v_t leftuv = vectorProjectScalar(leftnorm, norm) / edge->uvdiv;
 	v_t rightuv = vectorProjectScalar(rightnorm, norm) / edge->uvdiv;
 
-	v_t ceilheight = sect->ceil + viewheight;
-	v_t floorheight = sect->floor + viewheight;
+	v_t ceilheight = sect->ceil + cam->pos.y;
+	v_t floorheight = sect->floor + cam->pos.y;
 
 	// Divide by the z value to get the distance and calculate the height with that
 	v_t projtoplefty = ceilheight / leftfix.y;
@@ -86,13 +85,13 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	unsigned int i;
 	for(i = 0; i < screenwidth; i++){
 		int screenx = screenleft + i;
-		int top = screentoplefty + screenx * topslope;
-		int bot = screenbotlefty + screenx * botslope;
+		int top = max(screentoplefty + screenx * topslope, 0);
+		int bot = min(screenbotlefty + screenx * botslope, target->height - 1);
 		
 		v_t xt1 = (screenwidth - i) * rightfix.y;
 		v_t xt2 = i * leftfix.y;
 		v_t uvx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
-		drawTextureSlice(target, walltex, screenx, top, bot - top, uvx);
+		drawTextureSlice(target, walltex, screenx, top, bot, uvx);
 	}
 }
 
@@ -126,7 +125,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		xy_t transp2 = {.y = asin * relp2.x + acos * relp2.y};
 
 		// Clip everything behind the camera minimal view
-		if(transp1.y <= cam->znear || transp2.y <= cam->znear){
+		if(transp1.y <= cam->znear && transp2.y <= cam->znear){
 			continue;
 		}
 
@@ -165,10 +164,10 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
 			if(neighbor != NULL){
-				//renderSector(texture, textures, getSector(neighbor->sector), cam, left, right, neighbor);
+				renderSector(texture, textures, getSector(neighbor->sector), cam, proj1, proj2, neighbor);
 			}
 		}else if(edge->type == WALL){
-			renderWall(texture, textures, sector, edge, cam->pos.y, proj1, proj2, transp2, transp1, clipleft, clipright);
+			renderWall(texture, textures, sector, edge, cam,proj1, proj2, transp2, transp1, clipleft, clipright);
 		}
 	}
 }

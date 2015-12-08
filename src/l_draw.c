@@ -3,6 +3,7 @@
 #include "l_colors.h"
 
 #include <string.h>
+#include <stdio.h>
 
 void drawPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel);
 
@@ -231,35 +232,25 @@ void drawTexture(texture_t *target, const texture_t *source, int x, int y)
 	}
 }
 
-void drawTextureSlice(texture_t *target, const texture_t *source, unsigned int x, int y, unsigned int height, double uvx)
+void drawTextureSlice(texture_t *target, const texture_t *source, unsigned int x, int y, int y2, double uvx)
 {
-	if(height == 0 || y >= target->height || y < -height){
+	int height = y2 - y;
+	if(height < 1){
 		return;
 	}
 
-	int uvcx;
-	if(uvx == 0){
-		uvcx = 0;
-	}else{
-		uvcx = (int)(source->width * uvx) % source->width;
+	if(uvx > target->width || y < 0 || y2 >= target->width){
+		fprintf(stderr, "Slice out of bounds: %d %d %d\n", uvx, y, y2);
+		return;
 	}
 
-	unsigned int drawy = 0;
-	if(y > 0){
-		drawy = y;
-	}
-	unsigned int drawheight = height;
-	if(drawy + height > target->height){
-		drawheight = target->height;
-	}
-	drawheight += y;
+	unsigned int uvcx = (int)(source->width * uvx) % source->width;
+	v_t scale = source->height / height;
 
-	unsigned int j;
-	for(j = drawy; j < drawheight; j++){
-		int yscreen = j;
-		unsigned int yproj = j * ((v_t)source->height / height);
-		pixel_t pixel = source->pixels[uvcx + yproj * source->width];
-		setPixel(target, x, yscreen, pixel);
+	unsigned int i;
+	for(i = 0; i < height; i++){
+		pixel_t pixel = source->pixels[uvcx + (unsigned int)(i * scale) * source->width];
+		setPixel(target, x, i, pixel);
 	}
 }
 
