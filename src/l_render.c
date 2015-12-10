@@ -10,6 +10,7 @@
 #include <stdio.h>
 
 #define DEBUG_MAP 1
+#define EXIT_ON_ERROR 1
 
 static unsigned int screenw = 0;
 static unsigned int screenhw = 0;
@@ -26,6 +27,10 @@ static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 	v_t realx = x / (v_t)screenhw;
 	v_t delta = -a * realx - b;
 	if(delta == 0){
+#ifdef EXIT_ON_ERROR
+		fprintf(stderr, "Error: line is orthogonal with the projection\n");
+		exit(1);
+#endif
 		return false;
 	}
 
@@ -151,15 +156,13 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			p2 = tempp;
 		}
 
-		// Use the line formula y=mx+b to project the line on the camera near field
-		if(p1.y <= cam->znear){
-			v_t slope = (p2.y - p1.y) / (p2.x - p1.x);
-			p1.x = p1.x + (cam->znear - p1.y) * slope;
-			p1.y = cam->znear;
-		}else if(p2.y <= cam->znear){
-			v_t slope = (p1.y - p2.y) / (p1.x - p2.x);
-			p2.x = p2.x + (cam->znear - p2.y) * slope;
-			p2.y = cam->znear;
+		// Use the line formula y=mx+b to project the line on the 0 axis, so the screen projections can't ever overlap
+		if(p1.y < 0){
+			p1.x -= p1.y * (p2.x - p1.x) / (p2.y - p1.y);
+			p1.y = 0;
+		}else if(p2.y < 0){
+			p2.x -= p2.y * (p1.x - p2.x) / (p1.y - p2.y);
+			p2.y = 0;
 		}
 
 		// Perspective projection
@@ -167,11 +170,6 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		int proj2 = projectCamToScreenCoordinates(p2, cam);
 
 		if(proj1 == proj2){
-			continue;
-		}
-
-		// Clip the edge if they are both outside of the screen
-		if(proj1 > camright || proj2 < camleft){
 			continue;
 		}
 
@@ -198,6 +196,12 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			d_edgecol = COLOR_BLUE;
 #endif
 		}else if(edge->type == WALL){
+			if(clipleft){
+				clipIntersection(p1, p2, proj1, &p1);
+			}
+			if(clipright){
+				clipIntersection(p1, p2, proj2, &p2);
+			}
 			//renderWall(texture, textures, sector, edge, cam,proj1, proj2, p2, p1, clipleft, clipright);
 		}
 
@@ -205,10 +209,6 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		xy_t d_p1 = {p1.x + screenhw, -p1.y + screenhh};
 		xy_t d_p2 = {p2.x + screenhw, -p2.y + screenhh};
 		drawLine(texture, d_p1, d_p2, d_edgecol);
-
-		xy_t d_r;
-		clipIntersection(p1, p2, proj1, &d_r);
-		drawLine(texture, (xy_t){d_r.x + screenhw, -d_r.y + screenhh}, (xy_t){screenhw, screenhh}, COLOR_GREEN);
 #endif
 	}
 }
