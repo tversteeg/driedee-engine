@@ -15,7 +15,7 @@ static unsigned int screenw = 0;
 static unsigned int screenhw = 0;
 static unsigned int screenh = 0;
 static unsigned int screenhh = 0;
-static v_t *screenlookup = NULL;
+//static v_t *screenlookup = NULL;
 
 static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 {
@@ -23,7 +23,7 @@ static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 	v_t b = p1.x - p2.x;
 	v_t c = a * p1.x + b * p1.y;
 
-	v_t realx = screenlookup[x + screenhw];
+	v_t realx = x / (v_t)screenhw;
 	v_t delta = -a * realx - b;
 	if(delta == 0){
 		return false;
@@ -44,12 +44,14 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	xy_t leftfix = left;
 	if(clipleft){
 		if(!clipIntersection(left, right, leftproj / cam->fov, &leftfix)){
+			fprintf(stderr, "Interception not possible for %d\n", leftproj);
 			exit(1);
 		}
 	}
 	xy_t rightfix = right;
 	if(clipright){
 		if(!clipIntersection(left, right, rightproj / cam->fov, &rightfix)){
+			fprintf(stderr, "Interception not possible for %d\n", rightproj);
 			exit(1);
 		}
 	}
@@ -142,16 +144,30 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			continue;
 		}
 
+		// Always have p1 on the left side
+		if(p1.x > p2.x){
+			xy_t tempp = p1;
+			p1 = p2;
+			p2 = tempp;
+		}
+
+		// Use the line formula y=mx+b to project the line on the camera near field
+		if(p1.y <= cam->znear){
+			v_t slope = (p2.y - p1.y) / (p2.x - p1.x);
+			p1.x = p1.x + (cam->znear - p1.y) * slope;
+			p1.y = cam->znear;
+		}else if(p2.y <= cam->znear){
+			v_t slope = (p1.y - p2.y) / (p1.x - p2.x);
+			p2.x = p2.x + (cam->znear - p2.y) * slope;
+			p2.y = cam->znear;
+		}
+
 		// Perspective projection
 		int proj1 = projectCamToScreenCoordinates(p1, cam);
 		int proj2 = projectCamToScreenCoordinates(p2, cam);
 
 		if(proj1 == proj2){
 			continue;
-		}else if(proj1 > proj2){
-			int tempproj = proj1;
-			proj1 = proj2;
-			proj2 = tempproj;
 		}
 
 		// Clip the edge if they are both outside of the screen
@@ -191,8 +207,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		drawLine(texture, d_p1, d_p2, d_edgecol);
 
 		xy_t d_r;
-		clipIntersection(d_p1, d_p2, proj1, &d_r);
-		drawPixel(texture, d_r.x + screenhw, -d_r.y + screenhh, COLOR_GREEN);
+		clipIntersection(p1, p2, proj1, &d_r);
+		drawLine(texture, (xy_t){d_r.x + screenhw, -d_r.y + screenhh}, (xy_t){screenhw, screenhh}, COLOR_GREEN);
 #endif
 	}
 }
@@ -217,11 +233,13 @@ void initRender(unsigned int width, unsigned int height, camera_t *cam)
 	screenhw = width / 2;
 	screenhh = height / 2;
 
+	/*
 	screenlookup = (v_t*)malloc(width * sizeof(v_t));
 	unsigned int i;
 	for(i = 0; i < width; i++){
 		screenlookup[i] = (i - screenhw) * cam->fov;
 	}
+	*/
 }
 
 void renderFromSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam)
