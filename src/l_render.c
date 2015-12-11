@@ -28,7 +28,7 @@ static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 	v_t delta = -a * realx - b;
 	if(delta == 0){
 #ifdef EXIT_ON_ERROR
-		fprintf(stderr, "Error: line is orthogonal with the projection\n");
+		fprintf(stderr, "Error: line is parralel with the projection\n");
 		exit(1);
 #endif
 		return false;
@@ -197,9 +197,15 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 #endif
 		}else if(edge->type == WALL){
 			if(clipleft){
+#ifdef DEBUG_MAP
+			d_edgecol = COLOR_BROWN;
+#endif
 				clipIntersection(p1, p2, proj1, &p1);
 			}
 			if(clipright){
+#ifdef DEBUG_MAP
+			d_edgecol = COLOR_RED;
+#endif
 				clipIntersection(p1, p2, proj2, &p2);
 			}
 			//renderWall(texture, textures, sector, edge, cam,proj1, proj2, p2, p1, clipleft, clipright);
