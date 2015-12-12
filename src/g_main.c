@@ -306,7 +306,7 @@ int main(int argc, char **argv)
 	player.pos.x = getSector(player.sector)->vertices[0].x + 5;
 	player.pos.z = getSector(player.sector)->vertices[0].y + 5;
 	player.pos.y = player.vel.x = player.vel.y = player.vel.z = player.cam.angle = 0;
-	player.cam.znear = 1;
+	player.cam.znear = 5;
 	player.cam.zfar = 200;
 	calculateViewport(&player.cam, (xy_t){1, 1});
 	initRender(HWIDTH, HHEIGHT, &player.cam);

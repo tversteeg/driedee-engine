@@ -28,7 +28,7 @@ void createLevelFromMap(map_t *map)
 
 		sect->ceiltex = 0;
 		sect->floortex = 0;
-		sect->ceil = 50;
+		sect->ceil = 20;
 		sect->floor = -10;
 
 		// Find neighbors to create portals to

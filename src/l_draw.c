@@ -62,11 +62,6 @@ void initTexture(texture_t *tex, unsigned int width, unsigned int height)
 	tex->width = width;
 	tex->height = height;
 	tex->pixels = (pixel_t*)calloc(width * height, sizeof(pixel_t));
-
-	unsigned int i, len = width * height;
-	for(i = 0; i < width * height; i++){
-		tex->pixels[i] = COLOR_MASK;
-	}
 }
 
 void initFont(font_t *font, unsigned int width, unsigned int height)

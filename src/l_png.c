@@ -1,5 +1,7 @@
 #include "l_png.h"
 
+#include "l_colors.h"
+
 #include <png.h>
 
 bool getSizePng(const char *file, unsigned int *width, unsigned int *height)
@@ -133,6 +135,8 @@ bool loadPng(texture_t *tex, const char *file)
 				png_byte *color = row + (x << 2);
 				if(color[3] > 0){
 					setPixel(tex, x, y, (pixel_t){color[0], color[1], color[2]});
+				}else{
+					setPixel(tex, x, y, COLOR_MASK);
 				}
 			}
 		}

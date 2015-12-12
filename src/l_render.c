@@ -89,6 +89,40 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 		}
 	}
 
+	v_t ceilheight = sect->ceil + cam->pos.y;
+	v_t floorheight = sect->floor + cam->pos.y;
+
+	int topleft = screenhh - (ceilheight / leftfix.y) * screenhh;
+	int botleft = screenhh - (floorheight / leftfix.y) * screenhh;
+	int topright = screenhh - (ceilheight / rightfix.y) * screenhh;
+	int botright = screenhh - (floorheight / rightfix.y) * screenhh;
+
+	unsigned int screenwidth = rightproj - leftproj;
+	v_t topslope = (topright - topleft) / (v_t)screenwidth;
+	v_t botslope = (botright - botleft) / (v_t)screenwidth;
+
+	unsigned int leftscreen = leftproj + screenhw;
+	unsigned int i;
+	for(i = 0; i < screenwidth; i++){
+		unsigned int realx = i + leftscreen;
+		xy_t top = {realx, topleft + i * topslope};
+		xy_t bot = {realx, botleft + i * botslope};
+		drawLine(target, top, bot, COLOR_GRAY);
+	}
+
+#if DEBUG_VERBOSITY >= 2
+	xy_t d_p1, d_p2;
+
+	d_p1 = (xy_t){leftproj + screenhw, topleft};
+	d_p2 = (xy_t){leftproj + screenhw, botleft};
+	drawLine(target + 1, d_p1, d_p2, COLOR_LIGHTGREEN);
+
+	d_p1 = (xy_t){rightproj + screenhw, topright};
+	d_p2 = (xy_t){rightproj + screenhw, botright};
+	drawLine(target + 1, d_p1, d_p2, COLOR_LIGHTBLUE);
+#endif
+
+#if 0
 	// Calculate the UV coordinates
 	xy_t norm = {right.x - left.x, right.y - left.y};
 	xy_t leftnorm = {leftfix.x - left.x, leftfix.y - left.y};
@@ -133,6 +167,7 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 		v_t uvy = walltex->height / (v_t)(bot - top);
 		drawTextureSlice(target, walltex, screenx, max(top, 0), min(bot, target->height - 1), uvx, uvy);
 	}
+#endif
 }
 
 static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, int camleft, int camright, edge_t *previous)
