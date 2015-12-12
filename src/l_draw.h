@@ -4,7 +4,7 @@
 #include "l_utils.h"
 
 typedef struct {
-	unsigned char r, g, b, a;
+	unsigned char r, g, b;
 } pixel_t;
 
 typedef struct {

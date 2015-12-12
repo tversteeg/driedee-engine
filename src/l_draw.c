@@ -62,6 +62,11 @@ void initTexture(texture_t *tex, unsigned int width, unsigned int height)
 	tex->width = width;
 	tex->height = height;
 	tex->pixels = (pixel_t*)calloc(width * height, sizeof(pixel_t));
+
+	unsigned int i, len = width * height;
+	for(i = 0; i < width * height; i++){
+		tex->pixels[i] = COLOR_MASK;
+	}
 }
 
 void initFont(font_t *font, unsigned int width, unsigned int height)
@@ -80,7 +85,7 @@ void loadFont(font_t *font, char start, const bool *pixels)
 
 void clearTexture(texture_t *tex, pixel_t pixel)
 {
-	if(pixel.r == 0 && pixel.g == 0 && pixel.b == 0 && pixel.a == 0){
+	if(samePixel(pixel, COLOR_MASK)){
 		memset(tex->pixels, 0, tex->width * tex->height * sizeof(pixel_t));
 	}else{
 		unsigned int i, size = tex->width * tex->height;
@@ -92,7 +97,7 @@ void clearTexture(texture_t *tex, pixel_t pixel)
 
 bool samePixel(pixel_t p1, pixel_t p2)
 {
-	return p1.r == p2.r && p1.g == p2.g && p1.b == p2.b && p1.a == p2.a;
+	return p1.r == p2.r && p1.g == p2.g && p1.b == p2.b;
 }
 
 bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y)
@@ -271,10 +276,9 @@ void drawTextureScaled(texture_t *target, const texture_t *source, int x, int y,
 		unsigned int j;
 		for(j = 0; j < height; j++){
 			pixel_t pixel = source->pixels[(int)(i * reciscale.x) + (int)(j * reciscale.y) * source->width];
-			if(pixel.a == 0){
-				continue;
+			if(!samePixel(pixel, COLOR_MASK)){
+				drawPixel(target, x + i, y + j, pixel);
 			}
-			drawPixel(target, x + i, y + j, pixel);
 		}
 	}
 }
@@ -296,21 +300,22 @@ void drawGrid(texture_t *tex, unsigned int x, unsigned int y, unsigned int width
 pixel_t strtopixel(const char *hexstr)
 {
 	if(hexstr == NULL){
-		return COLOR_NONE;
+		return COLOR_MASK;
 	}
 	long int number = strtol(hexstr, NULL, 16);
 
 	pixel_t pixel;
 	if(strlen(hexstr) == 8){
+		if((number & 0x000000FF) == 0){
+			return COLOR_MASK;
+		}
 		pixel.r = (number & 0xFF000000) >> 24;
 		pixel.g = (number & 0x00FF0000) >> 16;
 		pixel.b = (number & 0x0000FF00) >> 8;
-		pixel.a = number & 0x000000FF;
 	}else{
 		pixel.r = (number & 0xFF0000) >> 16;
 		pixel.g = (number & 0x00FF00) >> 8;
 		pixel.b = number & 0x0000FF;
-		pixel.a = 255;
 	}
 
 	return pixel;

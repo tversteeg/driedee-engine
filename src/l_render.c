@@ -143,7 +143,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 	}
 
 #if DEBUG_VERBOSITY >= 1
-	drawPixel(texture, screenhw, screenhh, COLOR_GREEN);
+	drawPixel(texture + 1, screenhw, screenhh, COLOR_GREEN);
 #endif
 
 	unsigned int i;
@@ -157,8 +157,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		xy_t p2 = worldToCamCoordinates(sector->vertices[edge->vertex2], cam);
 
 #if DEBUG_VERBOSITY >= 2
-		drawPixel(texture, p1.x + screenhw, screenhh - p1.y, COLOR_DARKGRAY);
-		drawPixel(texture, p2.x + screenhw, screenhh - p2.y, COLOR_DARKGREEN);
+		drawPixel(texture + 1, p1.x + screenhw, screenhh - p1.y, COLOR_DARKGRAY);
+		drawPixel(texture + 1, p2.x + screenhw, screenhh - p2.y, COLOR_DARKGREEN);
 #endif
 
 		// Clip everything behind the camera minimal view
@@ -237,7 +237,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			d_edgecol = COLOR_BLUE;
 #endif
 		}else if(edge->type == WALL){
-			//renderWall(texture, textures, sector, edge, cam,proj1, proj2, p2, p1, clipleft, clipright);
+			renderWall(texture, textures, sector, edge, cam, proj1, proj2, p1, p2, clipleft, clipright);
 		}
 
 #if DEBUG_VERBOSITY >= 1
@@ -246,16 +246,22 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 #if DEBUG_VERBOSITY >= 3
 		d_p1 = (xy_t){screenhw, screenhh};
 		d_p2 = (xy_t){projectScreenToCamAngle(proj1) * screenhh + screenhw, 0};
-		drawLine(texture, d_p1, d_p2, COLOR_DARKGREEN);
+		drawLine(texture + 1, d_p1, d_p2, COLOR_DARKGREEN);
 
-		d_p1 = (xy_t){screenhw, screenhh};
 		d_p2 = (xy_t){projectScreenToCamAngle(proj2) * screenhh + screenhw, 0};
-		drawLine(texture, d_p1, d_p2, COLOR_DARKRED);
+		drawLine(texture + 1, d_p1, d_p2, COLOR_DARKRED);
 #endif
+
+		if(clipleft){
+			clipIntersection(p1, p2, proj1, &p1);
+		}
+		if(clipright){
+			clipIntersection(p1, p2, proj2, &p2);
+		}
 
 		d_p1 = (xy_t){p1.x + screenhw, -p1.y + screenhh};
 		d_p2 = (xy_t){p2.x + screenhw, -p2.y + screenhh};
-		drawLine(texture, d_p1, d_p2, d_edgecol);
+		drawLine(texture + 1, d_p1, d_p2, d_edgecol);
 #endif
 	}
 }

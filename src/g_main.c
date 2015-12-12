@@ -43,7 +43,7 @@
 //#define USE_MOUSE
 
 #define TEX_3D (textures)
-#define TEX_DEPTH (textures + 1)
+#define TEX_DEBUG (textures + 1)
 
 struct player {
 	camera_t cam;
@@ -136,10 +136,18 @@ void render()
 	//drawTextureScaled(&tex, gun, HWIDTH - gun->width - 30, HEIGHT - gun->height * 2, (xy_t){2, 2});
 	drawTextureScaled(TEX_3D, gun, (HWIDTH / 2) - gun->width + 50, HHEIGHT - gun->height, (xy_t){1, 1});
 
+	unsigned int i;
+	for(i = 0; i < TEX_DEBUG->width * TEX_DEBUG->height; i++){
+		pixel_t pixel = TEX_DEBUG->pixels[i];
+		if(samePixel(pixel, COLOR_MASK)){
+			TEX_3D->pixels[i] = pixel;
+		}
+	}
+
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, TEX_3D->width, TEX_3D->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, TEX_3D->pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TEX_3D->width, TEX_3D->height, 0, GL_RGB, GL_UNSIGNED_BYTE, TEX_3D->pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -155,6 +163,7 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	clearTexture(TEX_3D, COLOR_BLACK);
+	clearTexture(TEX_DEBUG, COLOR_MASK);
 }
 
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
