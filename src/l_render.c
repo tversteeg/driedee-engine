@@ -9,14 +9,34 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define DEBUG_MAP 1
+#define DEBUG_VERBOSITY 1
 #define EXIT_ON_ERROR 1
 
 static unsigned int screenw = 0;
-static unsigned int screenhw = 0;
+static int screenhw = 0;
 static unsigned int screenh = 0;
-static unsigned int screenhh = 0;
-//static v_t *screenlookup = NULL;
+static int screenhh = 0;
+
+static xy_t worldToCamCoordinates(xy_t p, camera_t *cam)
+{
+	p.x = cam->pos.x - p.x;
+	p.y = cam->pos.z - p.y;
+
+	v_t asin = cam->anglesin;
+	v_t acos = cam->anglecos;
+
+	return (xy_t){acos * p.x - asin * p.y, asin * p.x + acos * p.y};
+}
+
+static v_t projectScreenToCamAngle(int s)
+{
+	return s / (v_t)screenhw;
+}
+
+static int projectCamToScreenCoordinates(xy_t p, camera_t *cam)
+{
+	return p.x * (cam->fov / p.y) * screenhw;
+}
 
 static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 {
@@ -24,7 +44,7 @@ static bool clipIntersection(xy_t p1, xy_t p2, int x, xy_t *result)
 	v_t b = p1.x - p2.x;
 	v_t c = a * p1.x + b * p1.y;
 
-	v_t realx = x / (v_t)screenhw;
+	v_t realx = projectScreenToCamAngle(x);
 	v_t delta = -a * realx - b;
 	if(delta == 0){
 #ifdef EXIT_ON_ERROR
@@ -48,16 +68,24 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	// Clip the edges when they are partially hidden
 	xy_t leftfix = left;
 	if(clipleft){
-		if(!clipIntersection(left, right, leftproj / cam->fov, &leftfix)){
+		if(!clipIntersection(left, right, leftproj, &leftfix)){
+#ifdef EXIT_ON_ERROR
 			fprintf(stderr, "Interception not possible for %d\n", leftproj);
 			exit(1);
+#else
+			return;
+#endif
 		}
 	}
 	xy_t rightfix = right;
 	if(clipright){
-		if(!clipIntersection(left, right, rightproj / cam->fov, &rightfix)){
+		if(!clipIntersection(left, right, rightproj, &rightfix)){
+#ifdef EXIT_ON_ERROR
 			fprintf(stderr, "Interception not possible for %d\n", rightproj);
 			exit(1);
+#else
+			return;
+#endif
 		}
 	}
 
@@ -87,7 +115,7 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	v_t botslope = (screenbotrighty - screenbotlefty) / (v_t)screenwidth;
 
 	int screenleft = leftproj + screenhw;
-	
+
 	const texture_t *walltex = tex + edge->texture;
 	const texture_t *ceiltex = tex + sect->ceiltex;
 	const texture_t *floortex = tex + sect->floortex;
@@ -97,7 +125,7 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 		int screenx = screenleft + i;
 		int top = screentoplefty + screenx * topslope;
 		int bot = screenbotlefty + screenx * botslope;
-		
+
 		v_t xt1 = (screenwidth - i) * rightfix.y;
 		v_t xt2 = i * leftfix.y;
 		v_t uvfx = (leftuv * xt1 + rightuv * xt2) / (xt1 + xt2);
@@ -107,22 +135,6 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	}
 }
 
-static xy_t worldToCamCoordinates(xy_t p, camera_t *cam)
-{
-	p.x = cam->pos.x - p.x;
-	p.y = cam->pos.z - p.y;
-
-	v_t asin = cam->anglesin;
-	v_t acos = cam->anglecos;
-
-	return (xy_t){acos * p.x - asin * p.y, asin * p.x + acos * p.y};
-}
-
-static int projectCamToScreenCoordinates(xy_t p, camera_t *cam)
-{
-	return p.x * (cam->fov / p.y) * screenhw;
-}
-
 static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, int camleft, int camright, edge_t *previous)
 {
 	if(sector == NULL){
@@ -130,7 +142,7 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		exit(1);
 	}
 
-#ifdef DEBUG_MAP
+#if DEBUG_VERBOSITY >= 1
 	drawPixel(texture, screenhw, screenhh, COLOR_GREEN);
 #endif
 
@@ -144,24 +156,26 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		xy_t p1 = worldToCamCoordinates(sector->vertices[edge->vertex1], cam);
 		xy_t p2 = worldToCamCoordinates(sector->vertices[edge->vertex2], cam);
 
+#if DEBUG_VERBOSITY >= 2
+		drawPixel(texture, p1.x + screenhw, screenhh - p1.y, COLOR_DARKGRAY);
+		drawPixel(texture, p2.x + screenhw, screenhh - p2.y, COLOR_DARKGREEN);
+#endif
+
 		// Clip everything behind the camera minimal view
 		if(p1.y <= cam->znear && p2.y <= cam->znear){
 			continue;
 		}
 
-		// Always have p1 on the left side
-		if(p1.x > p2.x){
-			xy_t tempp = p1;
-			p1 = p2;
-			p2 = tempp;
-		}
-
 		// Use the line formula y=mx+b to project the line on the cam znear axis, so the screen projections can't ever overlap
 		if(p1.y < cam->znear){
-			p1.x += (cam->znear - p1.y) * (p2.x - p1.x) / (p2.y - p1.y);
+			if(p1.x != p2.x){
+				p1.x += (cam->znear - p1.y) * (p2.x - p1.x) / (p2.y - p1.y);
+			}
 			p1.y = cam->znear;
 		}else if(p2.y < cam->znear){
-			p2.x += (cam->znear - p2.y) * (p1.x - p2.x) / (p1.y - p2.y);
+			if(p1.x != p2.x){
+				p2.x += (cam->znear - p2.y) * (p1.x - p2.x) / (p1.y - p2.y);
+			}
 			p2.y = cam->znear;
 		}
 
@@ -169,7 +183,24 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		int proj1 = projectCamToScreenCoordinates(p1, cam);
 		int proj2 = projectCamToScreenCoordinates(p2, cam);
 
+		// Always have p1 on the left side
+		if(proj1 > proj2){
+			int tempproj = proj1;
+			proj1 = proj2;
+			proj2 = tempproj;
+
+			xy_t tempp = p1;
+			p1 = p2;
+			p2 = tempp;
+		}
+
+		// Ignore the points when they are on the same pixel
 		if(proj1 == proj2){
+			continue;
+		}
+
+		// Edge is out of camera bounds
+		if((proj1 < -screenhw && proj2 < -screenhw) || (proj1 >= screenhw && proj2 >= screenhw)){
 			continue;
 		}
 
@@ -184,36 +215,46 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			clipright = true;
 		}
 
-#ifdef DEBUG_MAP
+#if DEBUG_VERBOSITY >= 1
 		pixel_t d_edgecol = COLOR_YELLOW;
 #endif
+
+		// Clip everything behind the camera minimal view
+		if((clipleft || clipright) && p1.y <= cam->znear && p2.y <= cam->znear){
+#ifdef EXIT_ON_ERROR
+			exit(1);
+#else
+			continue;
+#endif
+		}
+
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
 			if(neighbor != NULL){
 				renderSector(texture, textures, getSector(neighbor->sector), cam, proj1, proj2, neighbor);
 			}
-#ifdef DEBUG_MAP
+#if DEBUG_VERBOSITY >= 1
 			d_edgecol = COLOR_BLUE;
 #endif
 		}else if(edge->type == WALL){
-			if(clipleft){
-#ifdef DEBUG_MAP
-			d_edgecol = COLOR_BROWN;
-#endif
-				clipIntersection(p1, p2, proj1, &p1);
-			}
-			if(clipright){
-#ifdef DEBUG_MAP
-			d_edgecol = COLOR_RED;
-#endif
-				clipIntersection(p1, p2, proj2, &p2);
-			}
 			//renderWall(texture, textures, sector, edge, cam,proj1, proj2, p2, p1, clipleft, clipright);
 		}
 
-#ifdef DEBUG_MAP
-		xy_t d_p1 = {p1.x + screenhw, -p1.y + screenhh};
-		xy_t d_p2 = {p2.x + screenhw, -p2.y + screenhh};
+#if DEBUG_VERBOSITY >= 1
+		xy_t d_p1, d_p2;
+
+#if DEBUG_VERBOSITY >= 3
+		d_p1 = (xy_t){screenhw, screenhh};
+		d_p2 = (xy_t){projectScreenToCamAngle(proj1) * screenhh + screenhw, 0};
+		drawLine(texture, d_p1, d_p2, COLOR_DARKGREEN);
+
+		d_p1 = (xy_t){screenhw, screenhh};
+		d_p2 = (xy_t){projectScreenToCamAngle(proj2) * screenhh + screenhw, 0};
+		drawLine(texture, d_p1, d_p2, COLOR_DARKRED);
+#endif
+
+		d_p1 = (xy_t){p1.x + screenhw, -p1.y + screenhh};
+		d_p2 = (xy_t){p2.x + screenhw, -p2.y + screenhh};
 		drawLine(texture, d_p1, d_p2, d_edgecol);
 #endif
 	}
@@ -238,17 +279,9 @@ void initRender(unsigned int width, unsigned int height, camera_t *cam)
 	screenh = height;
 	screenhw = width / 2;
 	screenhh = height / 2;
-
-	/*
-	screenlookup = (v_t*)malloc(width * sizeof(v_t));
-	unsigned int i;
-	for(i = 0; i < width; i++){
-		screenlookup[i] = (i - screenhw) * cam->fov;
-	}
-	*/
 }
 
 void renderFromSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam)
 {
-	renderSector(texture, textures, sector, cam, -((int)screenhw), (int)screenhw - 1, NULL);
+	renderSector(texture, textures, sector, cam, -screenhw, screenhw - 1, NULL);
 }
