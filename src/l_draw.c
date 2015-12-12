@@ -85,7 +85,7 @@ void loadFont(font_t *font, char start, const bool *pixels)
 
 void clearTexture(texture_t *tex, pixel_t pixel)
 {
-	if(samePixel(pixel, COLOR_MASK)){
+	if(samePixel(pixel, COLOR_BLACK)){
 		memset(tex->pixels, 0, tex->width * tex->height * sizeof(pixel_t));
 	}else{
 		unsigned int i, size = tex->width * tex->height;

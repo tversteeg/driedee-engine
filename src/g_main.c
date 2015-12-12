@@ -139,7 +139,7 @@ void render()
 	unsigned int i;
 	for(i = 0; i < TEX_DEBUG->width * TEX_DEBUG->height; i++){
 		pixel_t pixel = TEX_DEBUG->pixels[i];
-		if(samePixel(pixel, COLOR_MASK)){
+		if(!samePixel(pixel, COLOR_MASK)){
 			TEX_3D->pixels[i] = pixel;
 		}
 	}
