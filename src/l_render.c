@@ -156,13 +156,13 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			p2 = tempp;
 		}
 
-		// Use the line formula y=mx+b to project the line on the 0 axis, so the screen projections can't ever overlap
-		if(p1.y < 0){
-			p1.x -= p1.y * (p2.x - p1.x) / (p2.y - p1.y);
-			p1.y = 0;
-		}else if(p2.y < 0){
-			p2.x -= p2.y * (p1.x - p2.x) / (p1.y - p2.y);
-			p2.y = 0;
+		// Use the line formula y=mx+b to project the line on the cam znear axis, so the screen projections can't ever overlap
+		if(p1.y < cam->znear){
+			p1.x += (cam->znear - p1.y) * (p2.x - p1.x) / (p2.y - p1.y);
+			p1.y = cam->znear;
+		}else if(p2.y < cam->znear){
+			p2.x += (cam->znear - p2.y) * (p1.x - p2.x) / (p1.y - p2.y);
+			p2.y = cam->znear;
 		}
 
 		// Perspective projection
