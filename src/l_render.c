@@ -9,8 +9,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#define DEBUG_VERBOSITY 1
 #define EXIT_ON_ERROR 1
+#define ROUNDING_FACTOR 10.0
 
 static unsigned int screenw = 0;
 static int screenhw = 0;
@@ -19,22 +19,38 @@ static int screenhh = 0;
 
 static xy_t worldToCamCoordinates(xy_t p, camera_t *cam)
 {
+	// Add some error so we are sure we are not dividing by zero
 	p.x = cam->pos.x - p.x;
 	p.y = cam->pos.z - p.y;
 
 	v_t asin = cam->anglesin;
 	v_t acos = cam->anglecos;
 
-	return (xy_t){acos * p.x - asin * p.y, asin * p.x + acos * p.y};
+	long camx = (acos * p.x - asin * p.y) * ROUNDING_FACTOR;
+	long camy = (asin * p.x + acos * p.y) * ROUNDING_FACTOR;
+
+	return (xy_t){camx / ROUNDING_FACTOR, camy / ROUNDING_FACTOR};
 }
 
 static v_t projectScreenToCamAngle(int s)
 {
+#ifdef EXIT_ON_ERROR
+	if(s < -screenhw || s >= screenhw){
+		fprintf(stderr, "Error: screen projection is out of bounds: %d\n", s);
+		exit(1);
+	}
+#endif
 	return s / (v_t)screenhw;
 }
 
 static int projectCamToScreenCoordinates(xy_t p, camera_t *cam)
 {
+#ifdef EXIT_ON_ERROR
+	if(p.y <= 0){
+		fprintf(stderr, "Camera point y coordinate can't be lower then 0: %f\n", p.y);
+		exit(1);
+	}
+#endif
 	return p.x * (cam->fov / p.y) * screenhw;
 }
 
@@ -105,12 +121,12 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 	unsigned int i;
 	for(i = 0; i < screenwidth; i++){
 		unsigned int realx = i + leftscreen;
-		xy_t top = {realx, topleft + i * topslope};
-		xy_t bot = {realx, botleft + i * botslope};
+		xy_t top = {realx, max(0, topleft + i * topslope)};
+		xy_t bot = {realx, min(screenh - 1, botleft + i * botslope)};
 		drawLine(target, top, bot, COLOR_GRAY);
 	}
 
-#if DEBUG_VERBOSITY >= 2
+#if DRAW_DEBUG_LEVEL >= 2
 	xy_t d_p1, d_p2;
 
 	d_p1 = (xy_t){leftproj + screenhw, topleft};
@@ -170,14 +186,15 @@ static void renderWall(texture_t *target, const texture_t *tex, const sector_t *
 #endif
 }
 
+#define MAX_CALLS 10
+static int calls = 0;
 static void renderSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam, int camleft, int camright, edge_t *previous)
 {
-	if(sector == NULL){
-		fprintf(stderr, "Edge's sector is undefined\n");
-		exit(1);
+	if(++calls == MAX_CALLS){
+		return;
 	}
 
-#if DEBUG_VERBOSITY >= 1
+#if DRAW_DEBUG_LEVEL >= 1
 	drawPixel(texture + 1, screenhw, screenhh, COLOR_GREEN);
 #endif
 
@@ -191,42 +208,65 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		xy_t p1 = worldToCamCoordinates(sector->vertices[edge->vertex1], cam);
 		xy_t p2 = worldToCamCoordinates(sector->vertices[edge->vertex2], cam);
 
-#if DEBUG_VERBOSITY >= 2
+#if DRAW_DEBUG_LEVEL >= 2
 		drawPixel(texture + 1, p1.x + screenhw, screenhh - p1.y, COLOR_DARKGRAY);
 		drawPixel(texture + 1, p2.x + screenhw, screenhh - p2.y, COLOR_DARKGREEN);
 #endif
 
-		// Clip everything behind the camera minimal view
-		if(p1.y <= cam->znear && p2.y <= cam->znear){
+		// Clip portals behind zero
+		v_t znear = 0.1;
+		if(edge->type == WALL){
+			znear = cam->znear;
+		}
+
+		// Clip everything behind the camera minimal view 
+		if(p1.y < znear && p2.y < znear){
+			continue;
+		}
+
+		if(p1.y > cam->zfar || p2.y > cam->zfar){
 			continue;
 		}
 
 		// Use the line formula y=mx+b to project the line on the cam znear axis, so the screen projections can't ever overlap
-		if(p1.y < cam->znear){
+		xy_t tempp1 = p1;
+		if(p1.y < znear){
 			if(p1.x != p2.x){
-				p1.x += (cam->znear - p1.y) * (p2.x - p1.x) / (p2.y - p1.y);
+				tempp1.x += (znear - p1.y) * (p2.x - p1.x) / (p2.y - p1.y);
 			}
-			p1.y = cam->znear;
-		}else if(p2.y < cam->znear){
-			if(p1.x != p2.x){
-				p2.x += (cam->znear - p2.y) * (p1.x - p2.x) / (p1.y - p2.y);
-			}
-			p2.y = cam->znear;
+			tempp1.y = znear;
 		}
+		if(p2.y < znear){
+			if(p1.x != p2.x){
+				p2.x += (znear - p2.y) * (p1.x - p2.x) / (p1.y - p2.y);
+			}
+			p2.y = znear;
+		}
+		p1 = tempp1;
 
 		// Perspective projection
 		int proj1 = projectCamToScreenCoordinates(p1, cam);
 		int proj2 = projectCamToScreenCoordinates(p2, cam);
 
-		// Always have p1 on the left side
+		// Don't render walls that are not facing this way
 		if(proj1 > proj2){
-			int tempproj = proj1;
-			proj1 = proj2;
-			proj2 = tempproj;
+			continue;
+		}
 
-			xy_t tempp = p1;
-			p1 = p2;
-			p2 = tempp;
+		// Edge is out of camera bounds
+		if(proj2 < -screenhw || proj1 >= screenhw){
+			continue;
+		}
+
+		bool clipleft = false;
+		if(proj1 <= camleft){
+			proj1 = camleft;
+			clipleft = true;
+		}
+		bool clipright = false;
+		if(proj2 >= camright){
+			proj2 = camright;
+			clipright = true;
 		}
 
 		// Ignore the points when they are on the same pixel
@@ -234,51 +274,50 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 			continue;
 		}
 
-		// Edge is out of camera bounds
-		if((proj1 < -screenhw && proj2 < -screenhw) || (proj1 >= screenhw && proj2 >= screenhw)){
-			continue;
+#ifdef EXIT_ON_ERROR
+		if(proj1 < -screenhw || proj1 >= screenhw || proj2 < -screenhw || proj2 >= screenhw){
+			fprintf(stderr, "Projection out of bounds:\t%d:%d\n", proj1, proj2);
+			exit(1);
 		}
+#endif
 
-		bool clipleft = false;
-		if(proj1 < camleft){
-			proj1 = camleft;
-			clipleft = true;
-		}
-		bool clipright = false;
-		if(proj2 > camright){
-			proj2 = camright;
-			clipright = true;
-		}
-
-#if DEBUG_VERBOSITY >= 1
+#if DRAW_DEBUG_LEVEL >= 1
 		pixel_t d_edgecol = COLOR_YELLOW;
 #endif
-
-		// Clip everything behind the camera minimal view
-		if((clipleft || clipright) && p1.y <= cam->znear && p2.y <= cam->znear){
-#ifdef EXIT_ON_ERROR
-			exit(1);
-#else
-			continue;
-#endif
-		}
 
 		if(edge->type == PORTAL){
 			edge_t *neighbor = edge->neighbor;
 			if(neighbor != NULL){
 				renderSector(texture, textures, getSector(neighbor->sector), cam, proj1, proj2, neighbor);
 			}
-#if DEBUG_VERBOSITY >= 1
+#if DRAW_DEBUG_LEVEL >= 1
 			d_edgecol = COLOR_BLUE;
 #endif
 		}else if(edge->type == WALL){
-			renderWall(texture, textures, sector, edge, cam, proj1, proj2, p1, p2, clipleft, clipright);
+			// Clip everything behind the camera minimal view
+			if((clipleft || clipright) && (p1.y < znear || p2.y < znear)){
+#ifdef EXIT_ON_ERROR
+				exit(1);
+#else
+				continue;
+#endif
+			}
+			//renderWall(texture, textures, sector, edge, cam, proj1, proj2, p1, p2, clipleft, clipright);
+
+#if DRAW_DEBUG_LEVEL >= 1
+			if(clipleft){
+				clipIntersection(p1, p2, proj1, &p1);
+			}
+			if(clipright){
+				clipIntersection(p1, p2, proj2, &p2);
+			}
+#endif
 		}
 
-#if DEBUG_VERBOSITY >= 1
+#if DRAW_DEBUG_LEVEL >= 1
 		xy_t d_p1, d_p2;
 
-#if DEBUG_VERBOSITY >= 3
+#if DRAW_DEBUG_LEVEL >= 3
 		d_p1 = (xy_t){screenhw, screenhh};
 		d_p2 = (xy_t){projectScreenToCamAngle(proj1) * screenhh + screenhw, 0};
 		drawLine(texture + 1, d_p1, d_p2, COLOR_DARKGREEN);
@@ -286,13 +325,6 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 		d_p2 = (xy_t){projectScreenToCamAngle(proj2) * screenhh + screenhw, 0};
 		drawLine(texture + 1, d_p1, d_p2, COLOR_DARKRED);
 #endif
-
-		if(clipleft){
-			clipIntersection(p1, p2, proj1, &p1);
-		}
-		if(clipright){
-			clipIntersection(p1, p2, proj2, &p2);
-		}
 
 		d_p1 = (xy_t){p1.x + screenhw, -p1.y + screenhh};
 		d_p2 = (xy_t){p2.x + screenhw, -p2.y + screenhh};
@@ -304,8 +336,8 @@ static void renderSector(texture_t *texture, texture_t *textures, sector_t *sect
 void setCameraRotation(camera_t *cam, v_t angle)
 {
 	cam->angle = angle;
-	cam->anglesin = sin(angle);
-	cam->anglecos = cos(angle);
+	cam->anglesin = sinf(angle);
+	cam->anglecos = cosf(angle);
 }
 
 void calculateViewport(camera_t *cam, xy_t right)
@@ -324,5 +356,6 @@ void initRender(unsigned int width, unsigned int height, camera_t *cam)
 
 void renderFromSector(texture_t *texture, texture_t *textures, sector_t *sector, camera_t *cam)
 {
+	calls = 0;
 	renderSector(texture, textures, sector, cam, -screenhw, screenhw - 1, NULL);
 }

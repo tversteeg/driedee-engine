@@ -3,6 +3,8 @@
 #include "l_sector.h"
 #include "l_draw.h"
 
+#define DRAW_DEBUG_LEVEL 1
+
 typedef struct {
 	xyz_t pos;
 	double znear, zfar, fov, angle;

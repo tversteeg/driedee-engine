@@ -34,6 +34,9 @@
 #define HEIGHT 600
 #define HHEIGHT (HEIGHT / 2)
 
+#define TEX_WIDTH 400
+#define TEX_HEIGHT 300
+
 #define PLAYER_SPEED 0.2
 #define PLAYER_JUMP -0.5
 #define PLAYER_JUMP_WOBBLE -0.2
@@ -134,20 +137,22 @@ void render()
 	}
 
 	//drawTextureScaled(&tex, gun, HWIDTH - gun->width - 30, HEIGHT - gun->height * 2, (xy_t){2, 2});
-	drawTextureScaled(TEX_3D, gun, (HWIDTH / 2) - gun->width + 50, HHEIGHT - gun->height, (xy_t){1, 1});
+	//drawTextureScaled(TEX_3D, gun, (TEX_WIDTH / 2) - gun->width + 50, TEX_HEIGHT - gun->height, (xy_t){1, 1});
 
+#if DRAW_DEBUG_LEVEL >= 1
 	unsigned int i;
-	for(i = 0; i < TEX_DEBUG->width * TEX_DEBUG->height; i++){
+	for(i = 0; i < TEX_WIDTH * TEX_HEIGHT; i++){
 		pixel_t pixel = TEX_DEBUG->pixels[i];
 		if(!samePixel(pixel, COLOR_MASK)){
 			TEX_3D->pixels[i] = pixel;
 		}
 	}
+#endif
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TEX_3D->width, TEX_3D->height, 0, GL_RGB, GL_UNSIGNED_BYTE, TEX_3D->pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, TEX_WIDTH, TEX_HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, TEX_3D->pixels);
 
 	glBegin(GL_QUADS);
 	glTexCoord2f(0.0f, 0.0f);
@@ -163,7 +168,9 @@ void render()
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	clearTexture(TEX_3D, COLOR_BLACK);
+#if DRAW_DEBUG_LEVEL >= 1
 	clearTexture(TEX_DEBUG, COLOR_MASK);
+#endif
 }
 
 void movePlayer(bool upPressed, bool downPressed, bool leftPressed, bool rightPressed, bool spacePressed)
@@ -257,9 +264,13 @@ int main(int argc, char **argv)
 	initFont(&font, fontwidth, fontheight);
 	loadFont(&font, '!', (bool*)fontdata);
 
+#if DRAW_DEBUG_LEVEL >= 1
 	textures = (texture_t*)malloc(2 * sizeof(texture_t));
-	initTexture(textures, HWIDTH, HHEIGHT);
-	initTexture(textures + 1, HWIDTH, HHEIGHT);
+	initTexture(textures + 1, TEX_WIDTH, TEX_HEIGHT);
+#else
+	textures = (texture_t*)malloc(sizeof(texture_t));
+#endif
+	initTexture(textures, TEX_WIDTH, TEX_HEIGHT);
 
 	ngametextures = 7;
 	gametextures = (texture_t*)malloc(ngametextures * sizeof(texture_t));
@@ -306,10 +317,10 @@ int main(int argc, char **argv)
 	player.pos.x = getSector(player.sector)->vertices[0].x + 5;
 	player.pos.z = getSector(player.sector)->vertices[0].y + 5;
 	player.pos.y = player.vel.x = player.vel.y = player.vel.z = player.cam.angle = 0;
-	player.cam.znear = 5;
+	player.cam.znear = 1;
 	player.cam.zfar = 200;
 	calculateViewport(&player.cam, (xy_t){1, 1});
-	initRender(HWIDTH, HHEIGHT, &player.cam);
+	initRender(TEX_WIDTH, TEX_HEIGHT, &player.cam);
 	player.cam.pos = player.pos;
 	
 	ccDisplayInitialize();
