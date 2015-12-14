@@ -90,6 +90,11 @@ void clearTexture(texture_t *tex, pixel_t pixel)
 	}
 }
 
+void resizeTexture(texture_t *tex, unsigned int width, unsigned int height)
+{
+	//TODO implement
+}
+
 bool samePixel(pixel_t p1, pixel_t p2)
 {
 	return p1.r == p2.r && p1.g == p2.g && p1.b == p2.b;

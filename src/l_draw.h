@@ -1,7 +1,6 @@
 #pragma once
 
 #include "l_vector.h"
-#include "l_utils.h"
 
 typedef struct {
 	unsigned char r, g, b;
@@ -24,6 +23,8 @@ void initFont(font_t *font, unsigned int width, unsigned int height);
 void loadFont(font_t *font, char start, const bool *pixels);
 
 void clearTexture(texture_t *tex, pixel_t pixel);
+
+void resizeTexture(texture_t *tex, unsigned int width, unsigned int height);
 
 bool samePixel(pixel_t p1, pixel_t p2);
 bool getPixel(const texture_t *tex, pixel_t *pixel, unsigned int x, unsigned int y);
