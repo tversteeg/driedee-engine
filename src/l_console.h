@@ -6,9 +6,8 @@ typedef struct {
 	font_t *font;
 	texture_t tex;
 	char *buf;
-	size_t size, len;
 	bool active;
-	unsigned int maxlines;
+	unsigned int size, len, lines, maxlines;
 } console_t;
 
 void initConsole(console_t *con, unsigned int width, unsigned int height);

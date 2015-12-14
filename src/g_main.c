@@ -50,9 +50,10 @@ int main(int argc, char **argv)
 	screenheight = 600;
 
 	initTexture(&screentex, screenwidth, screenheight);
-	initConsole(&console, screenwidth, screenheight >> 1);
+	initConsole(&console, screenwidth >> 1, screenheight >> 2);
 
-	printConsole(&console, "Hello!");
+	printConsole(&console, "\\BWelcome to the \"Rogueliek\" console!\\d\n");
+	printConsole(&console, "Press \\RTAB\\d to view the available commands\n");
 	
 	ccDisplayInitialize();
 

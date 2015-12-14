@@ -223,14 +223,35 @@ void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, p
 void drawString(texture_t *tex, const font_t *font, const char *string, int x, int y, pixel_t pixel)
 {
 	int i;
+
+	unsigned int lx = x;
+	unsigned int ly = y;
+	pixel_t color = pixel;
 	for(i = 0; string[i] != '\0'; i++){
-		if(string[i] == '\n'){
-			y += font->size;
-			x -= (i + 1) * font->size;
+		if(string[i] == '\n' || lx > tex->width - font->size){
+			lx = x;
+			ly += font->size;
 		}else if(string[i] == '\t'){
-			x += font->size * 2;
+			lx += font->size * 2;
+		}else if(string[i] == '\\'){
+			switch(string[i + 1]){
+				case 'R':
+					color = COLOR_RED;
+					break;
+				case 'B':
+					color = COLOR_BLUE;
+					break;
+				case 'G':
+					color = COLOR_GREEN;
+					break;
+				default:
+					color = pixel;
+					break;
+			}
+			i++;
 		}else{
-			drawLetter(tex, font, string[i], x + i * font->size, y, pixel);
+			drawLetter(tex, font, string[i], lx, ly, color);
+			lx += font->size;
 		}
 	}
 }
