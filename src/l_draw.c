@@ -228,7 +228,7 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 	unsigned int ly = y;
 	pixel_t color = pixel;
 	for(i = 0; string[i] != '\0'; i++){
-		if(string[i] == '\n' || lx > tex->width - font->size){
+		if(string[i] == '\n'){
 			lx = x;
 			ly += font->size;
 		}else if(string[i] == '\t'){
@@ -250,6 +250,10 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 			}
 			i++;
 		}else{
+			if(lx > tex->width - font->size){
+				lx = x;
+				ly += font->size;
+			}
 			drawLetter(tex, font, string[i], lx, ly, color);
 			lx += font->size;
 		}

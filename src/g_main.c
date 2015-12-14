@@ -13,6 +13,7 @@
 #include <GL/glew.h>
 #endif
 
+#include "l_colors.h"
 #include "l_draw.h"
 #include "l_console.h"
 
@@ -50,10 +51,10 @@ int main(int argc, char **argv)
 	screenheight = 600;
 
 	initTexture(&screentex, screenwidth, screenheight);
-	initConsole(&console, screenwidth >> 1, screenheight >> 2);
+	initConsole(&console, screenwidth / 2, screenheight >> 2);
 
-	printConsole(&console, "\\BWelcome to the \"Rogueliek\" console!\\d\n");
-	printConsole(&console, "Press \\RTAB\\d to view the available commands\n");
+	printConsole(&console, "\\BWelcome to the \\G\"Rogueliek\"\\B console!\\d\n");
+	printConsole(&console, "Press \\RTAB\\d to view the available commands, and \\RF1\\d to toggle the console\n");
 	
 	ccDisplayInitialize();
 
@@ -87,12 +88,23 @@ int main(int argc, char **argv)
 					screenheight = ccWindowGetRect().height;
 					resizeTexture(&screentex, screenwidth, screenheight);
 					break;
+				case CC_EVENT_KEY_DOWN:
+					if(event.keyCode == CC_KEY_ESCAPE){
+						loop = false;
+					}else if(event.keyCode == CC_KEY_F1){
+						console.active = !console.active;
+					}
+					if(console.active){
+						inputConsole(&console, event);
+					}
+					break;
 				default: break;
 			}
 		}
 
 		renderConsole(&console, &screentex);
 		renderTexture(screentex);
+		clearTexture(&screentex, COLOR_BLACK);
 		ccGLBuffersSwap();
 
 		ccTimeDelay(6);
