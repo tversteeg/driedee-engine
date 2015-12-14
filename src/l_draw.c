@@ -1,9 +1,11 @@
 #include "l_draw.h"
 
 #include "l_colors.h"
+#include "l_defaultfont.h"
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 void drawPixel(texture_t *tex, unsigned int x, unsigned int y, pixel_t pixel);
 
@@ -76,6 +78,16 @@ void loadFont(font_t *font, char start, const bool *pixels)
 	font->letters = font->totalwidth / font->size;
 	font->start = start;
 	memcpy(font->pixels, pixels, (font->totalwidth * font->size) * sizeof(bool));
+}
+
+font_t *loadDefaultFont()
+{
+	font_t *font = (font_t*)malloc(sizeof(font_t));
+
+	initFont(font, defaultfontwidth, defaultfontheight);
+	loadFont(font, '!', (bool*)defaultfontdata);
+
+	return font;
 }
 
 void clearTexture(texture_t *tex, pixel_t pixel)

@@ -21,6 +21,7 @@ typedef struct {
 void initTexture(texture_t *tex, unsigned int width, unsigned int height);
 void initFont(font_t *font, unsigned int width, unsigned int height);
 void loadFont(font_t *font, char start, const bool *pixels);
+font_t *loadDefaultFont();
 
 void clearTexture(texture_t *tex, pixel_t pixel);
 

@@ -14,9 +14,11 @@
 #endif
 
 #include "l_draw.h"
+#include "l_console.h"
 
 GLuint gltex;
 texture_t screentex;
+console_t console;
 
 unsigned int screenwidth, screenheight;
 
@@ -48,6 +50,7 @@ int main(int argc, char **argv)
 	screenheight = 600;
 
 	initTexture(&screentex, screenwidth, screenheight);
+	initConsole(&console, screenwidth, screenheight >> 1);
 	
 	ccDisplayInitialize();
 
