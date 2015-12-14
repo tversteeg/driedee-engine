@@ -4,7 +4,7 @@ A Duke Nukem 3D-like game engine which will eventually result in a prototype for
 
 The progress is visually displayed in [this](http://www.youtube.com/playlist?list=PLFxtA9Al8RErx_kSD_-9Hrk9dkJBvwYU8) playlist.
 
-To install you need `libglew-dev libconfig8-dev libpng12-dev`
+To install you need `libglew-dev libpng12-dev`
 
 Pseudocode for renderring using sectors & edges (inspired by the Build Engine and @fabiensanglard his Chocolate Duke Nukem 3D, [article](http://fabiensanglard.net/duke3d/build_engine_internals.php)):
 
@@ -70,3 +70,10 @@ Pseudocode for renderring using sectors & edges (inspired by the Build Engine an
 					if next sector's floor is higher than this sector's floor:
 						Render wall between sector heights
 					Update occlusion array according to portal height
+	
+	Drawing the sprites
+		for each sprite:
+			Calculate distance from sprite to player
+		Sort sprites by distance
+		for each sorted sprite:
+			Render sprite
