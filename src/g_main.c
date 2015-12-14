@@ -51,6 +51,8 @@ int main(int argc, char **argv)
 
 	initTexture(&screentex, screenwidth, screenheight);
 	initConsole(&console, screenwidth, screenheight >> 1);
+
+	printConsole(&console, "Hello!");
 	
 	ccDisplayInitialize();
 
@@ -88,6 +90,7 @@ int main(int argc, char **argv)
 			}
 		}
 
+		renderConsole(&console, &screentex);
 		renderTexture(screentex);
 		ccGLBuffersSwap();
 
