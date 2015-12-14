@@ -16,6 +16,7 @@
 #include "l_colors.h"
 #include "l_draw.h"
 #include "l_console.h"
+#include "g_commands.h"
 
 GLuint gltex;
 texture_t screentex;
@@ -55,6 +56,8 @@ int main(int argc, char **argv)
 
 	printConsole(&console, "\\BWelcome to the \\G\"Rogueliek\"\\B console!\\d\n");
 	printConsole(&console, "Press \\RTAB\\d to view the available commands, and \\RF1\\d to toggle the console\n");
+
+	mapConsoleCmds(&console);
 	
 	ccDisplayInitialize();
 
