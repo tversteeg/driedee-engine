@@ -7,12 +7,23 @@
 #include "l_console.h"
 #include "g_map.h"
 
-static void c_addsector(console_t *con, int argc, char **argv)
+static void c_addSector(console_t *con, int argc, char **argv)
 {
-	if(argc != 2){
-		printConsole(con, "Usage: addsector floor ceil\n");
+	if(argc != 3){
+		printConsole(con, "Usage: %s floor ceil\n", argv[0]);
 	}else{
-		createSector(atoi(argv[0]), atoi(argv[1]));
+		sectp_t sectid = createSector(atoi(argv[1]), atoi(argv[2]));
+		printConsole(con, "Created sector with id %d\n", sectid);
+	}
+}
+
+static void c_addVert(console_t *con, int argc, char **argv)
+{
+	if(argc != 4){
+		printConsole(con, "Usage: %s x y neighbor\n", argv[0]);
+	}else{
+		addVertToSector((p_t){atoi(argv[1]), atoi(argv[2])}, atoi(argv[3]));
+		printConsole(con, "Created vertex\n");
 	}
 }
 
@@ -38,7 +49,8 @@ void initGameWorld(console_t *console)
 	cam_pos[1] = 30;
 	cam_angle = 0;
 
-	mapCmdConsole(console, "addsect", c_addsector);
+	mapCmdConsole(console, "sectadd", c_addSector);
+	mapCmdConsole(console, "vertadd", c_addVert);
 }
 
 void updateGameWorld()

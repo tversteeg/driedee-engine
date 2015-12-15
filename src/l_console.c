@@ -11,7 +11,6 @@ static int strtoarr(char *str, char **res)
 	int delims = 0;
 
 	// Ignore the command itself
-	p = strtok(NULL, " ");
 	while(p){
 		res = realloc(res, sizeof(char*) * ++delims);
 		res[delims - 1] = p;
@@ -60,9 +59,7 @@ static void performCommand(console_t *con)
 			return;
 		}
 	}
-	printConsole(con, "Command \"");
-	printConsole(con, con->cmdstr);
-	printConsole(con, "\" not found!\n");
+	printConsole(con, "Command \"%s\" not found!\n", con->cmdstr);
 }
 
 void initConsole(console_t *con, unsigned int width, unsigned int height)
@@ -141,29 +138,31 @@ void inputConsole(console_t *con, ccEvent event)
 				unsigned int shortest = 0, distance = 1000;
 				for(i = 0; i < con->cmds; i++){
 					if(strncmp(con->cmdnames[i], con->cmdstr, con->cmdstrlen) == 0){
-						printConsole(con, "\t");
-						printConsole(con, con->cmdnames[i]);
+						printConsole(con, "%s\t", con->cmdnames[i]);
 						
+						//TODO fix distance function not working correctly
 						// Check which strings have the most in common
 						if(i > 0 && con->cmdstrlen > 0){
 							char *c1 = con->cmdnames[i];
 							char *c2 = con->cmdnames[shortest];
 							unsigned int d = 0;
-							while(*(c1++) == *(c2++)){
+							printConsole(con, "wot %c %c\n", *c1, *c2);
+							while(*(++c1) == *(++c2)){
+								printConsole(con, "wot %d\n", d);
 								d++;
 							}
-							if(d < distance){
+							if(d < distance && d != 0){
 								distance = d;
 								shortest = i;
 							}
 						}
 					}
 				}
-				printConsole(con, "\n");
+				printConsole(con, "%d\n", distance);
 
 				if(distance > con->cmdstrlen && distance < 1000){
 					con->cmdstrlen = distance;
-					memcpy(con->cmdstr, con->cmdnames[cmd], con->cmdstrlen);
+					memcpy(con->cmdstr, con->cmdnames[shortest], con->cmdstrlen);
 				}
 			}else if(count == 1){
 				con->cmdstrlen = strlen(con->cmdnames[cmd]) + 1;
