@@ -17,6 +17,7 @@
 #include "l_draw.h"
 #include "l_console.h"
 #include "g_commands.h"
+#include "g_game.h"
 
 GLuint gltex;
 texture_t screentex;
@@ -54,10 +55,11 @@ int main(int argc, char **argv)
 	initTexture(&screentex, screenwidth, screenheight);
 	initConsole(&console, screenwidth, screenheight >> 2);
 
-	printConsole(&console, "\\BWelcome to the \\G\"Rogueliek\"\\B console!\\d\n");
-	printConsole(&console, "Press \\RTAB\\d to view the available commands, and \\RF1\\d to toggle the console\n");
+	printConsole(&console, "PRESS \\RTAB\\d TO VIEW AVAILABLE COMMANDS, AND \\RF1\\d TO TOGGLE THE CONSOLE\n");
 
 	mapConsoleCmds(&console);
+
+	initGameWorld();
 	
 	ccDisplayInitialize();
 
@@ -100,12 +102,20 @@ int main(int argc, char **argv)
 					}
 					if(console.active){
 						inputConsole(&console, event);
+					}else{
+						inputGameWorld(event);
+					}
+					break;
+				case CC_EVENT_KEY_UP:
+					if(!console.active){
+						inputGameWorld(event);
 					}
 					break;
 				default: break;
 			}
 		}
 
+		renderGameWorld(&screentex);
 		renderConsole(&console, &screentex);
 		renderTexture(screentex);
 		clearTexture(&screentex, COLOR_BLACK);
