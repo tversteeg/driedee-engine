@@ -10,7 +10,7 @@
 static void c_addsector(console_t *con, int argc, char **argv)
 {
 	if(argc != 2){
-		printConsole(con, "Usage: createsector floor ceil\n");
+		printConsole(con, "Usage: addsector floor ceil\n");
 	}else{
 		createSector(atoi(argv[0]), atoi(argv[1]));
 	}
@@ -38,7 +38,7 @@ void initGameWorld(console_t *console)
 	cam_pos[1] = 30;
 	cam_angle = 0;
 
-	mapCmdConsole(console, "createsector", c_addsector);
+	mapCmdConsole(console, "addsect", c_addsector);
 }
 
 void updateGameWorld()

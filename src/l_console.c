@@ -1,6 +1,7 @@
 #include "l_console.h"
 
 #include <string.h>
+#include <stdio.h>
 
 #include "l_colors.h"
 
@@ -183,7 +184,7 @@ void inputConsole(console_t *con, ccEvent event)
 	refresh(con);
 }
 
-void printConsole(console_t *con, const char *text)
+static void __printConsole(console_t *con, const char *text)
 {
 	size_t len = strlen(text);
 
@@ -222,6 +223,17 @@ void printConsole(console_t *con, const char *text)
 	con->buflen = total;
 	
 	refresh(con);
+}
+
+void _printConsole(console_t *con, const char *text, ...)
+{
+	va_list arg;
+
+	va_start(arg, text);
+	char buf[256];
+	vsprintf(buf, text, arg);
+	__printConsole(con, buf);
+	va_end(arg);
 }
 
 void mapCmdConsole(console_t *con, const char *cmd, cmdptr_t cmdfunction)

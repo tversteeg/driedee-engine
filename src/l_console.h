@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdarg.h>
 #include <ccore/event.h>
 
 #include "l_draw.h"
@@ -27,6 +28,7 @@ void renderConsole(console_t *con, texture_t *target);
 
 void inputConsole(console_t *con, ccEvent event);
 
-void printConsole(console_t *con, const char *text);
+void _printConsole(console_t *con, const char *text, ...) __attribute__((format(printf, 2, 3)));
+#define printConsole(con, text, ...) _printConsole(con, text, ##__VA_ARGS__)
 
 void mapCmdConsole(console_t *con, const char *cmd, cmdptr_t cmdfunction);
