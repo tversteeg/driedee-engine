@@ -38,7 +38,7 @@ static void performCommand(console_t *con)
 			return;
 		}
 	}
-	printConsole(con, "Command: \"");
+	printConsole(con, "Command \"");
 	printConsole(con, con->cmdstr);
 	printConsole(con, "\" not found!\n");
 }
@@ -48,8 +48,6 @@ void initConsole(console_t *con, unsigned int width, unsigned int height)
 	initTexture(&con->tex, width, height);	
 	
 	con->font = loadDefaultFont();
-	setMaxLines(con);
-
 	con->active = true;
 
 	con->bufmaxsize = 32;
@@ -57,6 +55,8 @@ void initConsole(console_t *con, unsigned int width, unsigned int height)
 	con->cmdnames = NULL;
 	con->cmdfs = NULL;
 	con->buflen = con->cmdstrlen = con->buflines = con->cmds = 0;
+
+	setMaxLines(con);
 }
 
 void resizeConsole(console_t *con, unsigned int width, unsigned int height)

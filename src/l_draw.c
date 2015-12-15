@@ -104,7 +104,9 @@ void clearTexture(texture_t *tex, pixel_t pixel)
 
 void resizeTexture(texture_t *tex, unsigned int width, unsigned int height)
 {
-	//TODO implement
+	tex->width = width;
+	tex->height = height;
+	tex->pixels = (pixel_t*)realloc(tex->pixels, width * height * sizeof(pixel_t));
 }
 
 bool samePixel(pixel_t p1, pixel_t p2)

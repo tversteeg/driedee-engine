@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	screenheight = 600;
 
 	initTexture(&screentex, screenwidth, screenheight);
-	initConsole(&console, screenwidth / 2, screenheight >> 2);
+	initConsole(&console, screenwidth, screenheight >> 2);
 
 	printConsole(&console, "\\BWelcome to the \\G\"Rogueliek\"\\B console!\\d\n");
 	printConsole(&console, "Press \\RTAB\\d to view the available commands, and \\RF1\\d to toggle the console\n");
@@ -90,6 +90,7 @@ int main(int argc, char **argv)
 					screenwidth = ccWindowGetRect().width;
 					screenheight = ccWindowGetRect().height;
 					resizeTexture(&screentex, screenwidth, screenheight);
+					resizeConsole(&console, screenwidth, screenheight >> 1);
 					break;
 				case CC_EVENT_KEY_DOWN:
 					if(event.keyCode == CC_KEY_ESCAPE){
