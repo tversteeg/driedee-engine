@@ -33,7 +33,7 @@ static void performCommand(console_t *con)
 {
 	unsigned int i;
 	for(i = 0; i < con->cmds; i++){
-		if(strcmp(con->cmdnames[i], con->cmdstr) == 0){
+		if(strncmp(con->cmdnames[i], con->cmdstr, strlen(con->cmdnames)) == 0){
 			con->cmdfs[i](con, 0, NULL);
 			return;
 		}
@@ -116,13 +116,33 @@ void inputConsole(console_t *con, ccEvent event)
 				}
 			}
 			if(count > 1){
+				unsigned int shortest = 0, distance = 1000;
 				for(i = 0; i < con->cmds; i++){
 					if(strncmp(con->cmdnames[i], con->cmdstr, con->cmdstrlen) == 0){
-						printConsole(con, con->cmdnames[i]);
 						printConsole(con, "\t");
+						printConsole(con, con->cmdnames[i]);
+						
+						// Check which strings have the most in common
+						if(i > 0 && con->cmdstrlen > 0){
+							char *c1 = con->cmdnames[i];
+							char *c2 = con->cmdnames[shortest];
+							unsigned int d = 0;
+							while(*(c1++) == *(c2++)){
+								d++;
+							}
+							if(d < distance){
+								distance = d;
+								shortest = i;
+							}
+						}
 					}
 				}
 				printConsole(con, "\n");
+
+				if(distance > con->cmdstrlen && distance < 1000){
+					con->cmdstrlen = distance;
+					memcpy(con->cmdstr, con->cmdnames[cmd], con->cmdstrlen);
+				}
 			}else if(count == 1){
 				con->cmdstrlen = strlen(con->cmdnames[cmd]) + 1;
 				memcpy(con->cmdstr, con->cmdnames[cmd], con->cmdstrlen);

@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 					screenwidth = ccWindowGetRect().width;
 					screenheight = ccWindowGetRect().height;
 					resizeTexture(&screentex, screenwidth, screenheight);
-					resizeConsole(&console, screenwidth, screenheight >> 1);
+					resizeConsole(&console, screenwidth, screenheight >> 2);
 					break;
 				case CC_EVENT_KEY_DOWN:
 					if(event.keyCode == CC_KEY_ESCAPE){
