@@ -1,6 +1,7 @@
 #include "l_render.h"
 
 #include "l_colors.h"
+#include "l_colors.h"
 
 // Sector information
 // Start of the wall pointer
@@ -49,24 +50,37 @@ void addVertToSector(p_t vert, sectp_t nextsect)
 }
 
 texture_t *tex = NULL;
+uint16_t texhw = 0, texhh = 0;
 void setRenderTarget(texture_t *target)
 {
 	tex = target;
+	texhw = tex->width >> 1;
+	texhh = tex->height >> 1;
 }
 
-void renderFromSector(sectp_t sect, p_t camloc, v_t camangle)
+static void renderMinimap(sectp_t sect, p_t camloc)
 {
 	wallp_t wall = s_fwall[sect];
 	wallp_t maxwall = wall + s_nwalls[sect] - 1;
 
-	xy_t v1 = {w_vert[wall][0], w_vert[wall][1]};
-	xy_t v2 = {w_vert[maxwall][0], w_vert[maxwall][1]};
+	int xc = texhw - camloc[0];
+	int yc = texhh - camloc[1];
+
+	xy_t v1 = {xc + w_vert[wall][0], yc + w_vert[wall][1]};
+	xy_t v2 = {xc + w_vert[maxwall][0], yc + w_vert[maxwall][1]};
 	drawLine(tex, v1, v2, COLOR_YELLOW);
 
 	while(wall < maxwall){
 		wall++;
-		xy_t v1 = {w_vert[wall][0], w_vert[wall][1]};
-		xy_t v2 = {w_vert[wall - 1][0], w_vert[wall - 1][1]};
+		xy_t v1 = {xc + w_vert[wall][0], yc + w_vert[wall][1]};
+		xy_t v2 = {xc + w_vert[wall - 1][0], yc + w_vert[wall - 1][1]};
 		drawLine(tex, v1, v2, COLOR_YELLOW);
 	}
+
+	drawPixel(tex, texhw, texhh, COLOR_GREEN);
+}
+
+void renderFromSector(sectp_t sect, p_t camloc, v_t camangle)
+{
+	renderMinimap(sect, camloc);
 }

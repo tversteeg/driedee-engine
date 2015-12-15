@@ -1,14 +1,26 @@
 #include "g_game.h"
 
+#include <stdlib.h>
+
 #include "l_vector.h"
 #include "l_render.h"
+#include "l_console.h"
 #include "g_map.h"
+
+static void c_addsector(console_t *con, int argc, char **argv)
+{
+	if(argc != 2){
+		printConsole(con, "Usage: createsector floor ceil\n");
+	}else{
+		createSector(atoi(argv[0]), atoi(argv[1]));
+	}
+}
 
 p_t cam_pos;
 v_t cam_angle;
 sectp_t cam_sect;
 
-void initGameWorld()
+void initGameWorld(console_t *console)
 {
 	map_t *map = createMap(20, 20);
 
@@ -25,6 +37,8 @@ void initGameWorld()
 	cam_pos[0] = 30;
 	cam_pos[1] = 30;
 	cam_angle = 0;
+
+	mapCmdConsole(console, "createsector", c_addsector);
 }
 
 void updateGameWorld()

@@ -52,14 +52,14 @@ int main(int argc, char **argv)
 	screenwidth = 800;
 	screenheight = 600;
 
-	initTexture(&screentex, screenwidth, screenheight);
-	initConsole(&console, screenwidth, screenheight >> 2);
+	initTexture(&screentex, screenwidth >> 1, screenheight >> 1);
+	initConsole(&console, screenwidth >> 1, screenheight >> 2);
 
 	printConsole(&console, "PRESS \\RTAB\\d TO VIEW AVAILABLE COMMANDS, AND \\RF1\\d TO TOGGLE THE CONSOLE\n");
 
 	mapConsoleCmds(&console);
 
-	initGameWorld();
+	initGameWorld(&console);
 	
 	ccDisplayInitialize();
 

@@ -4,6 +4,25 @@
 
 #include "l_colors.h"
 
+static int strtoarr(char *str, char **res)
+{
+	char *p = strtok(str, " \t");
+	int delims = 0;
+
+	// Ignore the command itself
+	p = strtok(NULL, " ");
+	while(p){
+		res = realloc(res, sizeof(char*) * ++delims);
+		res[delims - 1] = p;
+		p = strtok(NULL, " ");
+	}
+
+	res = realloc(res, sizeof(char*) * delims + 1);
+	res[delims] = NULL;
+
+	return delims;
+}
+
 static void refresh(console_t *con)
 {
 	clearTexture(&con->tex, COLOR_MASK);
@@ -33,8 +52,10 @@ static void performCommand(console_t *con)
 {
 	unsigned int i;
 	for(i = 0; i < con->cmds; i++){
-		if(strncmp(con->cmdnames[i], con->cmdstr, strlen(con->cmdnames)) == 0){
-			con->cmdfs[i](con, 0, NULL);
+		if(strncmp(con->cmdnames[i], con->cmdstr, strlen(con->cmdnames[i])) == 0){
+			char **argv = (char**)malloc(sizeof(char*));
+			int argc = strtoarr(con->cmdstr, argv);
+			con->cmdfs[i](con, argc, argv);
 			return;
 		}
 	}
