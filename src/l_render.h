@@ -3,6 +3,7 @@
 #include <stdint.h>
 
 #include "l_vector.h"
+#include "l_draw.h"
 
 #define WALL -1
 
@@ -18,4 +19,5 @@ sectp_t createSector(int16_t floor, int16_t ceil);
 
 void addVertToSector(p_t vert, sectp_t nextsect);
 
+void setRenderTarget(texture_t *target);
 void renderFromSector(sectp_t sect, p_t camloc, v_t camangle);

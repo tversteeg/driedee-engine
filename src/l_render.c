@@ -1,5 +1,7 @@
 #include "l_render.h"
 
+#include "l_colors.h"
+
 // Sector information
 // Start of the wall pointer
 wallp_t s_fwall[MAX_SECTORS];
@@ -37,10 +39,34 @@ sectp_t createSector(int16_t floor, int16_t ceil)
 
 void addVertToSector(p_t vert, sectp_t nextsect)
 {
-	wallp_t wall = s_fwall[lastsect] + s_nwalls[lastsect];
+	sectp_t sect = lastsect - 1;
+	wallp_t wall = s_fwall[sect] + s_nwalls[sect];
 	w_vert[wall][0] = vert[0];
 	w_vert[wall][1] = vert[1];
 	w_nextsect[wall] = nextsect;
 
-	s_nwalls[lastsect]++;
+	s_nwalls[sect]++;
+}
+
+texture_t *tex = NULL;
+void setRenderTarget(texture_t *target)
+{
+	tex = target;
+}
+
+void renderFromSector(sectp_t sect, p_t camloc, v_t camangle)
+{
+	wallp_t wall = s_fwall[sect];
+	wallp_t maxwall = wall + s_nwalls[sect] - 1;
+
+	xy_t v1 = {w_vert[wall][0], w_vert[wall][1]};
+	xy_t v2 = {w_vert[maxwall][0], w_vert[maxwall][1]};
+	drawLine(tex, v1, v2, COLOR_YELLOW);
+
+	while(wall < maxwall){
+		wall++;
+		xy_t v1 = {w_vert[wall][0], w_vert[wall][1]};
+		xy_t v2 = {w_vert[wall - 1][0], w_vert[wall - 1][1]};
+		drawLine(tex, v1, v2, COLOR_YELLOW);
+	}
 }
