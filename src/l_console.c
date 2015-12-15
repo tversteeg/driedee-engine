@@ -96,6 +96,44 @@ void inputConsole(console_t *con, ccEvent event)
 		performCommand(con);
 		con->cmdstrlen = 0;
 		con->cmdstr[0] = '\0';
+	}else if(key == '\t'){
+		bool containsspace = false;
+		unsigned int i;
+		for(i = 0; i < con->cmdstrlen; i++){
+			if(con->cmdstr[i] == ' '){
+				containsspace = true;
+				break;
+			}
+		}
+		if(!containsspace){
+			// Do autocompletion
+			unsigned int count = 0;
+			int cmd = -1;
+			for(i = 0; i < con->cmds; i++){
+				if(strncmp(con->cmdnames[i], con->cmdstr, con->cmdstrlen) == 0){
+					count++;
+					cmd = i;
+				}
+			}
+			if(count > 1){
+				for(i = 0; i < con->cmds; i++){
+					if(strncmp(con->cmdnames[i], con->cmdstr, con->cmdstrlen) == 0){
+						printConsole(con, con->cmdnames[i]);
+						printConsole(con, "\t");
+					}
+				}
+				printConsole(con, "\n");
+			}else if(count == 1){
+				con->cmdstrlen = strlen(con->cmdnames[cmd]) + 1;
+				memcpy(con->cmdstr, con->cmdnames[cmd], con->cmdstrlen);
+				con->cmdstr[con->cmdstrlen - 1] = ' ';
+				con->cmdstr[con->cmdstrlen] = '\0';
+			}
+		}else{
+			// Insert tab character
+			con->cmdstr[con->cmdstrlen] = key;
+			con->cmdstr[++con->cmdstrlen] = '\0';
+		}
 	}else if(con->cmdstrlen < MAX_CMD_LEN){
 		con->cmdstr[con->cmdstrlen] = key;
 		con->cmdstr[++con->cmdstrlen] = '\0';
@@ -155,8 +193,10 @@ void mapCmdConsole(console_t *con, const char *cmd, cmdptr_t cmdfunction)
 		con->cmdfs = (cmdptr_t*)realloc(con->cmdfs, sizeof(cmdptr_t) * (con->cmds + 1));
 	}
 
-	con->cmdnames[con->cmds] = (char*)malloc(strlen(cmd) + 1);
-	strcpy(con->cmdnames[con->cmds], cmd);
+	unsigned int len = strlen(cmd);
+	con->cmdnames[con->cmds] = (char*)malloc(len + 1);
+	memcpy(con->cmdnames[con->cmds], cmd, len);
+	con->cmdnames[con->cmds][len] = '\0';
 
 	con->cmdfs[con->cmds] = cmdfunction;
 
