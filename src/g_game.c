@@ -1,31 +1,9 @@
 #include "g_game.h"
 
-#include <stdlib.h>
-
 #include "l_vector.h"
 #include "l_render.h"
 #include "l_console.h"
 #include "g_map.h"
-
-static void c_addSector(console_t *con, int argc, char **argv)
-{
-	if(argc != 3){
-		printConsole(con, "Usage: %s floor ceil\n", argv[0]);
-	}else{
-		sectp_t sectid = createSector(atoi(argv[1]), atoi(argv[2]));
-		printConsole(con, "Created sector with id %d\n", sectid);
-	}
-}
-
-static void c_addVert(console_t *con, int argc, char **argv)
-{
-	if(argc != 4){
-		printConsole(con, "Usage: %s x y neighbor\n", argv[0]);
-	}else{
-		addVertToSector((p_t){atoi(argv[1]), atoi(argv[2])}, atoi(argv[3]));
-		printConsole(con, "Created vertex\n");
-	}
-}
 
 p_t cam_pos;
 v_t cam_angle;
@@ -48,9 +26,6 @@ void initGameWorld(console_t *console)
 	cam_pos[0] = 30;
 	cam_pos[1] = 30;
 	cam_angle = 0;
-
-	mapCmdConsole(console, "sectadd", c_addSector);
-	mapCmdConsole(console, "vertadd", c_addVert);
 }
 
 void updateGameWorld()

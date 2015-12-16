@@ -146,9 +146,7 @@ void inputConsole(console_t *con, ccEvent event)
 							char *c1 = con->cmdnames[i];
 							char *c2 = con->cmdnames[shortest];
 							unsigned int d = 0;
-							printConsole(con, "wot %c %c\n", *c1, *c2);
 							while(*(++c1) == *(++c2)){
-								printConsole(con, "wot %d\n", d);
 								d++;
 							}
 							if(d < distance && d != 0){
@@ -158,7 +156,7 @@ void inputConsole(console_t *con, ccEvent event)
 						}
 					}
 				}
-				printConsole(con, "%d\n", distance);
+				printConsole(con, "\n");
 
 				if(distance > con->cmdstrlen && distance < 1000){
 					con->cmdstrlen = distance;
