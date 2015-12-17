@@ -49,6 +49,11 @@ void addVertToSector(p_t vert, sectp_t nextsect)
 	s_nwalls[sect]++;
 }
 
+sectp_t getSector(p_t xz, int32_t y)
+{
+	return lastsect;
+}
+
 texture_t *tex = NULL;
 uint16_t texhw = 0, texhh = 0;
 void setRenderTarget(texture_t *target)
@@ -80,7 +85,7 @@ static void renderMinimap(sectp_t sect, p_t camloc)
 	drawPixel(tex, texhw, texhh, COLOR_GREEN);
 }
 
-void renderFromSector(sectp_t sect, p_t camloc, v_t camangle)
+void renderFromSector(camera_t cam)
 {
-	renderMinimap(sect, camloc);
+	renderMinimap(cam.sect, cam.xz);
 }
