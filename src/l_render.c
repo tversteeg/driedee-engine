@@ -49,6 +49,26 @@ void addVertToSector(p_t vert, sectp_t nextsect)
 	s_nwalls[sect]++;
 }
 
+//TODO change to concave polygon
+/* http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html#Convex%20Polygons */
+static bool pointInSector(sectp_t sect, p_t p)
+{
+	bool in = false;
+	
+	wallp_t swall = s_fwall[sect];
+	wallp_t ewall = swall + s_nwalls[sect];
+	wallp_t w1, w2;
+	for(w1 = swall, w2 = ewall - 1; w1 < ewall; w2 = w1++){
+		xy_t p1 = {w_vert[w1][0], w_vert[w1][1]};
+		xy_t p2 = {w_vert[w2][0], w_vert[w2][1]};
+		if(((p1.y > p[1]) != (p2.y > p[1])) && (p[0] < (p2.x - p1.x) * (p[1] - p1.y) / (p2.y - p1.y) + p1.x)){
+			in = !in;
+		}
+	}
+
+	return in;
+}
+
 sectp_t getSector(p_t xz, int32_t y)
 {
 	return lastsect;
