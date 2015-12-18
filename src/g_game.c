@@ -30,7 +30,8 @@ static void updatePlayer()
 	player.cam.xz[1] = (int32_t)(player.pos.z + 0.5);
 	player.cam.y = (int32_t)(player.pos.y + 0.5);
 
-	//player.cam.sect = getSector(player.cam.xz, player.cam.y);
+	player.cam.sect = getSector(player.cam.xz, player.cam.y);
+
 	if(player.vel.x == 0 && player.vel.y == 0 && player.vel.z == 0){
 		_moveplayer = false;
 	}
@@ -45,18 +46,20 @@ void initGameWorld(console_t *console)
 
 	debugPrintMap(map);
 
-	createSector(0, 10);
+	createSector(0, 20);
 	addVertToSector((p_t){20, 20}, WALL);
 	addVertToSector((p_t){50, 20}, WALL);
 	addVertToSector((p_t){50, 50}, WALL);
 	addVertToSector((p_t){20, 50}, WALL);
 
-	player.cam.xz[0] = 30;
-	player.cam.xz[1] = 30;
-	player.cam.y = 10;
-	player.cam.angle = 0;
+	player.pos.x = 30;
+	player.pos.z = 30;
+	player.pos.y = 10;
+	player.vel.x = player.vel.y = player.vel.z = 0;
 
 	_con = console;
+
+	updatePlayer();
 }
 
 bool _buttonpress[4] = {0};

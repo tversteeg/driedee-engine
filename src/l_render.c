@@ -1,7 +1,10 @@
 #include "l_render.h"
 
 #include "l_colors.h"
-#include "l_colors.h"
+
+typedef struct {
+	int32_t minx, maxx, miny, maxy;
+}	aabb_t;
 
 // Sector information
 // Start of the wall pointer
@@ -12,6 +15,8 @@ wallp_t s_nwalls[MAX_SECTORS];
 int16_t s_floor[MAX_SECTORS];
 // Ceiling height of sector
 int16_t s_ceil[MAX_SECTORS];
+// AABB data
+aabb_t s_aabb[MAX_WALLS];
 
 // Wall information
 // Wall vertices
@@ -33,6 +38,9 @@ sectp_t createSector(int16_t floor, int16_t ceil)
 	s_floor[lastsect] = floor;
 	s_ceil[lastsect] = ceil;
 
+	s_aabb[lastsect].minx = s_aabb[lastsect].miny = INT32_MAX;
+	s_aabb[lastsect].maxx = s_aabb[lastsect].maxy = INT32_MIN;
+
 	lastsect++;
 
 	return lastsect - 1;
@@ -45,6 +53,11 @@ void addVertToSector(p_t vert, sectp_t nextsect)
 	w_vert[wall][0] = vert[0];
 	w_vert[wall][1] = vert[1];
 	w_nextsect[wall] = nextsect;
+	
+	s_aabb[sect].minx = min(vert[0], s_aabb[sect].minx);
+	s_aabb[sect].maxx = max(vert[0], s_aabb[sect].maxx);
+	s_aabb[sect].miny = min(vert[1], s_aabb[sect].miny);
+	s_aabb[sect].maxy = max(vert[1], s_aabb[sect].maxy);
 
 	s_nwalls[sect]++;
 }
@@ -53,6 +66,9 @@ void addVertToSector(p_t vert, sectp_t nextsect)
 /* http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html#Convex%20Polygons */
 static bool pointInSector(sectp_t sect, p_t p)
 {
+	if(p[0] < s_aabb[sect].minx || p[0] > s_aabb[sect].maxx || p[1] < s_aabb[sect].miny || p[1] > s_aabb[sect].maxy){
+		return false;
+	}
 	bool in = false;
 	
 	wallp_t swall = s_fwall[sect];
@@ -61,7 +77,8 @@ static bool pointInSector(sectp_t sect, p_t p)
 	for(w1 = swall, w2 = ewall - 1; w1 < ewall; w2 = w1++){
 		xy_t p1 = {w_vert[w1][0], w_vert[w1][1]};
 		xy_t p2 = {w_vert[w2][0], w_vert[w2][1]};
-		if(((p1.y > p[1]) != (p2.y > p[1])) && (p[0] < (p2.x - p1.x) * (p[1] - p1.y) / (p2.y - p1.y) + p1.x)){
+		if(((p1.y > p[1]) != (p2.y > p[1])) 
+				&& (p[0] < (p2.x - p1.x) * (p[1] - p1.y) / (p2.y - p1.y) + p1.x)){
 			in = !in;
 		}
 	}
@@ -73,7 +90,7 @@ sectp_t getSector(p_t xz, int32_t y)
 {
 	sectp_t sect;
 	for(sect = 0; sect < lastsect; sect++){
-		if(pointInSector(sect, xz) && s_floor[sect] <= y && s_ceil[sect] >= y){
+		if(pointInSector(sect, xz) && y >= s_floor[sect] && y <= s_ceil[sect]){
 			return sect;
 		}
 	}
@@ -92,24 +109,23 @@ void setRenderTarget(texture_t *target)
 
 static void renderMinimap(sectp_t sect, p_t camloc)
 {
-	wallp_t wall = s_fwall[sect];
-	wallp_t maxwall = wall + s_nwalls[sect] - 1;
+	drawPixel(tex, texhw, texhh, COLOR_GREEN);
 
-	int xc = texhw - camloc[0];
-	int yc = texhh - camloc[1];
-
-	xy_t v1 = {xc + w_vert[wall][0], yc + w_vert[wall][1]};
-	xy_t v2 = {xc + w_vert[maxwall][0], yc + w_vert[maxwall][1]};
-	drawLine(tex, v1, v2, COLOR_YELLOW);
-
-	while(wall < maxwall){
-		wall++;
-		xy_t v1 = {xc + w_vert[wall][0], yc + w_vert[wall][1]};
-		xy_t v2 = {xc + w_vert[wall - 1][0], yc + w_vert[wall - 1][1]};
-		drawLine(tex, v1, v2, COLOR_YELLOW);
+	if(sect < 0){
+		return;
 	}
 
-	drawPixel(tex, texhw, texhh, COLOR_GREEN);
+	int xc = texhw - camloc[0];
+	int yc = texhh - camloc[1];	
+	
+	wallp_t swall = s_fwall[sect];
+	wallp_t ewall = swall + s_nwalls[sect];
+	wallp_t w1, w2;
+	for(w1 = swall, w2 = ewall - 1; w1 < ewall; w2 = w1++){
+		xy_t p1 = {w_vert[w1][0] + xc, w_vert[w1][1] + yc};
+		xy_t p2 = {w_vert[w2][0] + xc, w_vert[w2][1] + yc};
+		drawLine(tex, p1, p2, COLOR_YELLOW);
+	}
 }
 
 void renderFromSector(camera_t cam)
