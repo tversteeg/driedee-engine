@@ -1,5 +1,7 @@
 #include "l_render.h"
 
+#include <string.h>
+
 #include "l_colors.h"
 
 typedef struct {
@@ -17,6 +19,8 @@ int16_t s_floor[MAX_SECTORS];
 int16_t s_ceil[MAX_SECTORS];
 // AABB data
 aabb_t s_aabb[MAX_WALLS];
+// If the sector is visited, updated every frame
+bool s_visited[MAX_WALLS];
 
 // Wall information
 // Wall vertices
@@ -34,6 +38,7 @@ sectp_t createSector(int16_t floor, int16_t ceil)
 		s_fwall[lastsect] = s_fwall[lastsect - 1] + s_nwalls[lastsect - 1];
 	}
 	s_nwalls[lastsect] = 0;
+	s_visited[lastsect] = 0;
 
 	s_floor[lastsect] = floor;
 	s_ceil[lastsect] = ceil;
@@ -107,13 +112,13 @@ void setRenderTarget(texture_t *target)
 	texhh = tex->height >> 1;
 }
 
-static void renderMinimap(sectp_t sect, p_t camloc)
+static void renderMinimapSector(sectp_t sect, p_t camloc, bool first)
 {
-	drawPixel(tex, texhw, texhh, COLOR_GREEN);
-
-	if(sect < 0){
+	if(sect < 0 || s_visited[sect]){
 		return;
 	}
+
+	s_visited[sect] = true;
 
 	int xc = texhw - camloc[0];
 	int yc = texhh - camloc[1];	
@@ -124,8 +129,25 @@ static void renderMinimap(sectp_t sect, p_t camloc)
 	for(w1 = swall, w2 = ewall - 1; w1 < ewall; w2 = w1++){
 		xy_t p1 = {w_vert[w1][0] + xc, w_vert[w1][1] + yc};
 		xy_t p2 = {w_vert[w2][0] + xc, w_vert[w2][1] + yc};
-		drawLine(tex, p1, p2, COLOR_YELLOW);
+		if(w_nextsect[w1] < 0){
+			if(first){
+				drawLine(tex, p1, p2, COLOR_YELLOW);
+			}else{
+				drawLine(tex, p1, p2, COLOR_GRAY);
+			}
+		}else{
+			drawLine(tex, p1, p2, COLOR_BLUE);
+			renderMinimapSector(w_nextsect[w1], camloc, false);
+		}
 	}
+}
+
+static void renderMinimap(sectp_t sect, p_t camloc)
+{
+	drawPixel(tex, texhw, texhh, COLOR_GREEN);
+
+	memset(s_visited, 0, lastsect * sizeof(s_visited[0]));
+	renderMinimapSector(sect, camloc, true);
 }
 
 void renderFromSector(camera_t cam)

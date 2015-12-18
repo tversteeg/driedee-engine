@@ -6,6 +6,7 @@
 #include "g_map.h"
 
 #define PLAYER_DAMPING 0.9
+#define PLAYER_MOVE_ACC 0.05
 
 struct {
 	camera_t cam;
@@ -46,11 +47,17 @@ void initGameWorld(console_t *console)
 
 	debugPrintMap(map);
 
-	createSector(0, 20);
+	sectp_t s1 = createSector(0, 20);
 	addVertToSector((p_t){20, 20}, WALL);
 	addVertToSector((p_t){50, 20}, WALL);
-	addVertToSector((p_t){50, 50}, WALL);
-	addVertToSector((p_t){20, 50}, WALL);
+	addVertToSector((p_t){50, 50}, 1);
+	addVertToSector((p_t){20, 50}, WALL);	
+	
+	createSector(0, 20);
+	addVertToSector((p_t){70, 20}, WALL);
+	addVertToSector((p_t){50, 20}, WALL);
+	addVertToSector((p_t){50, 50}, s1);
+	addVertToSector((p_t){70, 50}, WALL);
 
 	player.pos.x = 30;
 	player.pos.z = 30;
@@ -66,19 +73,19 @@ bool _buttonpress[4] = {0};
 void updateGameWorld()
 {
 	if(_buttonpress[0]){
-		player.vel.z -= 0.1;
+		player.vel.z -= PLAYER_MOVE_ACC;
 		_moveplayer = true;
 	}
 	if(_buttonpress[1]){
-		player.vel.z += 0.1;
+		player.vel.z += PLAYER_MOVE_ACC;
 		_moveplayer = true;
 	}
 	if(_buttonpress[2]){
-		player.vel.x -= 0.1;
+		player.vel.x -= PLAYER_MOVE_ACC;
 		_moveplayer = true;
 	}
 	if(_buttonpress[3]){
-		player.vel.x += 0.1;
+		player.vel.x += PLAYER_MOVE_ACC;
 		_moveplayer = true;
 	}
 
