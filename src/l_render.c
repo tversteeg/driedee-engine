@@ -71,7 +71,14 @@ static bool pointInSector(sectp_t sect, p_t p)
 
 sectp_t getSector(p_t xz, int32_t y)
 {
-	return lastsect;
+	sectp_t sect;
+	for(sect = 0; sect < lastsect; sect++){
+		if(pointInSector(sect, xz) && s_floor[sect] <= y && s_ceil[sect] >= y){
+			return sect;
+		}
+	}
+
+	return -1;
 }
 
 texture_t *tex = NULL;

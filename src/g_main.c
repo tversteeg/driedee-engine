@@ -115,6 +115,8 @@ int main(int argc, char **argv)
 			}
 		}
 
+		updateGameWorld();
+
 		renderGameWorld(&screentex);
 		renderConsole(&console, &screentex);
 		renderTexture(screentex);
