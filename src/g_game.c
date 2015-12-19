@@ -1,12 +1,15 @@
 #include "g_game.h"
 
+#include <math.h>
+
 #include "l_vector.h"
 #include "l_render.h"
 #include "l_console.h"
 #include "g_map.h"
 
 #define PLAYER_DAMPING 0.9
-#define PLAYER_MOVE_ACC 0.05
+#define PLAYER_MOVE_ACC 0.1
+#define PLAYER_MOVE_ROT 0.05
 
 struct {
 	camera_t cam;
@@ -48,19 +51,19 @@ void initGameWorld(console_t *console)
 	debugPrintMap(map);
 
 	sectp_t s1 = createSector(0, 20);
-	addVertToSector((p_t){20, 20}, WALL);
-	addVertToSector((p_t){50, 20}, WALL);
-	addVertToSector((p_t){50, 50}, 1);
-	addVertToSector((p_t){20, 50}, WALL);	
+	addVertToSector((p_t){200, 200}, WALL);
+	addVertToSector((p_t){500, 200}, WALL);
+	addVertToSector((p_t){500, 500}, 1);
+	addVertToSector((p_t){200, 500}, WALL);	
 	
 	createSector(0, 20);
-	addVertToSector((p_t){70, 20}, WALL);
-	addVertToSector((p_t){50, 20}, WALL);
-	addVertToSector((p_t){50, 50}, s1);
-	addVertToSector((p_t){70, 50}, WALL);
+	addVertToSector((p_t){700, 200}, WALL);
+	addVertToSector((p_t){500, 200}, WALL);
+	addVertToSector((p_t){500, 500}, s1);
+	addVertToSector((p_t){700, 500}, WALL);
 
-	player.pos.x = 30;
-	player.pos.z = 30;
+	player.pos.x = 300;
+	player.pos.z = 300;
 	player.pos.y = 10;
 	player.vel.x = player.vel.y = player.vel.z = 0;
 
@@ -73,19 +76,21 @@ bool _buttonpress[4] = {0};
 void updateGameWorld()
 {
 	if(_buttonpress[0]){
-		player.vel.z -= PLAYER_MOVE_ACC;
+		player.vel.x += cos(player.cam.angle) * PLAYER_MOVE_ACC;
+		player.vel.z += sin(player.cam.angle) * PLAYER_MOVE_ACC;
 		_moveplayer = true;
 	}
 	if(_buttonpress[1]){
-		player.vel.z += PLAYER_MOVE_ACC;
+		player.vel.x += cos(player.cam.angle + M_PI) * PLAYER_MOVE_ACC;
+		player.vel.z += sin(player.cam.angle + M_PI) * PLAYER_MOVE_ACC;
 		_moveplayer = true;
 	}
 	if(_buttonpress[2]){
-		player.vel.x -= PLAYER_MOVE_ACC;
+		player.cam.angle -= PLAYER_MOVE_ROT;
 		_moveplayer = true;
 	}
 	if(_buttonpress[3]){
-		player.vel.x += PLAYER_MOVE_ACC;
+		player.cam.angle += PLAYER_MOVE_ROT;
 		_moveplayer = true;
 	}
 

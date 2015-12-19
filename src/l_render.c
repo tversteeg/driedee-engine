@@ -142,9 +142,12 @@ static void renderMinimapSector(sectp_t sect, p_t camloc, bool first)
 	}
 }
 
-static void renderMinimap(sectp_t sect, p_t camloc)
+static void renderMinimap(sectp_t sect, p_t camloc, v_t camangle)
 {
-	drawPixel(tex, texhw, texhh, COLOR_GREEN);
+	xy_t player = {texhw, texhh};
+	xy_t pointto = {texhw + cos(camangle) * 5, texhh + sin(camangle) * 5};
+	drawLine(tex, player, pointto, COLOR_DARKGREEN);
+	drawCircle(tex, player, 3, COLOR_GREEN);
 
 	memset(s_visited, 0, lastsect * sizeof(s_visited[0]));
 	renderMinimapSector(sect, camloc, true);
@@ -152,5 +155,5 @@ static void renderMinimap(sectp_t sect, p_t camloc)
 
 void renderFromSector(camera_t cam)
 {
-	renderMinimap(cam.sect, cam.xz);
+	renderMinimap(cam.sect, cam.xz, cam.angle);
 }
