@@ -1,6 +1,7 @@
 #include "l_render.h"
 
 #include <string.h>
+#include <math.h>
 
 #include "l_colors.h"
 
@@ -153,7 +154,37 @@ static void renderMinimap(sectp_t sect, p_t camloc, v_t camangle)
 	renderMinimapSector(sect, camloc, true);
 }
 
+typedef struct {
+	wallp_t *walls, nwalls;
+} bunch_t;
+
 void renderFromSector(camera_t cam)
 {
+	memset(s_visited, 0, lastsect * sizeof(s_visited[0]));
+
+	uint16_t nbunches = 32;
+	bunch_t *bunches = (bunch_t*)malloc(nbunches * sizeof(bunch_t));
+
+	uint16_t nsectors = 1;
+	sectp_t *sectors = (sectp_t*)malloc(sizeof(sectp_t));
+	sectors[0] = cam.sect;
+
+	while(nsectors > 0){
+		sectp_t sect = sectors[nsectors - 1];
+
+		wallp_t swall = s_fwall[sect];
+		wallp_t ewall = swall + s_nwalls[sect];
+		wallp_t w1, w2;
+		for(w1 = swall, w2 = ewall - 1; w1 < ewall; w2 = w1++){
+			xy_t p1 = {w_vert[w1][0] + xc, w_vert[w1][1] + yc};
+			xy_t p2 = {w_vert[w2][0] + xc, w_vert[w2][1] + yc};
+		}
+	
+		nsectors--;
+	}
+
+	free(sectors);
+	free(bunches);
+
 	renderMinimap(cam.sect, cam.xz, cam.angle);
 }

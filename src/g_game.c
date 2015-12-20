@@ -87,10 +87,16 @@ void updateGameWorld()
 	}
 	if(_buttonpress[2]){
 		player.cam.angle -= PLAYER_MOVE_ROT;
+		if(player.cam.angle < -M_PI){
+			player.cam.angle += M_PI * 2;
+		}
 		_moveplayer = true;
 	}
 	if(_buttonpress[3]){
 		player.cam.angle += PLAYER_MOVE_ROT;
+		if(player.cam.angle > M_PI){
+			player.cam.angle -= M_PI * 2;
+		}
 		_moveplayer = true;
 	}
 
