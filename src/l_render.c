@@ -160,7 +160,11 @@ typedef struct {
 
 void renderFromSector(camera_t cam)
 {
+	renderMinimap(cam.sect, cam.xz, cam.angle);
+
 	memset(s_visited, 0, lastsect * sizeof(s_visited[0]));
+
+	xy_t camvec = {cos(cam.angle), sin(cam.angle)};
 
 	uint16_t nbunches = 32;
 	bunch_t *bunches = (bunch_t*)malloc(nbunches * sizeof(bunch_t));
@@ -176,8 +180,15 @@ void renderFromSector(camera_t cam)
 		wallp_t ewall = swall + s_nwalls[sect];
 		wallp_t w1, w2;
 		for(w1 = swall, w2 = ewall - 1; w1 < ewall; w2 = w1++){
-			xy_t p1 = {w_vert[w1][0] + xc, w_vert[w1][1] + yc};
-			xy_t p2 = {w_vert[w2][0] + xc, w_vert[w2][1] + yc};
+			xy_t wallvec = {w_vert[w2][0] - w_vert[w1][0], w_vert[w2][1] - w_vert[w1][1]};
+			if(vectorCrossProduct(wallvec, camvec) < 0){
+				int xc = texhw - cam.xz[0];
+				int yc = texhh - cam.xz[1];	
+				xy_t p1 = {w_vert[w1][0] + xc, w_vert[w1][1] + yc};
+				xy_t p2 = {w_vert[w2][0] + xc, w_vert[w2][1] + yc};
+				drawLine(tex, p1, p2, COLOR_DARKGREEN);
+				continue;
+			}
 		}
 	
 		nsectors--;
@@ -185,6 +196,4 @@ void renderFromSector(camera_t cam)
 
 	free(sectors);
 	free(bunches);
-
-	renderMinimap(cam.sect, cam.xz, cam.angle);
 }

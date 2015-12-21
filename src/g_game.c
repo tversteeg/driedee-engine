@@ -57,10 +57,10 @@ void initGameWorld(console_t *console)
 	addVertToSector((p_t){200, 500}, WALL);	
 	
 	createSector(0, 20);
+	addVertToSector((p_t){500, 200}, s1);
 	addVertToSector((p_t){700, 200}, WALL);
-	addVertToSector((p_t){500, 200}, WALL);
-	addVertToSector((p_t){500, 500}, s1);
 	addVertToSector((p_t){700, 500}, WALL);
+	addVertToSector((p_t){500, 500}, WALL);
 
 	player.pos.x = 300;
 	player.pos.z = 300;
