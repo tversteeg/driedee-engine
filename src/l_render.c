@@ -1,9 +1,12 @@
 #include "l_render.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 
 #include "l_colors.h"
+
+#define MAX_SECTOR_STACK 32
 
 typedef struct {
 	int32_t minx, maxx, miny, maxy;
@@ -166,11 +169,12 @@ void renderFromSector(camera_t cam)
 
 	xy_t camvec = {cos(cam.angle), sin(cam.angle)};
 
-	uint16_t nbunches = 32;
-	bunch_t *bunches = (bunch_t*)malloc(nbunches * sizeof(bunch_t));
+	uint16_t maxbunches = 32;
+	uint16_t nbunches = 0;
+	bunch_t *bunches = (bunch_t*)malloc(maxbunches * sizeof(bunch_t));
 
 	uint16_t nsectors = 1;
-	sectp_t *sectors = (sectp_t*)malloc(sizeof(sectp_t));
+	sectp_t sectors[MAX_SECTOR_STACK];
 	sectors[0] = cam.sect;
 
 	while(nsectors > 0){
@@ -180,6 +184,7 @@ void renderFromSector(camera_t cam)
 		wallp_t ewall = swall + s_nwalls[sect];
 		wallp_t w1, w2;
 		for(w1 = swall, w2 = ewall - 1; w1 < ewall; w2 = w1++){
+			// Clip the wall when it's not in view
 			xy_t wallvec = {w_vert[w2][0] - w_vert[w1][0], w_vert[w2][1] - w_vert[w1][1]};
 			if(vectorCrossProduct(wallvec, camvec) < 0){
 				int xc = texhw - cam.xz[0];
@@ -189,11 +194,53 @@ void renderFromSector(camera_t cam)
 				drawLine(tex, p1, p2, COLOR_DARKGREEN);
 				continue;
 			}
+
+			// Add the wall to a bunch when they connect or create a new one
+			uint16_t i;
+			for(i = 0; i < nbunches; i++){
+				bunch_t *bunch = bunches + i;
+				wallp_t j;
+				for(j = 0; j < bunch->nwalls; j++){
+					int32_t bx = w_vert[bunch->walls[j]][0];
+					int32_t by = w_vert[bunch->walls[j]][1];
+					// Add to the bunch if the existing bunches already match vertices with the wall somewhere
+					if(bx == w_vert[w1][0] && by == w_vert[w1][1]){
+						bunch->nwalls++;
+						bunch->walls = (wallp_t*)realloc(bunch->walls, bunch->nwalls * sizeof(wallp_t));
+						bunch->walls[bunch->nwalls - 1] = w1;
+						goto walladded;
+					}
+				}
+			}
+			// Wall is not found, create a new bunch
+			nbunches++;
+			if(nbunches > maxbunches){
+				maxbunches *= 2;
+				bunches = (bunch_t*)realloc(bunches, maxbunches * sizeof(bunch_t));
+			}
+			bunch_t *bunch = bunches + nbunches - 1;
+			bunch->nwalls = 1;
+			bunch->walls = (wallp_t*)malloc(sizeof(wallp_t));
+			bunch->walls[0] = w1;
+
+walladded:;
+			// If the wall is a portal, add the sector to the stack
+			if(w_nextsect[w1] >= 0){
+				nsectors++;
+				if(nsectors > MAX_SECTOR_STACK){
+					fprintf(stderr, "To much sectors added to stack\n");
+					exit(1);
+				}
+
+				sectors[nsectors - 1] = w_nextsect[w1];
+			}
 		}
-	
 		nsectors--;
 	}
 
-	free(sectors);
+	uint16_t i;
+	for(i = 0; i < nbunches; i++){
+		free(bunches[i].walls);
+	}
 	free(bunches);
 }
