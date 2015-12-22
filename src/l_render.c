@@ -178,7 +178,9 @@ void renderFromSector(camera_t cam)
 	sectors[0] = cam.sect;
 
 	while(nsectors > 0){
-		sectp_t sect = sectors[nsectors - 1];
+		nsectors--;
+		sectp_t sect = sectors[nsectors];
+		s_visited[sect] = true;
 
 		wallp_t swall = s_fwall[sect];
 		wallp_t ewall = swall + s_nwalls[sect];
@@ -187,11 +189,6 @@ void renderFromSector(camera_t cam)
 			// Clip the wall when it's not in view
 			xy_t wallvec = {w_vert[w2][0] - w_vert[w1][0], w_vert[w2][1] - w_vert[w1][1]};
 			if(vectorCrossProduct(wallvec, camvec) < 0){
-				int xc = texhw - cam.xz[0];
-				int yc = texhh - cam.xz[1];	
-				xy_t p1 = {w_vert[w1][0] + xc, w_vert[w1][1] + yc};
-				xy_t p2 = {w_vert[w2][0] + xc, w_vert[w2][1] + yc};
-				drawLine(tex, p1, p2, COLOR_DARKGREEN);
 				continue;
 			}
 
@@ -224,8 +221,8 @@ void renderFromSector(camera_t cam)
 			bunch->walls[0] = w1;
 
 walladded:;
-			// If the wall is a portal, add the sector to the stack
-			if(w_nextsect[w1] >= 0){
+			// If the wall is a portal, and not visited yet, add the sector to the stack
+			if(w_nextsect[w1] >= 0 && !s_visited[w_nextsect[w1]]){
 				nsectors++;
 				if(nsectors > MAX_SECTOR_STACK){
 					fprintf(stderr, "To much sectors added to stack\n");
@@ -235,7 +232,6 @@ walladded:;
 				sectors[nsectors - 1] = w_nextsect[w1];
 			}
 		}
-		nsectors--;
 	}
 
 	uint16_t i;
