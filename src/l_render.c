@@ -253,7 +253,13 @@ walladded:;
 
 static void createModelMatrix(camera_t *cam)
 {
-
+	ccVec3 translation;
+	translation.x = cam->xz[0];
+	translation.y = cam->y;
+	translation.z = cam->xz[1];
+	ccMat4x4SetTranslation(cam->modelm, translation);
+	ccMat4x4RotateY(cam->modelm, cam->yaw);
+	ccMat4x4RotateX(cam->modelm, cam->pitch);
 }
 
 void createPerspProjMatrix(camera_t *cam, v_t fov, v_t aspect, v_t znear, v_t zfar)
