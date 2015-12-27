@@ -20,6 +20,8 @@ typedef struct {
 	int32_t y;
 	v_t angle;
 	sectp_t sect;
+
+	v_t persm[16], modelm[16];
 } camera_t;
 
 sectp_t createSector(int16_t floor, int16_t ceil);
@@ -30,3 +32,8 @@ sectp_t getSector(p_t xz, int32_t y);
 
 void setRenderTarget(texture_t *target);
 void renderFromSector(camera_t cam);
+
+void createPerspProjMatrix(camera_t *cam, v_t fov, v_t aspect, v_t znear, v_t zfar);
+
+void moveCamera(camera_t *cam, p_t xz, int32_t y);
+void rotateCamera(camera_t *cam, v_t angle);
