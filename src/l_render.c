@@ -71,7 +71,6 @@ void addVertToSector(p_t vert, sectp_t nextsect)
 	s_nwalls[sect]++;
 }
 
-//TODO change to concave polygon
 /* http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html#Convex%20Polygons */
 static bool pointInSector(sectp_t sect, p_t p)
 {
@@ -231,6 +230,17 @@ walladded:;
 
 				sectors[nsectors - 1] = w_nextsect[w1];
 			}
+		}
+	}
+
+	while(nbunches > 0){
+		nbunches--;
+
+		bunch_t *bunch = bunches + nbunches;
+
+		uint16_t i;
+		for(i = 0; i < nbunches - 1; i++){
+
 		}
 	}
 
