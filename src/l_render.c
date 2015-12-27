@@ -162,11 +162,11 @@ typedef struct {
 
 void renderFromSector(camera_t cam)
 {
-	renderMinimap(cam.sect, cam.xz, cam.angle);
+	renderMinimap(cam.sect, cam.xz, cam.pitch);
 
 	memset(s_visited, 0, lastsect * sizeof(s_visited[0]));
 
-	xy_t camvec = {cos(cam.angle), sin(cam.angle)};
+	xy_t camvec = {cos(cam.pitch), sin(cam.pitch)};
 
 	uint16_t maxbunches = 32;
 	uint16_t nbunches = 0;
@@ -253,7 +253,12 @@ walladded:;
 
 static void createModelMatrix(camera_t *cam)
 {
-	
+
+}
+
+void createPerspProjMatrix(camera_t *cam, v_t fov, v_t aspect, v_t znear, v_t zfar)
+{
+	ccMat4x4Perspective(cam->persm, fov, aspect, znear, zfar);
 }
 
 void moveCamera(camera_t *cam, p_t xz, int32_t y)
@@ -263,37 +268,14 @@ void moveCamera(camera_t *cam, p_t xz, int32_t y)
 	cam->y = y;
 
 	createModelMatrix(cam);
+
+	cam->sect = getSector(xz, y);
 }
 
 void rotateCamera(camera_t *cam, v_t angle)
 {
-	cam->angle = angle;
+	cam->pitch = angle;
+	cam->yaw = 0;
 
 	createModelMatrix(cam);
-}
-
-void createPerspProjMatrix(camera_t *cam, v_t fov, v_t aspect, v_t znear, v_t zfar)
-{
-	v_t xymax = znear * tan(fov * M_PI / 360.0) * 2;
-
-	v_t zdiff = zfar - znear;
-	v_t q = -(zfar + znear) / zdiff;
-	v_t qn = -2 * (zfar * znear) / zdiff;
-
-	v_t h = 2 * znear / (xymax * 2);
-	v_t w = h / aspect;
-
-	memset(cam->persm, 0, sizeof(cam->persm[0]) * sizeof(cam->persm));
-
-	/*	w  0  0  0
-	 *	0  h  0  0
-	 *	0  0  q  qn
-	 *	0  0  -1 0
-	 */
-
-	cam->persm[0] = w;
-	cam->persm[5] = h;
-	cam->persm[10] = q;
-	cam->persm[11] = -1;
-	cam->persm[14] = qn;
 }

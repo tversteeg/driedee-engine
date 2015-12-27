@@ -8,12 +8,13 @@
 #include "g_map.h"
 
 #define PLAYER_DAMPING 0.9
-#define PLAYER_MOVE_ACC 0.1
+#define PLAYER_MOVE_ACC 0.2
 #define PLAYER_MOVE_ROT 0.05
 
 struct {
 	camera_t cam;
 	xyz_t pos, vel;
+	v_t angle;
 } player;
 
 static bool _moveplayer = true;
@@ -30,11 +31,7 @@ static void updatePlayer()
 	player.vel.z *= PLAYER_DAMPING;
 	player.vel.y *= PLAYER_DAMPING;
 
-	player.cam.xz[0] = (int32_t)(player.pos.x + 0.5);
-	player.cam.xz[1] = (int32_t)(player.pos.z + 0.5);
-	player.cam.y = (int32_t)(player.pos.y + 0.5);
-
-	player.cam.sect = getSector(player.cam.xz, player.cam.y);
+	moveCamera(&player.cam, (p_t){player.pos.x, player.pos.z}, player.pos.y);
 
 	if(player.vel.x == 0 && player.vel.y == 0 && player.vel.z == 0){
 		_moveplayer = false;
@@ -65,7 +62,7 @@ void initGameWorld(console_t *console)
 	player.pos.x = 300;
 	player.pos.z = 300;
 	player.pos.y = 10;
-	player.vel.x = player.vel.y = player.vel.z = 0;
+	player.angle = player.vel.x = player.vel.y = player.vel.z = 0;
 
 	_con = console;
 
@@ -76,27 +73,29 @@ bool _buttonpress[4] = {0};
 void updateGameWorld()
 {
 	if(_buttonpress[0]){
-		player.vel.x += cos(player.cam.angle) * PLAYER_MOVE_ACC;
-		player.vel.z += sin(player.cam.angle) * PLAYER_MOVE_ACC;
+		player.vel.x += cos(player.cam.pitch) * PLAYER_MOVE_ACC;
+		player.vel.z += sin(player.cam.pitch) * PLAYER_MOVE_ACC;
 		_moveplayer = true;
 	}
 	if(_buttonpress[1]){
-		player.vel.x += cos(player.cam.angle + M_PI) * PLAYER_MOVE_ACC;
-		player.vel.z += sin(player.cam.angle + M_PI) * PLAYER_MOVE_ACC;
+		player.vel.x += cos(player.cam.pitch + M_PI) * PLAYER_MOVE_ACC;
+		player.vel.z += sin(player.cam.pitch + M_PI) * PLAYER_MOVE_ACC;
 		_moveplayer = true;
 	}
 	if(_buttonpress[2]){
-		player.cam.angle -= PLAYER_MOVE_ROT;
-		if(player.cam.angle < -M_PI){
-			player.cam.angle += M_PI * 2;
+		player.angle -= PLAYER_MOVE_ROT;
+		if(player.angle < -M_PI){
+			player.angle += M_PI * 2;
 		}
+		rotateCamera(&player.cam, player.angle);
 		_moveplayer = true;
 	}
 	if(_buttonpress[3]){
-		player.cam.angle += PLAYER_MOVE_ROT;
-		if(player.cam.angle > M_PI){
-			player.cam.angle -= M_PI * 2;
+		player.angle += PLAYER_MOVE_ROT;
+		if(player.angle > M_PI){
+			player.angle -= M_PI * 2;
 		}
+		rotateCamera(&player.cam, player.angle);
 		_moveplayer = true;
 	}
 

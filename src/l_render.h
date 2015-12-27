@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+#include <ccVector/ccVector.h>
+
 #include "l_vector.h"
 #include "l_draw.h"
 
@@ -18,10 +20,10 @@ typedef int32_t p_t[2];
 typedef struct {
 	p_t xz;
 	int32_t y;
-	v_t angle;
+	v_t pitch, yaw;
 	sectp_t sect;
 
-	v_t persm[16], modelm[16];
+	ccMat4x4 persm, modelm;
 } camera_t;
 
 sectp_t createSector(int16_t floor, int16_t ceil);
