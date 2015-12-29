@@ -31,10 +31,10 @@ static void refresh(console_t *con)
 		drawString(&con->tex, con->font, con->buf, 0, 0, COLOR_WHITE);
 	}
 
-	unsigned int cmdheight = con->tex.height - 2 - con->font->size;
+	unsigned int cmdheight = con->tex.height - 2 - con->font->height;
 	drawLetter(&con->tex, con->font, '>', 2, cmdheight, COLOR_WHITE);
 	if(con->cmdstrlen > 0){
-		drawString(&con->tex, con->font, con->cmdstr, con->font->size + 2, cmdheight, COLOR_WHITE);
+		drawString(&con->tex, con->font, con->cmdstr, con->font->height + 2, cmdheight, COLOR_WHITE);
 	}
 
 	drawLine(&con->tex, (xy_t){0, con->tex.height - 1}, (xy_t){con->tex.width, con->tex.height - 1}, COLOR_WHITE);
@@ -43,7 +43,7 @@ static void refresh(console_t *con)
 
 static void setMaxLines(console_t *con)
 {
-	con->bufmaxlines = con->tex.height / con->font->size - 1;
+	con->bufmaxlines = con->tex.height / con->font->height - 1;
 
 	refresh(con);
 }

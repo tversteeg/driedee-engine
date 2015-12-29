@@ -1,4 +1,5 @@
-static unsigned int defaultfontwidth = 1024;
+static unsigned int defaultfonttotalwidth = 1024;
+static unsigned int defaultfontwidth = 8;
 static unsigned int defaultfontheight = 8;
 
 static char defaultfontdata[] = {

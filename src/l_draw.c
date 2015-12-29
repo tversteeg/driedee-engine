@@ -66,25 +66,26 @@ void initTexture(texture_t *tex, unsigned int width, unsigned int height)
 	tex->pixels = (pixel_t*)calloc(width * height, sizeof(pixel_t));
 }
 
-void initFont(font_t *font, unsigned int width, unsigned int height)
+void initFont(font_t *font, unsigned int totalwidth, unsigned int width, unsigned int height)
 {
-	font->totalwidth = width;
-	font->size = height;
-	font->pixels = (bool*)calloc(width * height, sizeof(bool));
+	font->totalwidth = totalwidth;
+	font->width = width;
+	font->height = height;
+	font->pixels = (bool*)calloc(totalwidth * height, sizeof(bool));
 }
 
 void loadFont(font_t *font, char start, const bool *pixels)
 {
-	font->letters = font->totalwidth / font->size;
+	font->letters = font->totalwidth / font->width;
 	font->start = start;
-	memcpy(font->pixels, pixels, (font->totalwidth * font->size) * sizeof(bool));
+	memcpy(font->pixels, pixels, (font->totalwidth * font->height) * sizeof(bool));
 }
 
 font_t *loadDefaultFont()
 {
 	font_t *font = (font_t*)malloc(sizeof(font_t));
 
-	initFont(font, defaultfontwidth, defaultfontheight);
+	initFont(font, defaultfonttotalwidth, defaultfontwidth, defaultfontheight);
 	loadFont(font, '!', (bool*)defaultfontdata);
 
 	return font;
@@ -209,12 +210,12 @@ void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, p
 	if(todraw < 0 || todraw > font->letters){
 		return;
 	}
-	int drawpos = todraw * font->size;
+	int drawpos = todraw * font->width;
 
 	int i;
-	for(i = 0; i < font->size; i++){
+	for(i = 0; i < font->width; i++){
 		int j;
-		for(j = 0; j < font->size; j++){
+		for(j = 0; j < font->height; j++){
 			if(font->pixels[i + drawpos + j * font->totalwidth] == true){
 				drawPixel(tex, x + i, y + j, pixel);
 			}
@@ -232,9 +233,9 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 	for(i = 0; string[i] != '\0'; i++){
 		if(string[i] == '\n'){
 			lx = x;
-			ly += font->size;
+			ly += font->height;
 		}else if(string[i] == '\t'){
-			lx += font->size * 2;
+			lx += font->width * 2;
 		}else if(string[i] == '\\'){
 			switch(string[i + 1]){
 				case 'R':
@@ -252,12 +253,12 @@ void drawString(texture_t *tex, const font_t *font, const char *string, int x, i
 			}
 			i++;
 		}else{
-			if(lx > tex->width - font->size){
+			if(lx > tex->width - font->width){
 				lx = x;
-				ly += font->size;
+				ly += font->height;
 			}
 			drawLetter(tex, font, string[i], lx, ly, color);
-			lx += font->size;
+			lx += font->width;
 		}
 	}
 }

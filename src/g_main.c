@@ -18,10 +18,12 @@
 #include "l_console.h"
 #include "g_commands.h"
 #include "g_game.h"
+#include "pf_tamsyn.h"
 
 GLuint gltex;
 texture_t screentex;
 console_t console;
+font_t font;
 
 unsigned int screenwidth, screenheight;
 
@@ -52,8 +54,12 @@ int main(int argc, char **argv)
 	screenwidth = 800;
 	screenheight = 600;
 
-	initTexture(&screentex, screenwidth >> 1, screenheight >> 1);
-	initConsole(&console, screenwidth >> 1, screenheight >> 2);
+	initFont(&font, tamsynfonttotalwidth, tamsynfontwidth, tamsynfontheight);
+	loadFont(&font, tamsynfontstart, (bool*)tamsynfontdata);
+
+	initTexture(&screentex, screenwidth, screenheight);
+	initConsole(&console, screenwidth, screenheight >> 1);
+	setConsoleFont(&console, &font);
 
 	printConsole(&console, "PRESS \\RTAB\\d TO VIEW AVAILABLE COMMANDS, AND \\RF1\\d TO TOGGLE THE CONSOLE\n");
 

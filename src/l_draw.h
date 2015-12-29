@@ -13,13 +13,13 @@ typedef struct {
 
 typedef struct {
 	char start;
-	unsigned char letters, size;
+	unsigned char letters, width, height;
 	unsigned int totalwidth;
 	bool *pixels;
 } font_t;
 
 void initTexture(texture_t *tex, unsigned int width, unsigned int height);
-void initFont(font_t *font, unsigned int width, unsigned int height);
+void initFont(font_t *font, unsigned int totalwiddth, unsigned int width, unsigned int height);
 void loadFont(font_t *font, char start, const bool *pixels);
 font_t *loadDefaultFont();
 
