@@ -49,6 +49,7 @@ OUTPUTFILENAME="pf_$LOWERNAME.h"
 
 # Generate C header file
 echo -e \	"// Generated font file
+static unsigned int ${LOWERNAME}fonttotalwidth = ${SIZES[0]};
 static unsigned int ${LOWERNAME}fontwidth = $IMGWIDTH;
 static unsigned int ${LOWERNAME}fontheight = $HEIGHT;
 static char ${LOWERNAME}fontstart = $FONTSTART;
@@ -62,5 +63,5 @@ echo -e "\n};" >> $OUTPUTFILENAME
 
 echo -e "Font header $NAME ($OUTPUTFILENAME) created\n\tglyph size: $((${SIZES[0]} - 2))x$HEIGHT\n\twidth: $IMGWIDTH"
 
-#rm /tmp/sizes.pbm
-#rm /tmp/output.pbm
+rm /tmp/sizes.pbm
+rm /tmp/output.pbm
