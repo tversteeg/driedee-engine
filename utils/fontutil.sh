@@ -50,7 +50,7 @@ OUTPUTFILENAME="pf_$LOWERNAME.h"
 # Generate C header file
 echo -e \	"// Generated font file
 static unsigned int ${LOWERNAME}fonttotalwidth = $IMGWIDTH;
-static unsigned int ${LOWERNAME}fontwidth = ${SIZES[0]};
+static unsigned int ${LOWERNAME}fontwidth = $((${SIZES[0]} - 2));
 static unsigned int ${LOWERNAME}fontheight = $HEIGHT;
 static char ${LOWERNAME}fontstart = $FONTSTART;
 static char ${LOWERNAME}fontrange = $FONTRANGE;
