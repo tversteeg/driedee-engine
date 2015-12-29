@@ -9,15 +9,22 @@ if [ $# -ne 1 ]
 fi
 
 fc-list | grep -q "$1" || { echo "$1 is not a valid font" ; exit 1 ; }
+fc-list | grep "$1" >> /tmp/matchingfonts.txt
 
-FONT=$(fc-list | grep "$1" | head -1 | sed 's/:.*//')
+# Skip slanted fonts
+while : ; do
+	FONT=$(cat /tmp/matchingfonts.txt | head -1 | sed 's/:.*//')
+	QUERY=$(fc-query "$FONT")
+	NAME=$(echo "$QUERY" | grep "family" | sed 's/.*"\(.*\)"[^"]*$/\1/')
+	HEIGHT=$(echo "$QUERY" | grep "pixelsize" | grep -Po '\d+')
+	SLANT=$(echo "$QUERY" | grep "slant" | grep -Po '\d+')
+	sed -i '1d' /tmp/matchingfonts.txt
+	[[ $SLANT > 0 ]] || break
+done
 
-QUERY=$(fc-query "$FONT")
+rm /tmp/matchingfonts.txt
 
-#echo "$QUERY"
-
-NAME=$(echo "$QUERY" | grep "family" | sed 's/.*"\(.*\)"[^"]*$/\1/')
-HEIGHT=$(echo "$QUERY" | grep "pixelsize" | grep -Po '\d+')
+# echo "$QUERY"
 
 convert -list font | grep -q $NAME || { echo "Can not find font in ImageMagick cache" ; exit 1 ; }
 
@@ -25,21 +32,25 @@ convert -list font | grep -q $NAME || { echo "Can not find font in ImageMagick c
 convert -compress None -font "$FONT" -pointsize $HEIGHT label:"A" /tmp/sizes.pbm
 sed -i '1d' /tmp/sizes.pbm
 
-# Extract size of the image
-TEXTSIZES=$(head -1 /tmp/sizes.pbm)
-SIZES=(${TEXTSIZES// / })
-
 FONTSTART=33
 FONTEND=127
 FONTRANGE=$(($FONTEND - $FONTSTART))
 
-IMGWIDTH=$(($FONTRANGE * (${SIZES[0]} - 2)))
+# Extract size of the image
+TEXTSIZES=$(head -1 /tmp/sizes.pbm)
+rm /tmp/sizes.pbm
+SIZES=(${TEXTSIZES// / })
+
+REALWIDTH=$((${SIZES[0]} - 2))
+IMGWIDTH=$(($FONTRANGE * $REALWIDTH))
 
 STRING=$(printf $(printf '\%o' {33..127}))
 # Create a image with the whole array of letters
 echo -n "$STRING" | convert -compress None \
 	-font "$FONT" -pointsize $HEIGHT -size "${IMGWIDTH}x$HEIGHT" \
 	caption:@- /tmp/output.pbm
+
+#cp /tmp/output.pbm preview.pbm
 
 # Remove header
 sed -i '1,2d' /tmp/output.pbm
@@ -50,7 +61,7 @@ OUTPUTFILENAME="pf_$LOWERNAME.h"
 # Generate C header file
 echo -e \	"// Generated font file
 static unsigned int ${LOWERNAME}fonttotalwidth = $IMGWIDTH;
-static unsigned int ${LOWERNAME}fontwidth = $((${SIZES[0]} - 2));
+static unsigned int ${LOWERNAME}fontwidth = $REALWIDTH;
 static unsigned int ${LOWERNAME}fontheight = $HEIGHT;
 static char ${LOWERNAME}fontstart = $FONTSTART;
 static char ${LOWERNAME}fontrange = $FONTRANGE;
@@ -58,10 +69,8 @@ static char ${LOWERNAME}fontdata[] = {
 	" > $OUTPUTFILENAME
 
 sed 's/ /,/g' /tmp/output.pbm >> $OUTPUTFILENAME
+rm /tmp/output.pbm
 
 echo -e "\n};" >> $OUTPUTFILENAME
 
-echo -e "Font header $NAME ($OUTPUTFILENAME) created\n\tglyph size: $((${SIZES[0]} - 2))x$HEIGHT\n\twidth: $IMGWIDTH"
-
-rm /tmp/sizes.pbm
-rm /tmp/output.pbm
+echo -e "Font header $NAME ($OUTPUTFILENAME) created\n\tglyph size: ${REALWIDTH}x$HEIGHT\n\twidth: $IMGWIDTH"
