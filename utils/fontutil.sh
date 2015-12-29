@@ -3,9 +3,8 @@
 convert -version > /dev/null || { echo "ImageMagick is not installed" ; exit 1 ; }
 
 if [ $# -ne 1 ]
-  then
-    echo "Pass the font name to convert as the first argument" ;
-		exit 1
+then
+	echo "Pass the font name to convert as the first argument" ; exit 1
 fi
 
 fc-list | grep -q "$1" || { echo "$1 is not a valid font" ; exit 1 ; }
@@ -15,18 +14,25 @@ fc-list | grep "$1" >> /tmp/matchingfonts.txt
 while : ; do
 	FONT=$(cat /tmp/matchingfonts.txt | head -1 | sed 's/:.*//')
 	QUERY=$(fc-query "$FONT")
-	NAME=$(echo "$QUERY" | grep "family" | sed 's/.*"\(.*\)"[^"]*$/\1/')
-	HEIGHT=$(echo "$QUERY" | grep "pixelsize" | grep -Po '\d+')
-	SLANT=$(echo "$QUERY" | grep "slant" | grep -Po '\d+')
+	SLANT=$(echo "$QUERY" | grep "slant:" | grep -Po '\d+')
 	sed -i '1d' /tmp/matchingfonts.txt
 	[[ $SLANT > 0 ]] || break
 done
+
+echo "$QUERY"
+
+NAME=$(echo "$QUERY" | grep "family:" | sed 's/.*"\(.*\)"[^"]*$/\1/')
+HEIGHT=$(echo "$QUERY" | grep "pixelsize:" | grep -Po '\d+')
+if [[ $HEIGHT < 4 ]]
+then
+	HEIGHT=32
+fi
 
 rm /tmp/matchingfonts.txt
 
 # echo "$QUERY"
 
-convert -list font | grep -q $NAME || { echo "Can not find font in ImageMagick cache" ; exit 1 ; }
+convert -list font | grep -q "$NAME" || { echo "Can not find font in ImageMagick cache" ; exit 1 ; }
 
 # Get the actual image width
 convert -compress None -font "$FONT" -pointsize $HEIGHT label:"A" /tmp/sizes.pbm
@@ -50,12 +56,12 @@ echo -n "$STRING" | convert -compress None \
 	-font "$FONT" -pointsize $HEIGHT -size "${IMGWIDTH}x$HEIGHT" \
 	caption:@- /tmp/output.pbm
 
-#cp /tmp/output.pbm preview.pbm
+# cp /tmp/output.pbm preview.pbm
 
 # Remove header
 sed -i '1,2d' /tmp/output.pbm
 
-LOWERNAME=$(echo $NAME | tr '[:upper:]' '[:lower:]')
+LOWERNAME=$(echo $NAME | tr -d '[[:space:]]' | tr '[:upper:]' '[:lower:]')
 OUTPUTFILENAME="pf_$LOWERNAME.h"
 
 # Generate C header file
