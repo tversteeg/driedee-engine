@@ -10,15 +10,6 @@ fi
 fc-list | grep -q "$1" || { echo "$1 is not a valid font" ; exit 1 ; }
 fc-list | grep "$1" >> /tmp/matchingfonts.txt
 
-# Skip slanted fonts
-while : ; do
-	FONT=$(cat /tmp/matchingfonts.txt | head -1 | sed 's/:.*//')
-	QUERY=$(fc-query "$FONT")
-	SLANT=$(echo "$QUERY" | grep "slant:" | grep -Po '\d+')
-	sed -i '1d' /tmp/matchingfonts.txt
-	[[ $SLANT > 0 ]] || break
-done
-
 FONTSTART=33
 FONTEND=126
 FONTRANGE=$(($FONTEND - $FONTSTART))
@@ -57,23 +48,29 @@ for c in \"$STRINGQUOTED\":
 print('Monospace')
 " > /tmp/monofacecheck.py
 
-# Skip non-monospaced fonts
+# Skip slanted & non-monospaced fonts
 while : ; do
-	MONOSPACED=$(python /tmp/monofacecheck.py "$FONT")
+	if [[ ! -s /tmp/matchingfonts.txt ]] ; then
+		rm /tmp/matchingfonts.txt
+		echo "Could not find valid font"
+		exit 1
+	fi
+
 	FONT=$(cat /tmp/matchingfonts.txt | head -1 | sed 's/:.*//')
 	sed -i '1d' /tmp/matchingfonts.txt
-	[ -s /tmp/matchingfonts.txt ] || break
+
+	QUERY=$(fc-query "$FONT")
+	SLANT=$(echo "$QUERY" | grep "slant:" | grep -Po '\d+')
+	[[ $SLANT > 0 ]] || continue
+
+	MONOSPACED=$(python /tmp/monofacecheck.py "$FONT" 2> /dev/null)
 	if [ "$MONOSPACED" == "Monospace" ]; then
 		break
 	fi
 done
 
-rm /tmp/matchingfonts.txt
 rm /tmp/monofacecheck.py
-
-if [ "$MONOSPACED" != "Monospace" ]; then
-	echo "Could not find monospaced font" ; exit 1 ;
-fi
+rm /tmp/matchingfonts.txt
 
 NAME=$(echo "$QUERY" | grep "family:" | sed 's/.*"\(.*\)"[^"]*$/\1/')
 HEIGHT=$(echo "$QUERY" | grep "pixelsize:" | grep -Po '\d+')

@@ -18,7 +18,7 @@
 #include "l_console.h"
 #include "g_commands.h"
 #include "g_game.h"
-#include "pf_tamsyn.h"
+#include "pf_droidsanshebrew.h"
 
 GLuint gltex;
 texture_t screentex;
@@ -54,8 +54,8 @@ int main(int argc, char **argv)
 	screenwidth = 800;
 	screenheight = 600;
 
-	initFont(&font, tamsynfonttotalwidth, tamsynfontwidth, tamsynfontheight);
-	loadFont(&font, tamsynfontstart, (bool*)tamsynfontdata);
+	initFont(&font, droidsanshebrewfonttotalwidth, droidsanshebrewfontwidth, droidsanshebrewfontheight);
+	loadFont(&font, droidsanshebrewfontstart, (bool*)droidsanshebrewfontdata);
 
 	initTexture(&screentex, screenwidth, screenheight);
 	initConsole(&console, screenwidth, screenheight >> 1);
