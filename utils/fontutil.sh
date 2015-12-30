@@ -23,16 +23,18 @@ import fontforge
 
 font = fontforge.open(sys.argv[1])
 
-width = -1
+char = -1
 for c in \"$STRINGQUOTED\":
 	try:
 		font[c]
 	except TypeError:
 		continue
+	char = c
 
-	width = font[c].width
+width = font[char].width
 
-if width < -1:
+if char < 0:
+	font.close()
 	sys.exit(1)
 
 for c in \"$STRINGQUOTED\":
@@ -42,10 +44,11 @@ for c in \"$STRINGQUOTED\":
 		continue
 
 	if font[c].width != width:
-		print('Varspace')
+		font.close()
 		sys.exit(1)
 
-print('Monospace')
+print font[char].width
+font.close()
 " > /tmp/monofacecheck.py
 
 # Skip slanted & non-monospaced fonts
@@ -63,26 +66,27 @@ while : ; do
 	SLANT=$(echo "$QUERY" | grep "slant:" | grep -Po '\d+')
 	[[ $SLANT -eq 0 ]] || continue
 
-	MONOSPACED=$(python /tmp/monofacecheck.py "$FONT" 2> /dev/null)
-	if [ "$MONOSPACED" == "Monospace" ]; then
-		break
-	fi
+	MONOSPACED=$(python /tmp/monofacecheck.py "$FONT") || continue
+	break
 done
 
 rm /tmp/monofacecheck.py
 rm /tmp/matchingfonts.txt
 
 NAME=$(echo "$QUERY" | grep "family:" | sed 's/.*"\(.*\)"[^"]*$/\1/')
-HEIGHT=$(echo "$QUERY" | grep "pixelsize:" | grep -Po '\d+')
-if [[ $HEIGHT < 4 ]]
-then
-	HEIGHT=32
+
+if [ $(echo "$QUERY" | grep -q "pixelsize:") ]; then
+	HEIGHT=$(echo "$QUERY" | grep "pixelsize:" | grep -Po '\d+')
+else
+	TEXTHEIGHT=$(echo "$QUERY" | grep "size" | grep -Po '\d+')
+	TEXTHEIGHTARR=(${TEXTHEIGHT// / })
+	HEIGHT=${TEXTHEIGHTARR[1]}
 fi
 
 convert -list font | grep -q "$NAME" || { echo "Can not find font in ImageMagick cache" ; exit 1 ; }
 
 # Get the actual image width
-convert -compress None -style "Normal" -font "$FONT" -pointsize $HEIGHT label:"A" /tmp/sizes.pbm
+convert -compress None -font "$FONT" -pointsize $HEIGHT label:"A" /tmp/sizes.pbm
 sed -i '1d' /tmp/sizes.pbm
 
 # Extract size of the image
@@ -94,8 +98,7 @@ REALWIDTH=$((${SIZES[0]} - 2))
 IMGWIDTH=$(($FONTRANGE * $REALWIDTH))
 # Create a image with the whole array of letters
 echo -n "$STRING" | convert -compress None \
-	-font "$FONT" -style "Normal" \
-	-pointsize $HEIGHT -size "${IMGWIDTH}x$HEIGHT" \
+	-font "$FONT"	-pointsize $HEIGHT -size "${IMGWIDTH}x$HEIGHT" \
 	caption:@- /tmp/output.pbm
 
 # cp /tmp/output.pbm preview.pbm
