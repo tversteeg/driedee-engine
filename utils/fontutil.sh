@@ -19,7 +19,61 @@ while : ; do
 	[[ $SLANT > 0 ]] || break
 done
 
-echo "$QUERY"
+FONTSTART=33
+FONTEND=126
+FONTRANGE=$(($FONTEND - $FONTSTART))
+
+STRING=$(printf $(printf '\%o' {33..126}))
+STRINGQUOTED=$(echo "$STRING" | sed 's/\"/\\\"/')
+
+echo "
+import sys
+import fontforge
+
+font = fontforge.open(sys.argv[1])
+
+width = -1
+for c in \"$STRINGQUOTED\":
+	try:
+		font[c]
+	except TypeError:
+		continue
+
+	width = font[c].width
+
+if width < -1:
+	sys.exit(1)
+
+for c in \"$STRINGQUOTED\":
+	try:
+		font[c]
+	except TypeError:
+		continue
+
+	if font[c].width != width:
+		print('Varspace')
+		sys.exit(1)
+
+print('Monospace')
+" > /tmp/monofacecheck.py
+
+# Skip non-monospaced fonts
+while : ; do
+	MONOSPACED=$(python /tmp/monofacecheck.py "$FONT")
+	FONT=$(cat /tmp/matchingfonts.txt | head -1 | sed 's/:.*//')
+	sed -i '1d' /tmp/matchingfonts.txt
+	[ -s /tmp/matchingfonts.txt ] || break
+	if [ "$MONOSPACED" == "Monospace" ]; then
+		break
+	fi
+done
+
+rm /tmp/matchingfonts.txt
+rm /tmp/monofacecheck.py
+
+if [ "$MONOSPACED" != "Monospace" ]; then
+	echo "Could not find monospaced font" ; exit 1 ;
+fi
 
 NAME=$(echo "$QUERY" | grep "family:" | sed 's/.*"\(.*\)"[^"]*$/\1/')
 HEIGHT=$(echo "$QUERY" | grep "pixelsize:" | grep -Po '\d+')
@@ -28,19 +82,11 @@ then
 	HEIGHT=32
 fi
 
-rm /tmp/matchingfonts.txt
-
-# echo "$QUERY"
-
 convert -list font | grep -q "$NAME" || { echo "Can not find font in ImageMagick cache" ; exit 1 ; }
 
 # Get the actual image width
 convert -compress None -font "$FONT" -pointsize $HEIGHT label:"A" /tmp/sizes.pbm
 sed -i '1d' /tmp/sizes.pbm
-
-FONTSTART=33
-FONTEND=127
-FONTRANGE=$(($FONTEND - $FONTSTART))
 
 # Extract size of the image
 TEXTSIZES=$(head -1 /tmp/sizes.pbm)
@@ -49,8 +95,6 @@ SIZES=(${TEXTSIZES// / })
 
 REALWIDTH=$((${SIZES[0]} - 2))
 IMGWIDTH=$(($FONTRANGE * $REALWIDTH))
-
-STRING=$(printf $(printf '\%o' {33..127}))
 # Create a image with the whole array of letters
 echo -n "$STRING" | convert -compress None \
 	-font "$FONT" -pointsize $HEIGHT -size "${IMGWIDTH}x$HEIGHT" \
