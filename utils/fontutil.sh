@@ -61,7 +61,7 @@ while : ; do
 
 	QUERY=$(fc-query "$FONT")
 	SLANT=$(echo "$QUERY" | grep "slant:" | grep -Po '\d+')
-	[[ $SLANT > 0 ]] || continue
+	[[ $SLANT -eq 0 ]] || continue
 
 	MONOSPACED=$(python /tmp/monofacecheck.py "$FONT" 2> /dev/null)
 	if [ "$MONOSPACED" == "Monospace" ]; then
@@ -82,7 +82,7 @@ fi
 convert -list font | grep -q "$NAME" || { echo "Can not find font in ImageMagick cache" ; exit 1 ; }
 
 # Get the actual image width
-convert -compress None -font "$FONT" -pointsize $HEIGHT label:"A" /tmp/sizes.pbm
+convert -compress None -style "Normal" -font "$FONT" -pointsize $HEIGHT label:"A" /tmp/sizes.pbm
 sed -i '1d' /tmp/sizes.pbm
 
 # Extract size of the image
@@ -94,7 +94,8 @@ REALWIDTH=$((${SIZES[0]} - 2))
 IMGWIDTH=$(($FONTRANGE * $REALWIDTH))
 # Create a image with the whole array of letters
 echo -n "$STRING" | convert -compress None \
-	-font "$FONT" -pointsize $HEIGHT -size "${IMGWIDTH}x$HEIGHT" \
+	-font "$FONT" -style "Normal" \
+	-pointsize $HEIGHT -size "${IMGWIDTH}x$HEIGHT" \
 	caption:@- /tmp/output.pbm
 
 # cp /tmp/output.pbm preview.pbm
