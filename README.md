@@ -1,4 +1,4 @@
-rogueliek
+driedee engine
 =========
 A Duke Nukem 3D-like game engine which will eventually result in a prototype for a possbily roguelike game.
 
