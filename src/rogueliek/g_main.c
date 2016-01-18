@@ -13,12 +13,11 @@
 #include <GL/glew.h>
 #endif
 
-#include "l_colors.h"
-#include "l_draw.h"
-#include "l_console.h"
+#include <rogueliek/colors.h>
+#include <rogueliek/draw.h>
 #include "g_commands.h"
 #include "g_game.h"
-#include "pf_droidsanshebrew.h"
+#include "pf_tamsyn.h"
 
 GLuint gltex;
 texture_t screentex;
@@ -54,11 +53,11 @@ int main(int argc, char **argv)
 	screenwidth = 800;
 	screenheight = 600;
 
-	initFont(&font, droidsanshebrewfonttotalwidth, droidsanshebrewfontwidth, droidsanshebrewfontheight);
-	loadFont(&font, droidsanshebrewfontstart, (bool*)droidsanshebrewfontdata);
+	initFont(&font, tamsynfonttotalwidth, tamsynfontwidth, tamsynfontheight);
+	loadFont(&font, tamsynfontstart, (bool*)tamsynfontdata);
 
 	initTexture(&screentex, screenwidth, screenheight);
-	initConsole(&console, screenwidth, screenheight >> 1);
+	initConsole(&console, screenwidth, screenheight / 1.5);
 	setConsoleFont(&console, &font);
 
 	printConsole(&console, "PRESS \\RTAB\\d TO VIEW AVAILABLE COMMANDS, AND \\RF1\\d TO TOGGLE THE CONSOLE\n");

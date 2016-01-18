@@ -2,8 +2,8 @@
 
 #include <ccore/event.h>
 
-#include "l_draw.h"
-#include "l_console.h"
+#include <rogueliek/draw.h>
+#include <rogueliek/console.h>
 
 void initGameWorld(console_t *console);
 void updateGameWorld();

@@ -1,9 +1,9 @@
-#include "l_console.h"
+#include <rogueliek/console.h>
 
 #include <string.h>
 #include <stdio.h>
 
-#include "l_colors.h"
+#include <rogueliek/colors.h>
 
 static int strtoarr(char *str, char **res)
 {

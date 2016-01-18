@@ -2,9 +2,10 @@
 
 #include <math.h>
 
-#include "l_vector.h"
-#include "l_render.h"
-#include "l_console.h"
+#include <rogueliek/vector.h>
+#include <rogueliek/render.h>
+#include <rogueliek/console.h>
+
 #include "g_map.h"
 
 #define PLAYER_DAMPING 0.9

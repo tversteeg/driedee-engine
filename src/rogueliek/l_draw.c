@@ -1,7 +1,7 @@
-#include "l_draw.h"
+#include <rogueliek/draw.h>
 
-#include "l_colors.h"
-#include "l_defaultfont.h"
+#include <rogueliek/colors.h>
+#include <rogueliek/defaultfont.h>
 
 #include <string.h>
 #include <stdio.h>

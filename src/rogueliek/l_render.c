@@ -1,10 +1,10 @@
-#include "l_render.h"
+#include <rogueliek/render.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 
-#include "l_colors.h"
+#include <rogueliek/colors.h>
 
 #define MAX_SECTOR_STACK 32
 

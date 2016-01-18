@@ -1,4 +1,4 @@
-#include "l_vector.h"
+#include <rogueliek/vector.h>
 
 #include <math.h>
 

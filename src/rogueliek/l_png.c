@@ -1,6 +1,6 @@
-#include "l_png.h"
+#include <rogueliek/png.h>
 
-#include "l_colors.h"
+#include <rogueliek/colors.h>
 
 #include <png.h>
 
