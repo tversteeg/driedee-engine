@@ -2,10 +2,13 @@
 #define _GNU_SOURCE
 #endif
 
+#include <stdio.h>
+
 #include <ccore/display.h>
 #include <ccore/window.h>
 #include <ccore/opengl.h>
 #include <ccore/time.h>
+#include <ccore/file.h>
 
 #ifdef WINDOWS
 #include <gl/GL.h>
@@ -20,10 +23,33 @@
 
 GLuint gltex;
 texture_t screentex;
-cctTerm console;
-font_t font;
+cctTerm term;
+ccfFont font;
 
 unsigned int screenwidth, screenheight;
+
+void loadFont(const char *file)
+{
+	unsigned flen = ccFileInfoGet(file).size;
+
+	FILE *fp = fopen(file, "rb");
+	if(!fp){
+		fprintf(stderr, "Can not open file: %s\n", file);
+		exit(1);
+	}
+
+	uint8_t *bin = (uint8_t*)malloc(flen);
+	fread(bin, 1, flen, fp);
+
+	fclose(fp);
+
+	if(ccfBinToFont(&font, bin, flen) == -1){
+		fprintf(stderr, "Binary font failed: invalid version\n");
+		exit(1);
+	}
+
+	free(bin);
+}
 
 void renderTexture(texture_t tex)
 {
@@ -52,19 +78,19 @@ int main(int argc, char **argv)
 	screenwidth = 800;
 	screenheight = 600;
 
-	initFont(&font, tamsynfonttotalwidth, tamsynfontwidth, tamsynfontheight);
-	loadFont(&font, tamsynfontstart, (bool*)tamsynfontdata);
+	loadFont("font.ccf");
 
 	initTexture(&screentex, screenwidth, screenheight);
-	initConsole(&console, screenwidth, screenheight / 1.5);
-	setConsoleFont(&console, &font);
 
-	printConsole(&console, "PRESS \\RTAB\\d TO VIEW AVAILABLE COMMANDS, AND \\RF1\\d TO TOGGLE THE CONSOLE\n");
+	cctCreate(&term, screenwidth, screenheight);
+	cctSetFont(&term, &font);
 
-	mapConsoleCmds(&console);
+	cctPrintf(&term, "PRESS TAB TO VIEW AVAILABLE COMMANDS, AND F1 TO TOGGLE THE CONSOLE\n");
 
-	initGameWorld(&console);
-	
+	mapConsoleCmds(&term);
+
+	initGameWorld(&term);
+
 	ccDisplayInitialize();
 
 	ccWindowCreate((ccRect){0, 0, screenwidth, screenheight}, "Rogueliek", 0);
@@ -84,6 +110,7 @@ int main(int argc, char **argv)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
+	bool termactive = false;
 	bool loop = true;
 	while(loop){
 		while(ccWindowEventPoll()){
@@ -96,35 +123,40 @@ int main(int argc, char **argv)
 					screenwidth = ccWindowGetRect().width;
 					screenheight = ccWindowGetRect().height;
 					resizeTexture(&screentex, screenwidth, screenheight);
-					resizeConsole(&console, screenwidth, screenheight >> 2);
+					cctResize(&term, screenwidth, screenheight >> 2);
 					break;
 				case CC_EVENT_KEY_DOWN:
 					if(event.keyCode == CC_KEY_ESCAPE){
 						loop = false;
 					}else if(event.keyCode == CC_KEY_F1){
-						console.active = !console.active;
+						termactive = !termactive;
 					}
-					if(console.active){
-						inputConsole(&console, event);
-					}else{
+					if(!termactive){
 						inputGameWorld(event);
 					}
 					break;
 				case CC_EVENT_KEY_UP:
-					if(!console.active){
+					if(!termactive){
 						inputGameWorld(event);
 					}
 					break;
 				default: break;
+			}
+			if(termactive){
+				cctHandleEvent(&term, event);
 			}
 		}
 
 		updateGameWorld();
 
 		renderGameWorld(&screentex);
-		renderConsole(&console, &screentex);
 		renderTexture(screentex);
 		clearTexture(&screentex, COLOR_BLACK);
+
+		if(termactive){
+			cctRender(&term, gltex);
+		}
+
 		ccGLBuffersSwap();
 
 		ccTimeDelay(6);

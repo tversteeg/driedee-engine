@@ -10,7 +10,8 @@ BINDIR:=bin
 RM:=rm -f
 AR:=ar rcs
 CFLAGS:=-I$(INCDIR) -g -Wall -Wextra -O3 -DCC_USE_ALL
-LDLIBS:=-lGL -lGLU -lGLEW -lm -lccore -lccfont -lccterm -lpng
+LDLIBS:=-lm -lccore -lccFont -lccTerm -lpng
+GLDLIBS:=-L$(LIBDIR) -l$(NAME) -lGL -lGLU -lGLEW -lm -lccore -lccFont -lccTerm -lpng
 
 LSRCS:=$(wildcard ./$(SOURCEDIR)/l_*.c)
 LOBJS:=$(subst .c,.o,$(LSRCS))
@@ -23,8 +24,8 @@ all: $(NAME)
 
 .PHONY: $(NAME)
 $(NAME): $(LIBFILE) $(GOBJS) .depend
-	@mkdir $(BINDIR)
-	$(CC) $(LDFLAGS) -o $(NAME) $(OBJS) $(LDLIBS)
+	@mkdir -p $(BINDIR)
+	$(CC) $(LDFLAGS) -o $(BINDIR)/$(NAME) $(GOBJS) $(GLDLIBS)
 
 $(LIBFILE): $(LOBJS) .depend
 	@mkdir -p $(LIBDIR)
