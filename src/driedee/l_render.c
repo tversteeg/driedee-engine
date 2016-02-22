@@ -1,10 +1,10 @@
-#include <rogueliek/render.h>
+#include <driedee/render.h>
 
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
 
-#include <rogueliek/colors.h>
+#include <driedee/colors.h>
 
 #define MAX_SECTOR_STACK 32
 

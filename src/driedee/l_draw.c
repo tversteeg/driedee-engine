@@ -1,7 +1,6 @@
-#include <rogueliek/draw.h>
+#include <driedee/draw.h>
 
-#include <rogueliek/colors.h>
-#include <rogueliek/defaultfont.h>
+#include <driedee/colors.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -64,31 +63,6 @@ void initTexture(texture_t *tex, unsigned int width, unsigned int height)
 	tex->width = width;
 	tex->height = height;
 	tex->pixels = (pixel_t*)calloc(width * height, sizeof(pixel_t));
-}
-
-void initFont(font_t *font, unsigned int totalwidth, unsigned int width, unsigned int height)
-{
-	font->totalwidth = totalwidth;
-	font->width = width;
-	font->height = height;
-	font->pixels = (bool*)calloc(totalwidth * height, sizeof(bool));
-}
-
-void loadFont(font_t *font, char start, const bool *pixels)
-{
-	font->letters = font->totalwidth / font->width;
-	font->start = start;
-	memcpy(font->pixels, pixels, (font->totalwidth * font->height) * sizeof(bool));
-}
-
-font_t *loadDefaultFont()
-{
-	font_t *font = (font_t*)malloc(sizeof(font_t));
-
-	initFont(font, defaultfonttotalwidth, defaultfontwidth, defaultfontheight);
-	loadFont(font, '!', (bool*)defaultfontdata);
-
-	return font;
 }
 
 void clearTexture(texture_t *tex, pixel_t pixel)
@@ -201,65 +175,6 @@ void drawRect(texture_t *tex, xy_t p, unsigned int width, unsigned int height, p
 	unsigned int i;
 	for(i = p.y; i < p.y + height; i++){
 		hline(tex, i, p.x, p.x + width, pixel);
-	}
-}
-
-void drawLetter(texture_t *tex, const font_t *font, char letter, int x, int y, pixel_t pixel)
-{
-	char todraw = letter - font->start;
-	if(todraw < 0 || todraw > font->letters){
-		return;
-	}
-	int drawpos = todraw * font->width;
-
-	int i;
-	for(i = 0; i < font->width; i++){
-		int j;
-		for(j = 0; j < font->height; j++){
-			if(font->pixels[i + drawpos + j * font->totalwidth] == true){
-				drawPixel(tex, x + i, y + j, pixel);
-			}
-		}
-	}
-}
-
-void drawString(texture_t *tex, const font_t *font, const char *string, int x, int y, pixel_t pixel)
-{
-	int i;
-
-	unsigned int lx = x;
-	unsigned int ly = y;
-	pixel_t color = pixel;
-	for(i = 0; string[i] != '\0'; i++){
-		if(string[i] == '\n'){
-			lx = x;
-			ly += font->height;
-		}else if(string[i] == '\t'){
-			lx += font->width * 2;
-		}else if(string[i] == '\\'){
-			switch(string[i + 1]){
-				case 'R':
-					color = COLOR_RED;
-					break;
-				case 'B':
-					color = COLOR_BLUE;
-					break;
-				case 'G':
-					color = COLOR_GREEN;
-					break;
-				default:
-					color = pixel;
-					break;
-			}
-			i++;
-		}else{
-			if(lx > tex->width - font->width){
-				lx = x;
-				ly += font->height;
-			}
-			drawLetter(tex, font, string[i], lx, ly, color);
-			lx += font->width;
-		}
 	}
 }
 

@@ -2,9 +2,8 @@
 
 #include <math.h>
 
-#include <rogueliek/vector.h>
-#include <rogueliek/render.h>
-#include <rogueliek/console.h>
+#include <driedee/vector.h>
+#include <driedee/render.h>
 
 #include "g_map.h"
 
@@ -39,8 +38,8 @@ static void updatePlayer()
 	}
 }
 
-static console_t *_con;
-void initGameWorld(console_t *console)
+static cctTerm *_con;
+void initGameWorld(cctTerm *console)
 {
 	map_t *map = createMap(20, 20);
 

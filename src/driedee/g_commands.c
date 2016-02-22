@@ -2,19 +2,19 @@
 
 #include <stdlib.h>
 
-#include <rogueliek/render.h>
+#include <driedee/render.h>
 
-static void c_exit(console_t *con, int argc, char **argv)
+static void c_exit(cctTerm *con, int argc, char **argv)
 {
 	exit(0);
 }
 
-static void c_help(console_t *con, int argc, char **argv)
+static void c_help(cctTerm *con, int argc, char **argv)
 {
 	printConsole(con, "Press tab to view commands\n");
 }
 
-static void c_addSector(console_t *con, int argc, char **argv)
+static void c_addSector(cctTerm *con, int argc, char **argv)
 {
 	if(argc == 3){
 		sectp_t sectid = createSector(atoi(argv[2]), atoi(argv[1]));
@@ -27,7 +27,7 @@ static void c_addSector(console_t *con, int argc, char **argv)
 	}
 }
 
-static void c_addVert(console_t *con, int argc, char **argv)
+static void c_addVert(cctTerm *con, int argc, char **argv)
 {
 	if(argc == 4){
 		addVertToSector((p_t){atoi(argv[1]), atoi(argv[2])}, atoi(argv[3]));
@@ -40,7 +40,7 @@ static void c_addVert(console_t *con, int argc, char **argv)
 	}
 }
 
-void mapConsoleCmds(console_t *console)
+void mapConsoleCmds(cctTerm *console)
 {
 	mapCmdConsole(console, "sectadd", c_addSector);
 	mapCmdConsole(console, "vertadd", c_addVert);

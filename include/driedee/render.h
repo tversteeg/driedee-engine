@@ -4,8 +4,8 @@
 
 #include <ccVector/ccVector.h>
 
-#include <rogueliek/vector.h>
-#include <rogueliek/draw.h>
+#include <driedee/vector.h>
+#include <driedee/draw.h>
 
 #define WALL -1
 

@@ -1,5 +1,5 @@
 #pragma once
 
-#include <rogueliek/console.h>
+#include <ccTerm/ccTerm.h>
 
-void mapConsoleCmds(console_t *console);
+void mapConsoleCmds(cctTerm *console);

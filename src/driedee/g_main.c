@@ -13,15 +13,14 @@
 #include <GL/glew.h>
 #endif
 
-#include <rogueliek/colors.h>
-#include <rogueliek/draw.h>
+#include <driedee/colors.h>
+#include <driedee/draw.h>
 #include "g_commands.h"
 #include "g_game.h"
-#include "pf_tamsyn.h"
 
 GLuint gltex;
 texture_t screentex;
-console_t console;
+cctTerm console;
 font_t font;
 
 unsigned int screenwidth, screenheight;

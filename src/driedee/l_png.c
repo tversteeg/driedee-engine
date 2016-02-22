@@ -1,6 +1,6 @@
-#include <rogueliek/png.h>
+#include <driedee/png.h>
 
-#include <rogueliek/colors.h>
+#include <driedee/colors.h>
 
 #include <png.h>
 
