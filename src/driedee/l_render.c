@@ -8,6 +8,35 @@
 
 #define MAX_SECTOR_STACK 32
 
+#define Z_NEAR 1e-4f
+#define Z_FAR 5.0f
+#define SIDE_NEAR 1e-5f
+#define SIDE_FAR 20.0f
+
+// Taken from Bisqwit: http://bisqwit.iki.fi/jutut/kuvat/programming_examples/portalrendering.html
+#define clamp(a, mi, ma)                                                       \
+  min(max(a, mi), ma) // clamp: Clamp value into set range.
+#define vxs(x0, y0, x1, y1)                                                    \
+  ((x0) * (y1) - (x1) * (y0)) // vxs: Vector cross product
+// Overlap:  Determine whether the two number ranges overlap.
+#define Overlap(a0, a1, b0, b1)                                                \
+  (min(a0, a1) <= max(b0, b1) && min(b0, b1) <= max(a0, a1))
+// IntersectBox: Determine whether two 2D-boxes intersect.
+#define IntersectBox(x0, y0, x1, y1, x2, y2, x3, y3)                           \
+  (Overlap(x0, x1, x2, x3) && Overlap(y0, y1, y2, y3))
+// PointSide: Determine which side of a line the point is on. Return value: <0,
+// =0 or >0.
+#define PointSide(px, py, x0, y0, x1, y1)                                      \
+  vxs((x1) - (x0), (y1) - (y0), (px) - (x0), (py) - (y0))
+// Intersect: Calculate the point of intersection between two lines.
+#define Intersect(x1, y1, x2, y2, x3, y3, x4, y4)                              \
+  ((xy_t){vxs(vxs(x1, y1, x2, y2), (x1) - (x2), vxs(x3, y3, x4, y4),      \
+                   (x3) - (x4)) /                                              \
+                   vxs((x1) - (x2), (y1) - (y2), (x3) - (x4), (y3) - (y4)),    \
+               vxs(vxs(x1, y1, x2, y2), (y1) - (y2), vxs(x3, y3, x4, y4),      \
+                   (y3) - (y4)) /                                              \
+                   vxs((x1) - (x2), (y1) - (y2), (x3) - (x4), (y3) - (y4))})
+
 typedef struct {
 	int32_t minx, maxx, miny, maxy;
 }	aabb_t;
@@ -156,15 +185,73 @@ static void renderMinimap(sectp_t sect, p_t camloc, v_t camangle)
 	renderMinimapSector(sect, camloc, true);
 }
 
-typedef struct {
-	wallp_t *walls, nwalls;
-} bunch_t;
+static inline xy_t worldToCam(p_t p, camera_t cam)
+{
+	xy_t c = {cam.xz[0] - p[0], cam.xz[1] - p[1]};
+
+	return (xy_t){cam.anglecos * c.x - cam.anglesin * c.y, cam.anglesin * c.x + cam.anglecos * c.y};
+}
+
+static void renderRooms(camera_t cam)
+{
+	bool visited[lastsect];
+	memset(visited, 0, lastsect * sizeof(visited[0]));
+
+	typedef struct {
+		sectp_t sect;
+		int sx1, sx2;
+	} _item;
+
+	_item queue[MAX_SECTOR_STACK];
+	_item *head = queue, *tail = queue;
+
+	*head = (_item){cam.sect, 0, tex->width - 1};
+	head++;
+
+	do{
+		_item item = *tail;
+		if(++tail == queue + MAX_SECTOR_STACK){
+			tail = queue;
+		}
+		if(visited[item.sect]){
+			continue;
+		}
+
+		// Render walls
+		wallp_t swall = s_fwall[item.sect], ewall = swall + s_nwalls[item.sect];
+		for(wallp_t w1 = swall, w2 = ewall - 1; w1 < ewall; w2 = w1++){
+			xy_t v1 = worldToCam(w_vert[w1], cam);
+			xy_t v2 = worldToCam(w_vert[w2], cam);
+
+			// Clip walls fully behind the player
+			if(v1.y < 0 && v2.y < 0){
+				continue;
+			}else if(v1.y < Z_NEAR){
+				xy_t i = Intersect(v1.x, v1.y, v2.x, v2.y, -SIDE_NEAR, Z_NEAR, -SIDE_FAR, Z_FAR);
+				if(i.y > 0){
+					v1 = i;
+				}else{
+					v1 = Intersect(v1.x, v1.y, v2.x, v2.y, SIDE_NEAR, Z_NEAR, SIDE_FAR, Z_FAR);
+				}
+			}else if(v2.y < Z_NEAR){
+				xy_t i = Intersect(v1.x, v1.y, v2.x, v2.y, -SIDE_NEAR, Z_NEAR, -SIDE_FAR, Z_FAR);
+				if(i.y > 0){
+					v2 = i;
+				}else{
+					v2 = Intersect(v1.x, v1.y, v2.x, v2.y, SIDE_NEAR, Z_NEAR, SIDE_FAR, Z_FAR);
+				}
+			}
+		}
+	}while(head != tail);
+}
 
 void renderFromSector(camera_t cam)
 {
 	renderMinimap(cam.sect, cam.xz, cam.pitch);
 
-	memset(s_visited, 0, lastsect * sizeof(s_visited[0]));
+	renderRooms(cam);
+
+	/*
 
 	xy_t camvec = {cos(cam.pitch), sin(cam.pitch)};
 
@@ -249,22 +336,8 @@ walladded:;
 		free(bunches[i].walls);
 	}
 	free(bunches);
-}
 
-static void createModelMatrix(camera_t *cam)
-{
-	ccVec3 translation;
-	translation.x = cam->xz[0];
-	translation.y = cam->y;
-	translation.z = cam->xz[1];
-	ccMat4x4SetTranslation(cam->modelm, translation);
-	ccMat4x4RotateY(cam->modelm, cam->yaw);
-	ccMat4x4RotateX(cam->modelm, cam->pitch);
-}
-
-void createPerspProjMatrix(camera_t *cam, v_t fov, v_t aspect, v_t znear, v_t zfar)
-{
-	ccMat4x4Perspective(cam->persm, fov, aspect, znear, zfar);
+	*/
 }
 
 void moveCamera(camera_t *cam, p_t xz, int32_t y)
@@ -272,8 +345,6 @@ void moveCamera(camera_t *cam, p_t xz, int32_t y)
 	cam->xz[0] = xz[0];
 	cam->xz[1] = xz[1];
 	cam->y = y;
-
-	createModelMatrix(cam);
 
 	cam->sect = getSector(xz, y);
 }
@@ -283,5 +354,6 @@ void rotateCamera(camera_t *cam, v_t angle)
 	cam->pitch = angle;
 	cam->yaw = 0;
 
-	createModelMatrix(cam);
+	cam->anglecos = cosf(angle);
+	cam->anglesin = sinf(angle);
 }

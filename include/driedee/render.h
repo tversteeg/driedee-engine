@@ -23,7 +23,7 @@ typedef struct {
 	v_t pitch, yaw;
 	sectp_t sect;
 
-	ccMat4x4 persm, modelm;
+	v_t anglesin, anglecos;
 } camera_t;
 
 sectp_t createSector(int16_t floor, int16_t ceil);
