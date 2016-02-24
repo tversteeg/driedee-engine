@@ -4,7 +4,7 @@ A Duke Nukem 3D-like game engine which will eventually result in a prototype for
 
 The progress is visually displayed in [this](http://www.youtube.com/playlist?list=PLFxtA9Al8RErx_kSD_-9Hrk9dkJBvwYU8) playlist.
 
-To install you need `libglew-dev libpng12-dev`
+To install you need `libccore-dev libccfont-dev libccterm-dev libglew-dev libpng12-dev`
 
 Pseudocode for renderring using sectors & edges (inspired by the Build Engine and @fabiensanglard his Chocolate Duke Nukem 3D, [article](http://fabiensanglard.net/duke3d/build_engine_internals.php)):
 
