@@ -214,6 +214,11 @@ static void renderRooms(camera_t cam)
 	v_t hfovf = 1.0f / (H_FOV * (v_t)tex->height);
 	v_t vfovf = 1.0f / (V_FOV * (v_t)tex->height);
 
+	int ytop[tex->width];
+	memset(ytop, 255, tex->width * sizeof(ytop[0]));
+	int ybot[tex->width];
+	memset(ybot, 0, tex->width * sizeof(ybot[0]));
+
 	do{
 		_item item = *tail;
 		if(++tail == queue + MAX_SECTOR_STACK){
@@ -265,6 +270,45 @@ static void renderRooms(camera_t cam)
 			if(neighbor >= 0){
 				nyceil = s_ceil[neighbor] - cam.y;
 				nyfloor = s_floor[neighbor] - cam.y;
+			}
+
+			v_t yscale1 = v1.y * vfovf;
+			v_t yscale2 = v2.y * vfovf;
+
+			// Project ceiling and floor heights onto the screen
+			int ybotl = (yceil + v1.y * cam.yaw) * yscale1;
+			int ytopl = (yfloor + v1.y * cam.yaw) * yscale1;
+			int ybotr = (yceil + v2.y * cam.yaw) * yscale2;
+			int ytopr = (yfloor + v2.y * cam.yaw) * yscale2;
+
+			// Project for the neighbor sector
+			int nybotl = (nyceil + v1.y * cam.yaw) * yscale1;
+			int nytopl = (nyfloor + v1.y * cam.yaw) * yscale1;
+			int nybotr = (nyceil + v2.y * cam.yaw) * yscale2;
+			int nytopr = (nyfloor + v2.y * cam.yaw) * yscale2;
+
+			int startx = max(x1, item.sx1);
+			int endx = max(x2, item.sx2);
+			for(int x = startx; x <= endx; x++){
+				int x2minx1 = x2 - x1;
+				// Z coordinate for lighting
+				int z = ((x - x1) * (v2.y - v1.y) / (x2 - x1) + v1.y) * 8;
+
+				int ya = (x - x1) * (ytopr - ytopl) / (x2 - x1) + ytopl;
+				int cya = clamp(ya, ytop[x], ybot[x]);
+				int yb = (x - x1) * (ybotr - ybotl) / (x2 - x1) + ybotl;
+				int cyb = clamp(yb, ytop[x], ybot[x]);
+
+				if(neighbor >= 0){
+					drawLine(tex, (xy_t){x, cya}, (xy_t){x, cyb}, (pixel_t){255, 0, 0});
+				}
+			}
+
+			if(neighbor >= 0 && endx >= startx && (head + MAX_SECTOR_STACK + 1 - tail) % MAX_SECTOR_STACK){
+				*head = (_item){neighbor, startx, endx};
+				if(++head == queue + MAX_SECTOR_STACK){
+					head = queue;
+				}
 			}
 		}
 		visited[item.sect] = true;
