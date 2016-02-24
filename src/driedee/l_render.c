@@ -13,6 +13,9 @@
 #define SIDE_NEAR 1e-5f
 #define SIDE_FAR 20.0f
 
+#define H_FOV 0.73f
+#define V_FOV 0.2f
+
 // Taken from Bisqwit: http://bisqwit.iki.fi/jutut/kuvat/programming_examples/portalrendering.html
 #define clamp(a, mi, ma)                                                       \
   min(max(a, mi), ma) // clamp: Clamp value into set range.
@@ -208,6 +211,9 @@ static void renderRooms(camera_t cam)
 	*head = (_item){cam.sect, 0, tex->width - 1};
 	head++;
 
+	v_t hfovf = 1.0f / (H_FOV * (v_t)tex->height);
+	v_t vfovf = 1.0f / (V_FOV * (v_t)tex->height);
+
 	do{
 		_item item = *tail;
 		if(++tail == queue + MAX_SECTOR_STACK){
@@ -223,7 +229,7 @@ static void renderRooms(camera_t cam)
 			xy_t v1 = worldToCam(w_vert[w1], cam);
 			xy_t v2 = worldToCam(w_vert[w2], cam);
 
-			// Clip walls fully behind the player
+			// Clip walls fully behind the player & find the intersection point when the walls are partially hidden
 			if(v1.y < 0 && v2.y < 0){
 				continue;
 			}else if(v1.y < Z_NEAR){
@@ -241,7 +247,27 @@ static void renderRooms(camera_t cam)
 					v2 = Intersect(v1.x, v1.y, v2.x, v2.y, SIDE_NEAR, Z_NEAR, SIDE_FAR, Z_FAR);
 				}
 			}
+
+			// Do perspective transformation
+			v_t xscale1 = v1.y * hfovf;
+			int x1 = texhw - (int)(v1.x * xscale1);
+			v_t xscale2 = v2.y * hfovf;
+			int x2 = texhw - (int)(v2.x * xscale2);
+			if(x1 >= x2 || x2 < item.sx1 || x1 > item.sx2){
+				continue;
+			}
+
+			v_t yceil = s_ceil[item.sect] - cam.y;
+			v_t yfloor = s_floor[item.sect] - cam.y;
+
+			sectp_t neighbor = w_nextsect[w1];
+			float nyceil = 0, nyfloor = 0;
+			if(neighbor >= 0){
+				nyceil = s_ceil[neighbor] - cam.y;
+				nyfloor = s_floor[neighbor] - cam.y;
+			}
 		}
+		visited[item.sect] = true;
 	}while(head != tail);
 }
 
