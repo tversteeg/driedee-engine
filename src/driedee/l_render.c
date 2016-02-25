@@ -211,13 +211,15 @@ static void renderRooms(camera_t cam)
 	*head = (_item){cam.sect, 0, tex->width - 1};
 	head++;
 
-	v_t hfovf = 1.0f / (H_FOV * (v_t)tex->height);
-	v_t vfovf = 1.0f / (V_FOV * (v_t)tex->height);
+	v_t hfov = H_FOV * (v_t)tex->height;
+	v_t vfov = V_FOV * (v_t)tex->height;
 
 	int ytop[tex->width];
-	memset(ytop, 255, tex->width * sizeof(ytop[0]));
+	memset(ytop, 0, tex->width * sizeof(ytop[0]));
 	int ybot[tex->width];
-	memset(ybot, 0, tex->width * sizeof(ybot[0]));
+	for(unsigned i = 0; i < tex->width; i++){
+		ybot[i] = tex->height - 1;
+	}
 
 	do{
 		_item item = *tail;
@@ -235,7 +237,7 @@ static void renderRooms(camera_t cam)
 			xy_t v2 = worldToCam(w_vert[w2], cam);
 
 			// Clip walls fully behind the player & find the intersection point when the walls are partially hidden
-			if(v1.y < 0 && v2.y < 0){
+			if(v1.y <= 0 && v2.y <= 0){
 				continue;
 			}else if(v1.y < Z_NEAR){
 				xy_t i = Intersect(v1.x, v1.y, v2.x, v2.y, -SIDE_NEAR, Z_NEAR, -SIDE_FAR, Z_FAR);
@@ -254,9 +256,9 @@ static void renderRooms(camera_t cam)
 			}
 
 			// Do perspective transformation
-			v_t xscale1 = v1.y * hfovf;
+			v_t xscale1 = hfov / v1.y;
 			int x1 = texhw - (int)(v1.x * xscale1);
-			v_t xscale2 = v2.y * hfovf;
+			v_t xscale2 = hfov / v2.y;
 			int x2 = texhw - (int)(v2.x * xscale2);
 			if(x1 >= x2 || x2 < item.sx1 || x1 > item.sx2){
 				continue;
@@ -272,8 +274,8 @@ static void renderRooms(camera_t cam)
 				nyfloor = s_floor[neighbor] - cam.y;
 			}
 
-			v_t yscale1 = v1.y * vfovf;
-			v_t yscale2 = v2.y * vfovf;
+			v_t yscale1 = vfov / v1.y;
+			v_t yscale2 = vfov / v2.y;
 
 			// Project ceiling and floor heights onto the screen
 			int ybotl = (yceil + v1.y * cam.yaw) * yscale1;
@@ -290,7 +292,6 @@ static void renderRooms(camera_t cam)
 			int startx = max(x1, item.sx1);
 			int endx = max(x2, item.sx2);
 			for(int x = startx; x <= endx; x++){
-				int x2minx1 = x2 - x1;
 				// Z coordinate for lighting
 				int z = ((x - x1) * (v2.y - v1.y) / (x2 - x1) + v1.y) * 8;
 
@@ -299,7 +300,30 @@ static void renderRooms(camera_t cam)
 				int yb = (x - x1) * (ybotr - ybotl) / (x2 - x1) + ybotl;
 				int cyb = clamp(yb, ytop[x], ybot[x]);
 
+				// Render ceiling
+				drawLine(tex, (xy_t){x, ytop[x]}, (xy_t){x, cya - 1}, (pixel_t){255, 0, 0});
+				// Render floor
+				drawLine(tex, (xy_t){x, cyb + 1}, (xy_t){x, ybot[x]}, (pixel_t){255, 0, 0});
+
 				if(neighbor >= 0){
+					int nya = (x - x1) * (nytopr - nytopl) / (x2 - x1) + nytopl;
+					int ncya = clamp(nya, ytop[x], ybot[x]);
+					int nyb = (x - x1) * (nybotr - nybotl) / (x2 - x1) + nybotl;
+					int ncyb = clamp(nyb, ytop[x], ybot[x]);
+
+					ytop[x] = clamp(max(cya, ncya), ytop[x], tex->height - 1);
+					ybot[x] = clamp(min(cyb, ncyb), 0, ybot[x]);
+
+					if(x == x1 || x == x2){
+						continue;
+					}
+
+					// Render the top section of the wall
+					drawLine(tex, (xy_t){x, cya}, (xy_t){x, ncya - 1}, (pixel_t){255, 0, 0});
+
+					// Render the bottom section of the wall
+					drawLine(tex, (xy_t){x, cyb}, (xy_t){x, ncyb - 1}, (pixel_t){255, 0, 0});
+				}else if(x != x1 && x != x2){
 					drawLine(tex, (xy_t){x, cya}, (xy_t){x, cyb}, (pixel_t){255, 0, 0});
 				}
 			}
