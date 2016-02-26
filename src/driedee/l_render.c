@@ -11,7 +11,7 @@
 #define Z_NEAR 1e-4f
 #define Z_FAR 5.0f
 #define SIDE_NEAR 1e-5f
-#define SIDE_FAR 20.0f
+#define SIDE_FAR 5.0f
 
 #define H_FOV 0.73f
 #define V_FOV 0.2f
@@ -190,14 +190,21 @@ static void renderMinimap(sectp_t sect, p_t camloc, v_t camangle)
 
 static inline xy_t worldToCam(p_t p, camera_t cam)
 {
-	xy_t c = {cam.xz[0] - p[0], cam.xz[1] - p[1]};
+	xy_t c = {p[0] - cam.xz[0], p[1] - cam.xz[1]};
 
-	return (xy_t){cam.anglecos * c.x - cam.anglesin * c.y, cam.anglesin * c.x + cam.anglecos * c.y};
+	return (xy_t){cam.anglesin * c.x - cam.anglecos * c.y, cam.anglecos * c.x + cam.anglesin * c.y};
+}
+
+static void drawLineCentered(texture_t *tex, xy_t v1, xy_t v2, pixel_t c)
+{
+	xy_t v1p = {v1.x + texhw, v1.y + texhh};
+	xy_t v2p = {v2.x + texhw, v2.y + texhh};
+	drawLine(tex, v1p, v2p, c);
 }
 
 static void renderRooms(camera_t cam)
 {
-	bool visited[lastsect];
+	int visited[lastsect];
 	memset(visited, 0, lastsect * sizeof(visited[0]));
 
 	typedef struct {
@@ -226,9 +233,10 @@ static void renderRooms(camera_t cam)
 		if(++tail == queue + MAX_SECTOR_STACK){
 			tail = queue;
 		}
-		if(visited[item.sect]){
+		if(visited[item.sect] & 0x21){
 			continue;
 		}
+		visited[item.sect]++;
 
 		// Render walls
 		wallp_t swall = s_fwall[item.sect], ewall = swall + s_nwalls[item.sect];
@@ -255,6 +263,8 @@ static void renderRooms(camera_t cam)
 				}
 			}
 
+			drawLineCentered(tex, v1, v2, COLOR_YELLOW);
+
 			// Do perspective transformation
 			v_t xscale1 = hfov / v1.y;
 			int x1 = texhw - (int)(v1.x * xscale1);
@@ -278,16 +288,16 @@ static void renderRooms(camera_t cam)
 			v_t yscale2 = vfov / v2.y;
 
 			// Project ceiling and floor heights onto the screen
-			int ybotl = (yceil + v1.y * cam.yaw) * yscale1;
-			int ytopl = (yfloor + v1.y * cam.yaw) * yscale1;
-			int ybotr = (yceil + v2.y * cam.yaw) * yscale2;
-			int ytopr = (yfloor + v2.y * cam.yaw) * yscale2;
+			int ytopl = texhh - (yceil + v1.y * cam.yaw) * yscale1;
+			int ybotl = texhh - (yfloor + v1.y * cam.yaw) * yscale1;
+			int ytopr = texhh - (yceil + v2.y * cam.yaw) * yscale2;
+			int ybotr = texhh - (yfloor + v2.y * cam.yaw) * yscale2;
 
 			// Project for the neighbor sector
-			int nybotl = (nyceil + v1.y * cam.yaw) * yscale1;
-			int nytopl = (nyfloor + v1.y * cam.yaw) * yscale1;
-			int nybotr = (nyceil + v2.y * cam.yaw) * yscale2;
-			int nytopr = (nyfloor + v2.y * cam.yaw) * yscale2;
+			int nytopl = texhh - (nyceil + v1.y * cam.yaw) * yscale1;
+			int nybotl = texhh - (nyfloor + v1.y * cam.yaw) * yscale1;
+			int nytopr = texhh - (nyceil + v2.y * cam.yaw) * yscale2;
+			int nybotr = texhh - (nyfloor + v2.y * cam.yaw) * yscale2;
 
 			int startx = max(x1, item.sx1);
 			int endx = max(x2, item.sx2);
@@ -335,7 +345,7 @@ static void renderRooms(camera_t cam)
 				}
 			}
 		}
-		visited[item.sect] = true;
+		visited[item.sect]++;
 	}while(head != tail);
 }
 
