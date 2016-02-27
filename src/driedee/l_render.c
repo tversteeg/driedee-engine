@@ -197,13 +197,17 @@ static inline xy_t worldToCam(p_t p, camera_t cam)
 
 static void drawLineCentered(texture_t *tex, xy_t v1, xy_t v2, pixel_t c)
 {
-	xy_t v1p = {v1.x + texhw, v1.y + texhh};
-	xy_t v2p = {v2.x + texhw, v2.y + texhh};
+	xy_t v1p = {v1.x + texhw, texhh - v1.y};
+	xy_t v2p = {v2.x + texhw, texhh - v2.y};
 	drawLine(tex, v1p, v2p, c);
 }
 
 static void renderRooms(camera_t cam)
 {
+	if(cam.sect < 0){
+		return;
+	}
+
 	int visited[lastsect];
 	memset(visited, 0, lastsect * sizeof(visited[0]));
 
@@ -276,6 +280,8 @@ static void renderRooms(camera_t cam)
 
 			v_t yceil = s_ceil[item.sect] - cam.y;
 			v_t yfloor = s_floor[item.sect] - cam.y;
+			printf("%f ", s_ceil[item.sect]);
+			printf("%f\n", s_floor[item.sect]);
 
 			sectp_t neighbor = w_nextsect[w1];
 			float nyceil = 0, nyfloor = 0;
@@ -329,12 +335,12 @@ static void renderRooms(camera_t cam)
 					}
 
 					// Render the top section of the wall
-					drawLine(tex, (xy_t){x, cya}, (xy_t){x, ncya - 1}, (pixel_t){255, 0, 0});
+					drawLine(tex, (xy_t){x, cya}, (xy_t){x, ncya - 1}, (pixel_t){0, 0, 255});
 
 					// Render the bottom section of the wall
 					drawLine(tex, (xy_t){x, cyb}, (xy_t){x, ncyb - 1}, (pixel_t){255, 0, 0});
 				}else if(x != x1 && x != x2){
-					drawLine(tex, (xy_t){x, cya}, (xy_t){x, cyb}, (pixel_t){255, 0, 0});
+					drawLine(tex, (xy_t){x, cya}, (xy_t){x, cyb}, (pixel_t){0, 255, 0});
 				}
 			}
 

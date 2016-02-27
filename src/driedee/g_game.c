@@ -47,22 +47,23 @@ void initGameWorld(cctTerm *console)
 
 	debugPrintMap(map);
 
-	sectp_t s1 = createSector(0, 10);
+	sectp_t s1 = createSector(-5, 10);
 	addVertToSector((p_t){20, 20}, WALL);
 	addVertToSector((p_t){50, 20}, WALL);
 	addVertToSector((p_t){50, 50}, 1);
-	addVertToSector((p_t){20, 50}, WALL);	
+	addVertToSector((p_t){20, 51}, WALL);	
 	
-	createSector(0, 10);
-	addVertToSector((p_t){50, 20}, s1);
-	addVertToSector((p_t){70, 20}, WALL);
-	addVertToSector((p_t){70, 50}, WALL);
+	createSector(-5, 10);
+	addVertToSector((p_t){51, 20}, s1);
+	addVertToSector((p_t){73, 20}, WALL);
+	addVertToSector((p_t){73, 50}, WALL);
 	addVertToSector((p_t){50, 50}, WALL);
 
 	player.pos.x = 30;
 	player.pos.z = 30;
 	player.pos.y = 6;
 	player.angle = player.vel.x = player.vel.y = player.vel.z = 0;
+	player.cam = (camera_t){0};
 
 	_con = console;
 
